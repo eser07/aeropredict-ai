@@ -85,10 +85,12 @@ class AeroForecastVerifier(gl.contract.Contract):
                     BASE_RPC,
                     method="POST",
                     headers={"Content-Type": "application/json"},
-                    body={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+                    body=json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}),
                 )
-                if response.status_code != 200:
+                if response.status != 200:
                     raise gl.UserError("Base RPC returned an HTTP error")
+                if response.body is None:
+                    raise gl.UserError("Base RPC returned an empty body")
                 message = json.loads(response.body.decode("utf-8"))
                 if "error" in message or "result" not in message:
                     raise gl.UserError("Base RPC returned an invalid result")

@@ -45,6 +45,29 @@ def test_aero_deploy_and_forecast_on_glsim(monkeypatch):
     monkeypatch.setattr(factory_module, "_fee_kwargs", sdk_fee_kwargs)
     monkeypatch.setattr(contract_module, "_fee_kwargs", sdk_fee_kwargs)
 
+    # genlayer-test 0.29.2 expects SDK wait_until="decided"/"finalized".
+    # genlayer-py 0.18.0 instead accepts status=TransactionStatus.
+    # Adapt only the local test session; keep explicit finalization semantics.
+    from genlayer_py.client.genlayer_client import GenLayerClient
+    from genlayer_py.types import TransactionStatus
+
+    original_wait = GenLayerClient.wait_for_transaction_receipt
+    if "wait_until" not in inspect.signature(original_wait).parameters:
+        def compatible_wait(self, *args, wait_until=None, **kwargs):
+            if wait_until not in (None, "decided", "finalized"):
+                raise ValueError(f"Unsupported wait_until: {wait_until}")
+            if wait_until is not None and "status" in kwargs:
+                raise ValueError("Cannot supply both status and wait_until")
+            if wait_until == "decided":
+                kwargs["status"] = TransactionStatus.ACCEPTED
+            elif wait_until == "finalized":
+                kwargs["status"] = TransactionStatus.FINALIZED
+            return original_wait(self, *args, **kwargs)
+
+        monkeypatch.setattr(
+            GenLayerClient, "wait_for_transaction_receipt", compatible_wait
+        )
+
     factory = get_contract_factory("AeroForecastVerifier")
 
     print("GLSim: Deploying AeroForecastVerifier...")

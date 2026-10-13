@@ -92,8 +92,17 @@ def test_settle_checks_base_rpc_and_records_difference(direct_vm, direct_deploy)
         details = json.loads(contract.get_details())
         assert details["error_raw"] == "200000"
         assert details["settlement_block"] == block_num
-        # This checks the direct-mode validator reruns the same external reads.
-        assert direct_vm.run_validator() is True
+        # Direct mode's WASI sandbox mock does not return the ResultCode-
+        # prefixed sub-VM payload required by the SDK. Emulate sandbox
+        # execution in-process here ONLY to unit-test the validator's
+        # equality/replay logic, not actual isolated network consensus.
+        def in_process_sandbox(fn, *, allow_write_ops=False):
+            return module.gl.vm.Return(calldata=fn())
+
+        with patch.object(
+            module.gl.vm, "spawn_sandbox", side_effect=in_process_sandbox
+        ):
+            assert direct_vm.run_validator() is True
 
     assert "eth_chainId" in rpc_methods
     assert "eth_getBlockByNumber" in rpc_methods

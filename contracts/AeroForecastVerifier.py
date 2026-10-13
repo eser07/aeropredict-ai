@@ -45,18 +45,18 @@ class AeroForecastVerifier(gl.contract.Contract):
     @gl.public.write
     def submit_forecast(self, token_address: str, epoch_start: u256, predicted_raw: u256) -> None:
         if self.status != "EMPTY":
-            raise gl.UserError("Forecast already submitted")
+            raise gl.vm.UserError("Forecast already submitted")
         if len(token_address) != 42 or not token_address.startswith("0x"):
-            raise gl.UserError("Invalid token address")
+            raise gl.vm.UserError("Invalid token address")
         try:
             int(token_address[2:], 16)
         except ValueError:
-            raise gl.UserError("Invalid hexadecimal token address")
+            raise gl.vm.UserError("Invalid hexadecimal token address")
         start = int(epoch_start)
         if start <= int(datetime.now(timezone.utc).timestamp()):
-            raise gl.UserError("Forecast must be submitted before its epoch starts")
+            raise gl.vm.UserError("Forecast must be submitted before its epoch starts")
         if start % EPOCH_SECONDS != 0:
-            raise gl.UserError("Epoch must start at Thursday 00:00 UTC")
+            raise gl.vm.UserError("Epoch must start at Thursday 00:00 UTC")
         self.token_address = token_address.lower()
         self.epoch_start = epoch_start
         self.predicted_raw = predicted_raw
@@ -66,13 +66,13 @@ class AeroForecastVerifier(gl.contract.Contract):
     @gl.public.write
     def settle(self, first_next_epoch_block: u256) -> None:
         if self.status != "PENDING":
-            raise gl.UserError("No pending forecast")
+            raise gl.vm.UserError("No pending forecast")
         boundary = int(self.epoch_start) + EPOCH_SECONDS
         if int(datetime.now(timezone.utc).timestamp()) < boundary:
-            raise gl.UserError("Epoch has not ended")
+            raise gl.vm.UserError("Epoch has not ended")
         block_num = int(first_next_epoch_block)
         if block_num < 1:
-            raise gl.UserError("Invalid Base block")
+            raise gl.vm.UserError("Invalid Base block")
         token = self.token_address
         start = int(self.epoch_start)
         block_tag = hex(block_num)
@@ -88,26 +88,26 @@ class AeroForecastVerifier(gl.contract.Contract):
                     body=json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}),
                 )
                 if response.status != 200:
-                    raise gl.UserError("Base RPC returned an HTTP error")
+                    raise gl.vm.UserError("Base RPC returned an HTTP error")
                 if response.body is None:
-                    raise gl.UserError("Base RPC returned an empty body")
+                    raise gl.vm.UserError("Base RPC returned an empty body")
                 message = json.loads(response.body.decode("utf-8"))
                 if "error" in message or "result" not in message:
-                    raise gl.UserError("Base RPC returned an invalid result")
+                    raise gl.vm.UserError("Base RPC returned an invalid result")
                 return message["result"]
 
             if int(rpc("eth_chainId", []), 16) != BASE_CHAIN_ID:
-                raise gl.UserError("Wrong RPC chain")
+                raise gl.vm.UserError("Wrong RPC chain")
             current = rpc("eth_getBlockByNumber", [block_tag, False])
             parent = rpc("eth_getBlockByNumber", [hex(block_num - 1), False])
             if not isinstance(current, dict) or not isinstance(parent, dict):
-                raise gl.UserError("Block not found")
+                raise gl.vm.UserError("Block not found")
             # Requires the FIRST block at/after the new epoch boundary.
             if not (
                 int(parent["timestamp"], 16) < start + EPOCH_SECONDS
                 <= int(current["timestamp"], 16)
             ):
-                raise gl.UserError("Block does not cross the epoch boundary")
+                raise gl.vm.UserError("Block does not cross the epoch boundary")
             calldata = (
                 REWARD_EPOCH_SELECTOR
                 + token[2:].lower().zfill(64)

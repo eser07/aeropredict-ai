@@ -34,6 +34,50 @@ DESTINATIONS = {
 }
 CHAIN_ID = 8453
 MAX_POOLS = 50
+STATUS_PATH = DATA / "expanded_refresh_status.json"
+
+
+def utc_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def write_status(state, stage, error=None):
+    """Publish refresh progress atomically without exposing incomplete JSON."""
+    DATA.mkdir(parents=True, exist_ok=True)
+    try:
+        previous = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = {}
+    now = utc_iso()
+    started_at = None
+    if state == "running" and previous.get("state") == "running" and previous.get("pid") == os.getpid():
+        started_at = previous.get("started_at_utc")
+    if state != "running":
+        started_at = previous.get("started_at_utc")
+    payload = {
+        "state": state,
+        "stage": stage,
+        "started_at_utc": started_at or now,
+        "finished_at_utc": now if state != "running" else None,
+        "last_success_utc": now if state == "success" else previous.get("last_success_utc"),
+        "last_failure_utc": now if state == "failed" else previous.get("last_failure_utc"),
+        "last_error": str(error)[:250] if state == "failed" and error else None,
+        "pid": os.getpid() if state == "running" else None,
+    }
+    temp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", dir=DATA, prefix=".refresh_status_", suffix=".json",
+            encoding="utf-8", delete=False
+        ) as handle:
+            temp_path = Path(handle.name)
+            json.dump(payload, handle, ensure_ascii=False)
+            handle.write("\n")
+        os.replace(temp_path, STATUS_PATH)
+    finally:
+        if temp_path is not None and temp_path.exists():
+            temp_path.unlink()
+
 
 
 def read_json(path):
@@ -141,6 +185,7 @@ def stage_dashboard_bundle(staged):
     """One self-consistent dashboard payload; published with a single os.replace."""
     content = {
         "dataset_mode": "expanded",
+        "published_at_utc": utc_iso(),
         "backtest": read_json(staged["backtest"]),
         "history": read_json(staged["history"]),
         "incentives": read_json(staged["incentives"]),
@@ -195,7 +240,8 @@ def main():
         "Stops without replacing existing expanded files if any stage fails.",
         flush=True,
     )
-    print("Do not leave the dashboard server running during this refresh.", flush=True)
+    print("Dashboard may remain open; it reads the last complete atomic snapshot.", flush=True)
+    write_status("running", "Preparing data collection")
 
     with tempfile.TemporaryDirectory(
         prefix=".aeropredict_refresh_", dir=DATA
@@ -203,6 +249,7 @@ def main():
         temp = Path(temp_dir)
         staged = {k: temp / v.name for k, v in DESTINATIONS.items()}
 
+        write_status("running", "Collecting FEES histories")
         run(
             "scripts/pool_fee_histories_base.py",
             "--scan-file", SCAN,
@@ -211,24 +258,29 @@ def main():
             "--max-pools", str(len(candidates)),
             "--max-tokens", "4",
         )
+        write_status("running", "Backtesting reward series")
         run(
             "scripts/backtest_pool_fees.py",
             "--input-file", staged["history"],
             "--output-file", staged["backtest"],
         )
+        write_status("running", "Collecting BRIBES and current USD prices")
         run(
             "scripts/collect_pool_incentives_base.py",
             "--input-file", staged["history"],
             "--output-file", staged["incentives"],
             "--max-bribe-tokens", "20",
         )
+        write_status("running", "Verifying trading pairs")
         run(
             "scripts/collect_pool_pairs_base.py",
             "--input-file", staged["incentives"],
             "--output-file", staged["pairs"],
         )
+        write_status("running", "Validating all results")
         validate(staged, len(candidates))
         stage_dashboard_bundle(staged)
+        write_status("running", "Publishing verified snapshot")
         publish(staged, temp)
 
     print("\nSUCCESS: Expanded dashboard data and atomic dashboard bundle refreshed.", flush=True)
@@ -243,7 +295,12 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError) as exc:
+        write_status("success", "All data refreshed successfully")
+    except Exception as exc:
+        try:
+            write_status("failed", "Refresh failed; previous data retained", exc)
+        except OSError:
+            pass
         print(f"\nREFRESH STOPPED: {exc}", file=sys.stderr, flush=True)
         print(
             "Existing expanded dataset was preserved if failure occurred before "

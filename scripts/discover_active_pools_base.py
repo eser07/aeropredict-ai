@@ -9,8 +9,11 @@ as one complete registry. Public RPC providers may stop serving that old block:
 if so, keep the checkpoint, use an archive-capable RPC, or explicitly --restart.
 """
 import argparse
+import fcntl
 import json
 import os
+import re
+import subprocess
 import sys
 import tempfile
 import time
@@ -27,6 +30,69 @@ CHECKPOINT = DATA / "pool_discovery_checkpoint_base.json"
 RESULT = DATA / "pool_discovery_active_base.json"
 ZERO = "0x" + "0" * 40
 SCHEMA_VERSION = 1
+
+
+def describe_rpc_failure(exc):
+    """Classify failures without exposing RPC URLs (which may contain API keys)."""
+    if isinstance(exc, subprocess.CalledProcessError):
+        stderr = exc.stderr.decode("utf-8", "replace") if isinstance(exc.stderr, bytes) else str(exc.stderr or "")
+        match = re.search(r"error:\s*(\d{3})", stderr, re.IGNORECASE)
+        status = int(match.group(1)) if match else None
+        if status in (401, 403):
+            return False, (
+                f"HTTP {status}: this RPC does not authorize the pinned historic block. "
+                "Use an archive-capable Base RPC with credentials; do not --restart."
+            )
+        if status in (400, 404, 405, 413, 422):
+            return False, f"HTTP {status}: request refused. Check the Base RPC provider."
+        if status in (408, 425, 429) or (status is not None and status >= 500):
+            return True, f"HTTP {status}: temporary RPC/rate-limit failure"
+        return True, f"curl transport failed (exit {exc.returncode})"
+    if isinstance(exc, subprocess.TimeoutExpired):
+        return True, "RPC request timed out"
+    if isinstance(exc, (TimeoutError, ConnectionError)):
+        return True, "RPC connection timed out or was interrupted"
+    if isinstance(exc, FileNotFoundError):
+        return False, "curl or another required tool was not found"
+    if isinstance(exc, OSError):
+        return True, "Temporary RPC network error"
+    message = str(exc).lower()
+    if any(x in message for x in (
+        "archive", "personal token", "historical state", "missing trie node",
+        "forbidden", "unauthorized", "invalid params", "-32602",
+    )):
+        return False, "RPC rejected historic state or invalid parameters; use an archive-capable Base RPC"
+    if any(x in message for x in (
+        "rate limit", "too many requests", "timeout", "temporar",
+        "busy", "429", "-32005", "503", "502", "504",
+    )):
+        return True, "Temporary RPC error or rate limit"
+    return False, "RPC returned an unexpected response; inspect provider availability"
+
+
+def rpc_checked(operation, label, retries=3, retry_delay=3.0):
+    """Retry transient RPC failures with bounded exponential backoff only."""
+    for attempt in range(retries + 1):
+        try:
+            return operation()
+        except (
+            subprocess.CalledProcessError, subprocess.TimeoutExpired,
+            TimeoutError, OSError, RuntimeError,
+        ) as exc:
+            transient, reason = describe_rpc_failure(exc)
+            if not transient:
+                raise RuntimeError(f"{label}: {reason}. Saved checkpoint retained.") from None
+            if attempt == retries:
+                raise RuntimeError(
+                    f"{label}: {reason} after {retries + 1} attempts; "
+                    "checkpoint retained. Resume when RPC is healthy."
+                ) from None
+            wait = min(60.0, retry_delay * (2 ** attempt))
+            print(
+                f"RPC retry {attempt + 1}/{retries} | {label} | {reason} | "
+                f"waiting {wait:g}s", flush=True,
+            )
+            time.sleep(wait)
 
 
 def utc_now():
@@ -98,13 +164,14 @@ def validate_progress(progress):
     return True
 
 
-def begin_scan():
-    if int(rpc("eth_chainId", []), 16) != CHAIN_ID:
+def begin_scan(retries=3, retry_delay=3.0):
+    query = lambda callback, label: rpc_checked(callback, label, retries, retry_delay)
+    if int(query(lambda: rpc("eth_chainId", []), "Check Base chain"), 16) != CHAIN_ID:
         raise RuntimeError("Wrong chain ID; expected Base Mainnet (8453)")
-    block = int(rpc("eth_blockNumber", []), 16)
+    block = int(query(lambda: rpc("eth_blockNumber", []), "Get Base block"), 16)
     tag = hex(block)
-    count = read_uint("length()", None, tag)
-    weight = read_uint("totalWeight()", None, tag)
+    count = query(lambda: read_uint("length()", None, tag), "Read pool registry length")
+    weight = query(lambda: read_uint("totalWeight()", None, tag), "Read total voting weight")
     if not 0 < count < 1000000:
         raise RuntimeError(f"Unexpected Aerodrome registration count: {count}")
     if weight < 0:
@@ -133,26 +200,39 @@ def begin_scan():
     }
 
 
-def inspect_page(progress, page_size, delay):
+def inspect_page(progress, page_size, delay, retries=3, retry_delay=3.0):
     """Stage one page in memory, committing the checkpoint only if it finishes."""
     tag = hex(progress["snapshot_block_number"])
     start = progress["next_index"]
     end = min(start + page_size, progress["total_registered"])
     active = []
     total_weight = int(progress["total_voting_weight_raw"])
+    query = lambda callback, label: rpc_checked(callback, label, retries, retry_delay)
     for index in range(start, end):
-        address = read_address("pools(uint256)", index, tag)
+        address = query(
+            lambda: read_address("pools(uint256)", index, tag),
+            f"Pool #{index} address",
+        )
         if not address_ok(address) or int(address, 16) == 0:
             raise RuntimeError(f"Invalid pool address for index {index}")
-        gauge = read_address("gauges(address)", address, tag)
+        gauge = query(
+            lambda: read_address("gauges(address)", address, tag),
+            f"Pool #{index} gauge",
+        )
         if not address_ok(gauge):
             raise RuntimeError(f"Invalid gauge address for index {index}")
         alive = (
             int(gauge, 16) != 0 and
-            bool(read_uint("isAlive(address)", gauge, tag))
+            bool(query(
+                lambda: read_uint("isAlive(address)", gauge, tag),
+                f"Pool #{index} active flag",
+            ))
         )
         if alive:
-            raw_weight = read_uint("weights(address)", address, tag)
+            raw_weight = query(
+                lambda: read_uint("weights(address)", address, tag),
+                f"Pool #{index} voting weight",
+            )
             if raw_weight < 0:
                 raise RuntimeError(f"Negative weight for pool index {index}")
             share = (
@@ -205,24 +285,52 @@ def publish_completed(progress):
     )
 
 
-def run_scan(page_size=25, max_pages=1, delay=0.1, restart=False):
+def run_scan(
+    page_size=25, max_pages=1, delay=0.1, restart=False,
+    until_complete=False, retry_attempts=3, retry_delay=3.0,
+):
     DATA.mkdir(parents=True, exist_ok=True)
+    # Prevent overlapping terminal sessions from racing on a shared checkpoint.
+    with (DATA / ".pool_discovery.lock").open("a+") as lock:
+        try:
+            fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise RuntimeError("Pool discovery is already running; no duplicate scan started") from None
+        return _run_scan(
+            page_size, max_pages, delay, restart, until_complete,
+            retry_attempts, retry_delay,
+        )
+
+
+def _run_scan(
+    page_size, max_pages, delay, restart, until_complete,
+    retry_attempts, retry_delay,
+):
     if restart or not CHECKPOINT.is_file():
         if restart:
             print("Explicit restart: starting a new pinned-block inventory.", flush=True)
-        progress = begin_scan()
+        progress = begin_scan(retry_attempts, retry_delay)
         save_atomic(CHECKPOINT, progress)
     else:
         progress = json.loads(CHECKPOINT.read_text(encoding="utf-8"))
         validate_progress(progress)
-        if int(rpc("eth_chainId", []), 16) != CHAIN_ID:
+        if int(rpc_checked(
+            lambda: rpc("eth_chainId", []), "Check Base chain",
+            retry_attempts, retry_delay,
+        ), 16) != CHAIN_ID:
             raise RuntimeError("Wrong chain ID while resuming saved inventory")
         tag = hex(progress["snapshot_block_number"])
         # If the RPC can no longer read the pinned block, stop rather than
         # silently combine registry states from different moments.
-        if read_uint("length()", None, tag) != progress["total_registered"]:
+        if rpc_checked(
+            lambda: read_uint("length()", None, tag), "Verify pinned registry length",
+            retry_attempts, retry_delay,
+        ) != progress["total_registered"]:
             raise RuntimeError("Pinned-block registry length mismatch; checkpoint retained")
-        if str(read_uint("totalWeight()", None, tag)) != progress["total_voting_weight_raw"]:
+        if str(rpc_checked(
+            lambda: read_uint("totalWeight()", None, tag),
+            "Verify pinned total voting weight", retry_attempts, retry_delay,
+        )) != progress["total_voting_weight_raw"]:
             raise RuntimeError("Pinned-block total voting weight mismatch; checkpoint retained")
 
     if progress["complete"]:
@@ -238,14 +346,25 @@ def run_scan(page_size=25, max_pages=1, delay=0.1, restart=False):
         f"resuming at index {progress['next_index']}",
         flush=True,
     )
-    for page in range(max_pages):
+    remaining_pages = (
+        (progress["total_registered"] - progress["next_index"] + page_size - 1)
+        // page_size
+    )
+    page_limit = remaining_pages if until_complete else min(max_pages, remaining_pages)
+    if until_complete:
+        print(
+            f"Automatic discovery: up to {page_limit} pages, "
+            f"{delay:g}s between indexes; Ctrl+C keeps completed pages.",
+            flush=True,
+        )
+    for page in range(page_limit):
         if progress["complete"]:
             break
         start = progress["next_index"]
-        progress, found = inspect_page(progress, page_size, delay)
+        progress, found = inspect_page(progress, page_size, delay, retry_attempts, retry_delay)
         save_atomic(CHECKPOINT, progress)
         print(
-            f"Page {page + 1}/{max_pages}: scanned [{start}, {progress['next_index']}) "
+            f"Page {page + 1}/{page_limit}: scanned [{start}, {progress['next_index']}) "
             f"| active on page: {found} | total active found: {progress['active_pool_count']}",
             flush=True,
         )
@@ -271,6 +390,12 @@ def main():
     parser.add_argument("--max-pages", type=int, default=1, help="Pages in this run (1-20)")
     parser.add_argument("--delay-seconds", type=float, default=0.1,
                         help="Pause between inspected indices (0-5 seconds)")
+    parser.add_argument("--until-complete", action="store_true",
+                        help="Keep scanning all remaining pages automatically; resumable with Ctrl+C")
+    parser.add_argument("--retry-attempts", type=int, default=3,
+                        help="Additional retries for transient RPC errors (0-6)")
+    parser.add_argument("--retry-delay", type=float, default=3.0,
+                        help="Initial retry wait seconds, exponential backoff (1-30)")
     parser.add_argument("--restart", action="store_true",
                         help="Discard incomplete checkpoint and begin at a fresh pinned block")
     args = parser.parse_args()
@@ -280,7 +405,14 @@ def main():
         parser.error("--max-pages must be 1-20")
     if not 0 <= args.delay_seconds <= 5:
         parser.error("--delay-seconds must be 0-5")
-    run_scan(args.page_size, args.max_pages, args.delay_seconds, args.restart)
+    if not 0 <= args.retry_attempts <= 6:
+        parser.error("--retry-attempts must be 0-6")
+    if not 1 <= args.retry_delay <= 30:
+        parser.error("--retry-delay must be 1-30 seconds")
+    run_scan(
+        args.page_size, args.max_pages, args.delay_seconds, args.restart,
+        args.until_complete, args.retry_attempts, args.retry_delay,
+    )
 
 
 if __name__ == "__main__":
@@ -293,3 +425,10 @@ if __name__ == "__main__":
             file=sys.stderr, flush=True,
         )
         sys.exit(1)
+    except KeyboardInterrupt:
+        print(
+            "\nDISCOVERY PAUSED BY USER: Completed pages remain saved. "
+            "Rerun without --restart to continue.",
+            file=sys.stderr, flush=True,
+        )
+        sys.exit(130)

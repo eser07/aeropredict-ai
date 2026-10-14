@@ -73,6 +73,14 @@
     footer{font-size:12px;color:var(--muted);text-align:center;padding-top:24px}
     @media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.bar-row{grid-template-columns:115px 1fr 65px}}
     @media(max-width:430px){.wrap{padding:18px 12px 40px}.stat{padding:15px}.stat b{font-size:24px}.panel{padding:15px}.bar-row{grid-template-columns:98px 1fr 58px;gap:5px;font-size:11px}}
+    .refresh-strip{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center;border:1px solid #315074;background:#101e37;border-radius:12px;padding:10px 15px;margin:0 0 18px;font-size:13px}
+    .refresh-strip[hidden]{display:none}
+    .refresh-stamp{color:#cbd7eb}
+    .refresh-state{font-weight:600;color:#4ade80}
+    .refresh-state.running{color:#54e7d4}
+    .refresh-state.failed{color:#ff8f92}
+    .refresh-state.idle{color:#f4c66b}
+    .refresh-note{width:100%;font-size:11px;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -83,6 +91,11 @@
   </header>
   <h1>Aerodrome reward intelligence<br><span style="color:var(--cyan)">in one dashboard.</span></h1>
   <p class="lead">Explore weekly Aerodrome fee allocations, historical forecast errors, and statistical baselines by pool and reward token. This dashboard is not financial advice or a personal veAERO yield calculator.</p>
+  <section class="refresh-strip" id="refresh-strip" aria-label="Data refresh status" hidden>
+    <span class="refresh-stamp" id="refresh-last">Last successful update: Checking…</span>
+    <span class="refresh-state idle" id="refresh-state" role="status" aria-live="polite">Checking refresh status…</span>
+    <span class="refresh-note">Status checks every 15 seconds. After an update, recalculate your vote allocation to use the latest reward data.</span>
+  </section>
   <div id="error" class="error" role="alert"></div>
   <section class="stats" aria-label="Data overview">
     <div class="stat"><label>Active pools analyzed</label><b id="pool-count">—</b><small>Current sample</small></div>
@@ -189,6 +202,62 @@
   var entries = [];
   var history = null;
   var verifiedPairLabels = new Map();
+  var previousPublishedAt = null;
+  function turkeyTime(ts) {
+    var d = new Date(ts);
+    if (!Number.isFinite(d.getTime())) return "Unknown";
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone:"Europe/Istanbul",
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit",
+      hourCycle:"h23"
+    }).format(d) + " TRT";
+  }
+  async function checkRefreshStatus() {
+    var strip = document.getElementById("refresh-strip");
+    var label = document.getElementById("refresh-last");
+    var stateNode = document.getElementById("refresh-state");
+    try {
+      var response = await fetch("/api/refresh-status", {cache:"no-store"});
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      var info = await response.json();
+      if (info.state === "not_enabled") {
+        strip.hidden = true;
+        return;
+      }
+      strip.hidden = false;
+      var latest = info.last_updated_utc;
+      label.textContent = (latest ? "Last successful snapshot: " + turkeyTime(latest) :
+        "Last successful snapshot: Not yet available");
+      var state = info.state || "idle";
+      var detail = typeof info.stage === "string" ? info.stage : "";
+      stateNode.className = "refresh-state " +
+        (state === "running" ? "running" :
+         (state === "failed" || state === "interrupted" ? "failed" : "idle"));
+      if (state === "running") {
+        stateNode.textContent = "Updating now… " + detail;
+      } else if (state === "failed") {
+        stateNode.textContent = "Last refresh failed · Previous data retained";
+      } else if (state === "interrupted") {
+        stateNode.textContent = "Refresh interrupted · Previous data retained";
+      } else if (state === "success") {
+        stateNode.className = "refresh-state";
+        stateNode.textContent = "Refresh complete · Hourly schedule";
+      } else {
+        stateNode.textContent = "Waiting for scheduled refresh";
+      }
+      if (previousPublishedAt !== null && latest && previousPublishedAt !== latest) {
+        previousPublishedAt = latest;
+        await load();
+      } else if (latest) {
+        previousPublishedAt = latest;
+      }
+    } catch (err) {
+      strip.hidden = false;
+      stateNode.className = "refresh-state failed";
+      stateNode.textContent = "Refresh status unavailable";
+    }
+  }
   function node(tag, className, text) {
     var el = document.createElement(tag);
     if (className) el.className = className;
@@ -536,6 +605,8 @@
   });
   document.getElementById("refresh").addEventListener("click", load);
   load();
+  checkRefreshStatus();
+  setInterval(checkRefreshStatus, 15000);
 })();
 </script>
 <script src="/optimizer.js" defer></script>

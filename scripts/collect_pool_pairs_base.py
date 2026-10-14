@@ -5,6 +5,7 @@ Pool trading tokens are NOT inferred from FEES / BRIBES reward tokens.
 This lightweight metadata step does not refresh or modify reward estimates.
 Stores a separate local JSON artifact for the read-only dashboard.
 """
+import argparse
 import json
 import subprocess
 import sys
@@ -53,11 +54,33 @@ def symbol_or_address(token_address, cache):
 
 
 def main():
-    if not SOURCE.is_file():
-        raise RuntimeError(
-            "Missing saved incentive data. Run collect_pool_incentives_base.py first."
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input-file", type=Path, default=SOURCE,
+        help="Saved incentive JSON; default seven-pool demo",
+    )
+    parser.add_argument(
+        "--output-file", type=Path, default=OUTPUT,
+        help="Pair metadata JSON; default seven-pool demo",
+    )
+    args = parser.parse_args()
+    data_dir = Path("data").resolve()
+    input_file = args.input_file.resolve()
+    output_file = args.output_file.resolve()
+    if any(
+        not p.is_relative_to(data_dir) or p.suffix.lower() != ".json"
+        for p in (input_file, output_file)
+    ):
+        parser.error("Input and output must be .json files inside data/")
+    if input_file == output_file:
+        parser.error("Input and output must be different files")
+    if input_file != SOURCE.resolve() and output_file == OUTPUT.resolve():
+        parser.error(
+            "Custom incentive input requires a custom --output-file to protect the demo"
         )
-    incentives = json.loads(SOURCE.read_text(encoding="utf-8"))
+    if not input_file.is_file():
+        raise RuntimeError(f"Missing saved incentive data: {args.input_file}")
+    incentives = json.loads(input_file.read_text(encoding="utf-8"))
     if incentives.get("chain_id") != CHAIN_ID:
         raise RuntimeError("Saved incentives are not from Base Mainnet")
     if not isinstance(incentives.get("pools"), list):
@@ -74,9 +97,10 @@ def main():
     seen = set()
     for entry in incentives["pools"]:
         index = entry["index"]
-        pool = entry["pool_address"].lower()
-        if not isinstance(index, int) or not isinstance(pool, str):
+        pool_value = entry["pool_address"]
+        if not isinstance(index, int) or isinstance(index, bool) or not isinstance(pool_value, str):
             raise RuntimeError("Invalid pool entry")
+        pool = pool_value.lower()
         if len(pool) != 42 or not pool.startswith("0x"):
             raise RuntimeError(f"Invalid pool address for #{index}")
         try:
@@ -122,19 +146,19 @@ def main():
     output = {
         "chain_id": CHAIN_ID,
         "source": "token0() and token1() read directly from pool contracts on Base",
-        "source_incentive_file": str(SOURCE),
+        "source_incentive_file": str(args.input_file),
         "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
         "approx_block_number": block,
         "rpc": RPC,
         "pools": results,
     }
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(
         json.dumps(output, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     good = sum(bool(p["pair_label"]) for p in results)
-    print(f"Saved: {OUTPUT} | identified {good}/{len(results)} pool pairs")
+    print(f"Saved: {args.output_file} | identified {good}/{len(results)} pool pairs")
 
 
 if __name__ == "__main__":

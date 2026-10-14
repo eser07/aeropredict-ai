@@ -278,6 +278,46 @@ RPC interruption and checkpoint integrity):
 python -m unittest discover -s tests -p "discover_active_pools_test.py" -v
 ```
 
+### P2 — Prepare validated collection batches (offline; no dashboard changes)
+
+Once the full Voter inventory reports `COMPLETE` (e.g., **928 gauges
+alive among 1,991 registered pools** at a particular pinned Base block),
+validate it and build separate scan inputs in batches of 25:
+
+```bash
+python scripts/plan_pool_collection_base.py --batch-size 25 --order votes
+```
+
+This requires **no network or RPC requests**, and validates the completed
+discovery checkpoint's complete/coverage flags, chain ID, Voter address,
+pool IDs and counts before planning. It saves a manifest and deterministic
+25-pool scan inputs under
+`data/pool_collection_batches_base/block_<PINNED_BLOCK>/votes_25/`.
+Existing `data/pool_scan_active_expanded.json`, the 16-pool dashboard
+and its hourly refresher remain unchanged. Re-running with the same
+snapshot is safe; changing the snapshot while targeting the same output
+folder is rejected rather than silently mixing versions.
+
+**Why plan batches first?** The existing FEES history collector caps each
+run at **50 pools**, while the current expanded hourly refresh also caps its
+candidate file at 50. The planner deliberately does **not** alter those
+caps or run 928 pools through hourly refresh. Ranking is by **past snapshot
+Voter weight** only, NOT by weekly FEES, BRIBES, profitability, opportunities,
+current yield or expected veAERO payout. Zero-vote but alive gauges are
+retained and explicitly counted. A gauge alive at the recorded block may
+not be alive at collection time.
+
+The next P2 step is to pilot a **separate** bounded FEES/BRIBES collector
+using a planned 25-pool scan input, checkpoint results, verify USD price
+coverage, and only then expand to more batches. This is not a live
+928-pool optimizer or a production-dashboard migration.
+
+Offline planner regression tests (six cases):
+
+```bash
+python -m unittest discover -s tests -p "plan_pool_collection_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

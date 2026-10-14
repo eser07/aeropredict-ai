@@ -21,6 +21,7 @@ HTML = ROOT / "dashboard" / "index.html"
 RESULTS = ROOT / "data" / "pool_fee_backtest_base.json"
 HISTORY = ROOT / "data" / "pool_fee_histories_base.json"
 INCENTIVES = ROOT / "data" / "pool_incentives_base.json"
+PAIRS = ROOT / "data" / "pool_pairs_base.json"
 OPTIMIZER_JS = ROOT / "dashboard" / "optimizer.js"
 
 
@@ -114,8 +115,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         500, {"error": "Cannot parse incentives JSON", "detail": str(exc)}
                     )
                     return
+            pairs = None
+            if PAIRS.is_file():
+                try:
+                    pairs = json.loads(PAIRS.read_text(encoding="utf-8"))
+                    if pairs.get("chain_id") != 8453:
+                        raise ValueError("Pool pairs are not from Base Mainnet")
+                    if not isinstance(pairs.get("pools"), list):
+                        raise ValueError("Pool pairs require a pools list")
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    self.json_response(
+                        500, {"error": "Cannot parse pool pairs JSON", "detail": str(exc)}
+                    )
+                    return
             self.json_response(200, {
-                "backtest": raw, "history": history, "incentives": incentives
+                "backtest": raw, "history": history,
+                "incentives": incentives, "pairs": pairs
             })
             return
 
@@ -140,6 +155,7 @@ def main():
     print(f"Reading results from: {RESULTS}", flush=True)
     print(f"Reading reward histories from: {HISTORY}", flush=True)
     print(f"Reading incentives from: {INCENTIVES}", flush=True)
+    print(f"Reading pool trading pairs from: {PAIRS}", flush=True)
     print("Dashboard is bound to 127.0.0.1 only. Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever(poll_interval=0.2)

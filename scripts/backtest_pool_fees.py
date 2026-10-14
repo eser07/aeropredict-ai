@@ -11,6 +11,7 @@ No forecast model is trained; baselines are lag-1, four-week mean and median.
 Results are exploratory: eight holdout periods from twelve observed weeks, and
 no immutable point-in-time history, price data or voting-power denominator.
 """
+import argparse
 import json
 import sys
 from datetime import datetime, timedelta
@@ -128,12 +129,33 @@ def measure_series(weeks, decimals):
 
 
 def main():
-    if not INPUT.is_file():
-        raise RuntimeError(
-            "Missing data/pool_fee_histories_base.json; run "
-            "python scripts/pool_fee_histories_base.py first"
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--input-file", type=Path, default=INPUT,
+        help="FEES histories JSON; default original dashboard sample",
+    )
+    parser.add_argument(
+        "--output-file", type=Path, default=OUTPUT,
+        help="Backtest result JSON; default original dashboard result",
+    )
+    args = parser.parse_args()
+    data_dir = Path("data").resolve()
+    input_file = args.input_file.resolve()
+    output_file = args.output_file.resolve()
+    if any(
+        not p.is_relative_to(data_dir) or p.suffix.lower() != ".json"
+        for p in (input_file, output_file)
+    ):
+        parser.error("Both JSON paths must be inside data/")
+    if input_file == output_file:
+        parser.error("Input and output must be different files")
+    if input_file != INPUT.resolve() and output_file == OUTPUT.resolve():
+        parser.error(
+            "Custom FEES input requires a custom --output-file to protect the demo"
         )
-    data = json.loads(INPUT.read_text(encoding="utf-8"))
+    if not input_file.is_file():
+        raise RuntimeError(f"Missing FEES histories: {args.input_file}")
+    data = json.loads(input_file.read_text(encoding="utf-8"))
     if int(data.get("chain_id", 0)) != 8453:
         raise RuntimeError("Input is not Base Mainnet")
     if data.get("block_tag") != "latest":
@@ -143,7 +165,7 @@ def main():
 
     output = {
         "chain_id": 8453,
-        "input": str(INPUT),
+        "input": str(args.input_file),
         "window_weeks": WINDOW,
         "model_names": list(MODELS),
         "notice": (
@@ -201,12 +223,12 @@ def main():
                     "winner designated"
                 )
     output["series_count"] = count
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    output_file.write_text(
         json.dumps(output, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    print(f"Saved: {OUTPUT} | {count} pool/token series")
+    print(f"Saved: {args.output_file} | {count} pool/token series")
     print(
         "CAUTION: Rankings are unstable with few folds. Do not compare "
         "raw amounts or MAE between unlike tokens. Not an AI prediction yet."

@@ -35,6 +35,9 @@
     .bar-track{background:#24334f;height:12px;border-radius:99px;overflow:hidden}
     .bar-fill{height:100%;min-width:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px}
     .bar-row.sparse .bar-fill{background:linear-gradient(90deg,#73566a,var(--amber))}
+    .history-chart{margin-top:17px;min-height:235px}
+    .history-chart svg{display:block;width:100%;height:auto;max-height:300px}
+    .history-summary{margin-top:10px;font-size:12px;color:var(--muted)}
     .value{text-align:right;font-variant-numeric:tabular-nums}
     .note{margin-top:16px;color:var(--muted);font-size:12px}
     .table-overflow{overflow:auto;margin-top:16px}
@@ -78,10 +81,21 @@
   <section class="panel">
     <div class="headerline">
       <div><h2>Öngörülebilirlik karşılaştırması</h2><p class="sub">Her seride en düşük geçmiş WAPE. Düşük hata = daha tutarlı tahmin; yüksek getiri değil.</p></div>
-      <button type="button" id="refresh">Verileri yenile ↻</button>
+      <button type="button" id="refresh" title="Yalnızca yerel dosyalarda kayıtlı verileri yeniden yükler">Kaydedilmiş veriyi yükle ↻</button>
     </div>
     <div class="bars" id="bars" aria-label="WAPE değerleri"></div>
-    <p class="note">Seyrek ödül serileri turuncu gösterilir ve güvenilir sıralamaya alınmaz. WAPE farklı tokenlar arasında ölçekten bağımsız bir hata ölçüsüdür, ancak tek başına yatırım karşılaştırması değildir.</p>
+    <p class="note">Seyrek ödül serileri turuncu gösterilir ve güvenilir sıralamaya alınmaz. WAPE farklı tokenlar arasında ölçekten bağımsız bir hata ölçüsüdür, ancak tek başına yatırım karşılaştırması değildir. Yukarıdaki düğme Base ağını yeniden sorgulamaz.</p>
+  </section>
+  <section class="panel">
+    <div class="headerline">
+      <div><h2>12 haftalık ödül geçmişi</h2>
+        <p class="sub">Seçilen havuzun FEES token tahsisi; son tamamlanan haftalar. Token tutarları USD değildir.</p>
+      </div>
+      <select id="history-picker" aria-label="Ödül geçmişi için havuz ve token seç"></select>
+    </div>
+    <div class="history-chart" id="history-chart" role="img" aria-label="Seçilen ödül tokenının haftalık tahsis grafiği"></div>
+    <div class="history-summary" id="history-summary">Veriler yükleniyor…</div>
+    <p class="note" id="data-timestamp"></p>
   </section>
   <section class="panel">
     <h2>Tüm havuzlar · modeller</h2>
@@ -123,6 +137,7 @@
   };
   var models = Object.keys(modelNames);
   var entries = [];
+  var history = null;
   function node(tag, className, text) {
     var el = document.createElement(tag);
     if (className) el.className = className;
@@ -146,6 +161,100 @@
     if (!m || e.analysis.sparse_rewards_flag) return null;
     var value = Number(e.analysis.metrics[m].wape_percent);
     return Number.isFinite(value) ? value : null;
+  }
+  function historySeries(e) {
+    if (!history || !Array.isArray(history.pools)) return null;
+    var pool = history.pools.find(function(p) {
+      return String(p.pool_address).toLowerCase() === String(e.pool_address).toLowerCase();
+    });
+    if (!pool || !Array.isArray(pool.reward_series)) return null;
+    return pool.reward_series.find(function(s) {
+      return String(s.token_address).toLowerCase() === String(e.token_address).toLowerCase();
+    }) || null;
+  }
+  function svgEl(tag, attrs, text) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    Object.keys(attrs || {}).forEach(function(key){el.setAttribute(key, String(attrs[key]));});
+    if (text !== undefined) el.textContent = String(text);
+    return el;
+  }
+  function shortNumber(n) {
+    return Number(n).toLocaleString("tr-TR", {maximumSignificantDigits:5});
+  }
+  function paintHistory(index) {
+    var container = document.getElementById("history-chart");
+    var caption = document.getElementById("history-summary");
+    clear(container);
+    var entry = entries[index];
+    var data = entry ? historySeries(entry) : null;
+    if (!data || !Array.isArray(data.completed_weeks) || !data.completed_weeks.length) {
+      caption.textContent = "Bu ödül serisine ait geçmiş veri bulunamadı. Önce pool_fee_histories_base.py çalıştırılmalı.";
+      return;
+    }
+    var records = data.completed_weeks.slice().sort(function(a,b) {
+      return a.epoch_start_utc.localeCompare(b.epoch_start_utc);
+    });
+    var amounts = records.map(function(rec) {return Number(rec.token_amount);});
+    if (amounts.some(function(n){return !Number.isFinite(n) || n < 0;})) {
+      caption.textContent = "Grafik için token ondalık bilgisi geçerli değil.";
+      return;
+    }
+    var max = Math.max(0, ...amounts);
+    var width = 900, height = 265, left = 100, right = 870, top = 24, bottom = 220;
+    var usableX = right - left, usableY = bottom - top;
+    var x = function(i) {return left + (records.length <= 1 ? 0 : i / (records.length - 1)) * usableX;};
+    var y = function(v) {return max === 0 ? bottom : bottom - v / max * usableY;};
+    var svg = svgEl("svg", {
+      viewBox:"0 0 " + width + " " + height, preserveAspectRatio:"xMidYMid meet",
+      role:"img",
+      "aria-label": idFor(entry) + " için " + records.length + " haftalık FEES tahsis geçmişi grafiği"
+    });
+    [0, .5, 1].forEach(function(step) {
+      var ordinate = bottom - step * usableY;
+      svg.appendChild(svgEl("line", {
+        x1:left, x2:right, y1:ordinate, y2:ordinate,
+        stroke:"#344463", "stroke-width":"1", "stroke-dasharray":"4 5"
+      }));
+      svg.appendChild(svgEl("text", {
+        x:left - 12, y:ordinate + 4, fill:"#a2b1cf",
+        "text-anchor":"end", "font-size":"12"
+      }, shortNumber(max * step)));
+    });
+    records.forEach(function(row,i) {
+      if (i === 0 || i === records.length - 1 || i % 3 === 0) {
+        svg.appendChild(svgEl("text", {
+          x:x(i), y:bottom + 24, fill:"#a2b1cf",
+          "text-anchor":"middle", "font-size":"12"
+        }, row.epoch_start_utc.slice(5, 10)));
+      }
+    });
+    var points = amounts.map(function(v,i){return x(i).toFixed(2) + "," + y(v).toFixed(2);}).join(" ");
+    svg.appendChild(svgEl("polyline", {
+      points:points, fill:"none", stroke:"#54e7d4",
+      "stroke-width":"3", "stroke-linejoin":"round", "stroke-linecap":"round"
+    }));
+    records.forEach(function(row,i) {
+      var dot = svgEl("circle", {
+        cx:x(i), cy:y(amounts[i]), r:5,
+        fill:"#7095ff", stroke:"#e8eefc", "stroke-width":"1.5"
+      });
+      dot.appendChild(svgEl("title", {}, row.epoch_start_utc.slice(0,10) + " · " +
+        row.token_amount + " " + (entry.token_symbol || "TOKEN")));
+      svg.appendChild(dot);
+    });
+    container.appendChild(svg);
+    var positive = amounts.filter(function(n){return n > 0;}).length;
+    caption.textContent = idFor(entry) + " · " + positive + "/" + records.length +
+      " hafta ödül · En yüksek " + shortNumber(max) + " " + (entry.token_symbol || "TOKEN") +
+      " · Son tamamlanan hafta " + records[records.length-1].epoch_start_utc.slice(0,10) +
+      ": " + records[records.length-1].token_amount + " " + (entry.token_symbol || "TOKEN");
+  }
+  function showSeries(index) {
+    if (!Number.isInteger(index) || index < 0 || index >= entries.length) return;
+    document.getElementById("series-picker").value = String(index);
+    document.getElementById("history-picker").value = String(index);
+    paintForecast(index);
+    paintHistory(index);
   }
   function paintBars() {
     var barBox = document.getElementById("bars");
@@ -224,22 +333,31 @@
       var data = await response.json();
       if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Beklenmeyen veri biçimi");
       entries = data.backtest.results;
+      history = data.history || null;
+      document.getElementById("data-timestamp").textContent = history && history.collected_at_utc
+        ? "Veri toplama zamanı (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
+          " · Bu görünüm yerel JSON dosyalarından yükleniyor; otomatik zincir sorgusu değildir."
+        : "Ödül geçmişi dosyası bulunamadı veya yüklenemedi.";
       document.getElementById("error").style.display = "none";
       document.getElementById("series-count").textContent = entries.length;
       document.getElementById("pool-count").textContent = new Set(entries.map(function(e){return e.pool_index;})).size;
       document.getElementById("week-count").textContent = entries.reduce(function(s,e){return s + e.analysis.observed_week_count;},0);
       document.getElementById("fold-count").textContent = entries.length ? entries[0].analysis.fold_count : 0;
       var picker = document.getElementById("series-picker");
+      var historyPicker = document.getElementById("history-picker");
       var selected = picker.value;
       clear(picker);
+      clear(historyPicker);
       entries.forEach(function(e,i){
         var option = node("option", "", idFor(e));
         option.value = String(i);
         picker.appendChild(option);
+        var historyOption = node("option", "", idFor(e));
+        historyOption.value = String(i);
+        historyPicker.appendChild(historyOption);
       });
       if (entries.length) {
-        picker.value = selected && Number(selected) < entries.length ? selected : "0";
-        paintForecast(Number(picker.value));
+        showSeries(selected && Number(selected) < entries.length ? Number(selected) : 0);
       }
       paintBars();
       paintTable();
@@ -248,7 +366,10 @@
     }
   }
   document.getElementById("series-picker").addEventListener("change", function(e){
-    paintForecast(Number(e.target.value));
+    showSeries(Number(e.target.value));
+  });
+  document.getElementById("history-picker").addEventListener("change", function(e){
+    showSeries(Number(e.target.value));
   });
   document.getElementById("refresh").addEventListener("click", load);
   load();

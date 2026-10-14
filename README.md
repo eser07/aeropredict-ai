@@ -202,6 +202,31 @@ incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.
 
 
+### Read token amounts and approximate USD equivalents
+
+The expanded dashboard displays token quantity **and** an approximate USD
+equivalent side by side in the FEES-only voting simulator, its selected reward
+baseline, all three statistical forecast baselines, and the selected reward
+history's latest/peak amounts. Individual chart points also include approximate
+USD in their hover text. Changing the selected pool, reward token or baseline
+recalculates the displayed conversion without calling a pricing API from the
+browser.
+
+USD values use **DefiLlama's saved Base contract-address token prices** from
+the same validated incentive dataset already used by the optimizer. A quote
+must be positive, present, and no more than **36 hours old**, and the incentive
+snapshot itself must also be recent. Quotes are never matched by token symbol.
+Missing quotes (for example for some HOP/WELL tokens), invalid token amounts,
+and stale prices display **USD unavailable**, not an invented value or zero.
+Very small positive values retain extra decimal precision.
+
+**Important:** Applying a recent price to a prior week's FEES token amount is
+a *present-value approximation*, not the historical USD value at that week's
+market price. Pool-level FEES allocations and forecasting baselines are not
+personal wallet rewards or payout promises. USD estimates in the FEES-only
+simulator still exclude BRIBES. The original demo datasets are unmodified;
+if a demo has no corresponding saved fresh quote it displays USD unavailable.
+
 ### Start the local dashboard automatically at Windows logon
 
 On Windows 11 with WSL Ubuntu, you can register a **separate**, hidden Task

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AeroPredict AI | Havuz Analizi</title>
+  <style>
+    :root{--bg:#080d1d;--card:#111b32;--line:#26334e;--text:#e8eefc;--muted:#9eacc8;--cyan:#54e7d4;--blue:#7095ff;--amber:#f4c66b;--red:#ff8f92}
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(circle at 85% 0%,#172a51 0,transparent 43%),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+    .wrap{max-width:1240px;margin:0 auto;padding:28px 22px 60px}
+    .brand{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:1px solid var(--line);padding-bottom:24px}
+    .brand-name{font-weight:900;letter-spacing:-.04em;font-size:23px}
+    .brand-name span{color:var(--cyan)}
+    .tag{font-size:12px;border:1px solid #2d5267;background:#122c3f;color:#a6eae3;border-radius:20px;padding:6px 11px}
+    h1{font-size:clamp(27px,4.2vw,48px);letter-spacing:-.045em;line-height:1.16;margin:35px 0 13px}
+    .lead{color:var(--muted);max-width:790px;margin:0 0 28px;font-size:15px}
+    h2{letter-spacing:-.025em;font-size:19px;margin:0 0 15px}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:22px}
+    .stat,.panel{background:linear-gradient(150deg,rgba(27,43,75,.9),rgba(16,25,46,.96));border:1px solid var(--line);border-radius:16px}
+    .stat{padding:21px}
+    .stat label{display:block;color:var(--muted);font-size:12px;margin-bottom:8px}
+    .stat b{font-size:30px;letter-spacing:-.04em}
+    .stat small{display:block;color:var(--muted);font-size:12px}
+    .panel{padding:22px;margin:17px 0}
+    .headerline{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;flex-wrap:wrap}
+    .sub{color:var(--muted);font-size:13px;margin:4px 0 0}
+    select,button{background:#142441;color:var(--text);border:1px solid #425576;border-radius:10px;padding:10px 12px;font:inherit;cursor:pointer}
+    button:hover{border-color:var(--cyan)}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .small{font-size:12px;color:var(--muted)}
+    .bars{display:grid;gap:13px;margin-top:18px}
+    .bar-row{display:grid;grid-template-columns:140px 1fr 80px;align-items:center;gap:10px;font-size:13px}
+    .bar-track{background:#24334f;height:12px;border-radius:99px;overflow:hidden}
+    .bar-fill{height:100%;min-width:2px;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:99px}
+    .bar-row.sparse .bar-fill{background:linear-gradient(90deg,#73566a,var(--amber))}
+    .value{text-align:right;font-variant-numeric:tabular-nums}
+    .note{margin-top:16px;color:var(--muted);font-size:12px}
+    .table-overflow{overflow:auto;margin-top:16px}
+    table{border-collapse:collapse;width:100%;min-width:850px;text-align:left;font-size:13px}
+    th{color:var(--muted);font-weight:600;font-size:12px;border-bottom:1px solid var(--line);white-space:nowrap}
+    th,td{padding:14px 12px}
+    tbody tr:not(:last-child){border-bottom:1px solid #25334a}
+    tbody tr:hover{background:#20304b}
+    td:nth-child(n+3),th:nth-child(n+3){font-variant-numeric:tabular-nums}
+    .good{color:var(--cyan)}.warn{color:var(--amber)}.bad{color:var(--red)}
+    .status{display:inline-block;padding:3px 8px;border-radius:8px;background:#2a3246;color:#c1cde5;font-size:11px}
+    .status.sparse{background:#3e3229;color:#ffd9a2}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:17px}
+    .forecast{display:flex;flex-direction:column;gap:12px}
+    .prediction{padding:13px 0;border-bottom:1px solid var(--line)}
+    .prediction:last-child{border:none}
+    .prediction b{display:block;margin:5px 0;font-size:22px;letter-spacing:-.02em;overflow-wrap:anywhere}
+    .prediction .detail{font-size:12px;color:var(--muted)}
+    .disclaimer{border:1px solid #56452c;border-radius:12px;background:#292318;padding:14px 17px;color:#f3dab0;font-size:12px;margin-top:20px}
+    .error{border:1px solid #6a3a47;color:#ffb4bb;background:#291d29;padding:13px 17px;border-radius:12px;margin:16px 0;display:none}
+    footer{font-size:12px;color:var(--muted);text-align:center;padding-top:24px}
+    @media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.bar-row{grid-template-columns:115px 1fr 65px}}
+    @media(max-width:430px){.wrap{padding:18px 12px 40px}.stat{padding:15px}.stat b{font-size:24px}.panel{padding:15px}.bar-row{grid-template-columns:98px 1fr 58px;gap:5px;font-size:11px}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <header class="brand">
+    <div class="brand-name">AERO<span>PREDICT</span> <span style="color:#abb9d7">AI</span></div>
+    <span class="tag">BASE MAINNET · YEREL DEMO</span>
+  </header>
+  <h1>Aerodrome ödül analizi<br><span style="color:var(--cyan)">tek ekranda.</span></h1>
+  <p class="lead">Havuz ve ödül tokenına göre haftalık tahsis geçmişi, geçmiş tahmin hataları ve istatistiksel başlangıç tahminleri. Bu panel yatırım tavsiyesi veya kişisel veAERO getiri hesaplayıcısı değildir.</p>
+  <div id="error" class="error" role="alert"></div>
+  <section class="stats" aria-label="Özet veriler">
+    <div class="stat"><label>İncelenen aktif havuz</label><b id="pool-count">—</b><small>Mevcut örneklem</small></div>
+    <div class="stat"><label>Ödül serisi</label><b id="series-count">—</b><small>Havuz + token çifti</small></div>
+    <div class="stat"><label>Toplam haftalık gözlem</label><b id="week-count">—</b><small>Tamamlanmış epoch</small></div>
+    <div class="stat"><label>Değerlendirme dönemi</label><b id="fold-count">—</b><small>Seri başına geriye dönük tahmin</small></div>
+  </section>
+  <section class="panel">
+    <div class="headerline">
+      <div><h2>Öngörülebilirlik karşılaştırması</h2><p class="sub">Her seride en düşük geçmiş WAPE. Düşük hata = daha tutarlı tahmin; yüksek getiri değil.</p></div>
+      <button type="button" id="refresh">Verileri yenile ↻</button>
+    </div>
+    <div class="bars" id="bars" aria-label="WAPE değerleri"></div>
+    <p class="note">Seyrek ödül serileri turuncu gösterilir ve güvenilir sıralamaya alınmaz. WAPE farklı tokenlar arasında ölçekten bağımsız bir hata ölçüsüdür, ancak tek başına yatırım karşılaştırması değildir.</p>
+  </section>
+  <section class="panel">
+    <h2>Tüm havuzlar · modeller</h2>
+    <p class="sub">Önceki hafta, 4 haftalık ortalama ve 4 haftalık medyan yöntemlerinin WAPE (%) sonuçları.</p>
+    <div class="table-overflow">
+      <table>
+        <thead><tr><th>Havuz / token</th><th>Ödül görülen hafta</th><th>Önceki hafta</th><th>4 hf. ortalama</th><th>4 hf. medyan</th><th>Durum</th></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </section>
+  <div class="cols">
+    <section class="panel">
+      <div class="headerline">
+        <div><h2>İstatistiksel başlangıç değerleri</h2><p class="sub">Seçilen havuz/token için geçmiş dört haftadan hesaplanır.</p></div>
+        <select id="series-picker" aria-label="Ödül serisi seç"></select>
+      </div>
+      <div id="forecast" class="forecast"></div>
+    </section>
+    <section class="panel">
+      <h2>Bu sonuçlar ne söylüyor?</h2>
+      <p class="sub" id="interpretation">Yükleniyor…</p>
+      <div class="disclaimer">
+        <strong>Önemli sınırlamalar</strong>
+        <p>Bu veriler geçmiş epoch anahtarlarının Base ağındaki <code>latest</code> durumundan okunmasıyla derlendi. Geçmiş blok anlık görüntüsü değildir. Ödül tahsisi, bireysel veAERO kazancı, APR veya garanti edilen ödeme değildir.</p>
+        <p>12 haftalık veri yalnızca 8 test dönemi sunar. Modeller basit istatistiksel yöntemlerdir; doğrulanmış bir yapay zekâ tahmin sistemi henüz değildir.</p>
+      </div>
+    </section>
+  </div>
+  <footer>© AeroPredict AI · Yerel prototip · Veri: Base Mainnet / Aerodrome FEES sözleşmeleri</footer>
+</main>
+<script>
+(function () {
+  "use strict";
+  var modelNames = {
+    previous_week: "Önceki hafta",
+    mean_4w: "4 haftalık ortalama",
+    median_4w: "4 haftalık medyan"
+  };
+  var models = Object.keys(modelNames);
+  var entries = [];
+  function node(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = String(text);
+    return el;
+  }
+  function formatWape(v) {
+    if (v === null || v === undefined) return "N/A";
+    var n = Number(v);
+    return Number.isFinite(n) ? n.toLocaleString("tr-TR", {maximumFractionDigits:2}) + "%" : "N/A";
+  }
+  function error(message) {
+    var el = document.getElementById("error");
+    el.style.display = "block";
+    el.textContent = message;
+  }
+  function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
+  function idFor(e) { return "#" + e.pool_index + " / " + (e.token_symbol || "TOKEN"); }
+  function winner(e) {
+    var m = e.analysis.exploratory_best_baseline;
+    if (!m || e.analysis.sparse_rewards_flag) return null;
+    var value = Number(e.analysis.metrics[m].wape_percent);
+    return Number.isFinite(value) ? value : null;
+  }
+  function paintBars() {
+    var barBox = document.getElementById("bars");
+    clear(barBox);
+    var sorted = entries.slice().sort(function(a,b) {
+      var aa = winner(a), bb = winner(b);
+      return (aa === null ? Infinity : aa) - (bb === null ? Infinity : bb);
+    });
+    var max = Math.max(100, ...sorted.map(function(e) { return winner(e) || 0; }));
+    sorted.forEach(function (entry) {
+      var v = winner(entry);
+      var row = node("div", "bar-row" + (v === null ? " sparse" : ""));
+      row.appendChild(node("span", "", idFor(entry)));
+      var track = node("div", "bar-track");
+      var fill = node("div", "bar-fill");
+      fill.style.width = v === null ? "0%" : Math.min(100, v / max * 100).toFixed(1) + "%";
+      track.appendChild(fill);
+      row.appendChild(track);
+      row.appendChild(node("span", "value", v === null ? "Seyrek" : formatWape(v)));
+      barBox.appendChild(row);
+    });
+  }
+  function paintTable() {
+    var tbody = document.getElementById("table-body");
+    clear(tbody);
+    entries.forEach(function(e) {
+      var tr = node("tr");
+      var cells = [
+        idFor(e),
+        e.analysis.positive_observed_weeks + "/" + e.analysis.observed_week_count,
+        formatWape(e.analysis.metrics.previous_week.wape_percent),
+        formatWape(e.analysis.metrics.mean_4w.wape_percent),
+        formatWape(e.analysis.metrics.median_4w.wape_percent)
+      ];
+      cells.forEach(function(value, i) {
+        var cell = node("td", "", value);
+        if (i >= 2) {
+          var name = models[i-2];
+          if (!e.analysis.sparse_rewards_flag && e.analysis.exploratory_best_baseline === name) cell.className = "good";
+        }
+        tr.appendChild(cell);
+      });
+      var status = node("td");
+      status.appendChild(node("span", "status" + (e.analysis.sparse_rewards_flag ? " sparse" : ""),
+        e.analysis.sparse_rewards_flag ? "Seyrek ödül" : "Sınırlı örneklem"));
+      tr.appendChild(status);
+      tbody.appendChild(tr);
+    });
+  }
+  function paintForecast(index) {
+    var e = entries[index];
+    var box = document.getElementById("forecast");
+    clear(box);
+    if (!e) return;
+    var intro = node("p", "note", "İzleyen epoch: " + e.analysis.following_epoch_utc.slice(0, 10) + " · Bu değer önceden zincire kaydedilmiş bir tahmin değildir.");
+    box.appendChild(intro);
+    models.forEach(function(m) {
+      var div = node("div", "prediction");
+      div.appendChild(node("span", "small", modelNames[m] + (e.analysis.exploratory_best_baseline === m ? " · en düşük geçmiş hata" : "")));
+      var n = e.analysis.following_epoch_baselines_token_amount[m];
+      div.appendChild(node("b", "", (n === null ? "Ham birim: " + e.analysis.following_epoch_baselines_raw[m] : n) + " " + (e.token_symbol || "TOKEN")));
+      div.appendChild(node("div", "detail", "Geçmiş WAPE: " + formatWape(e.analysis.metrics[m].wape_percent)));
+      box.appendChild(div);
+    });
+    var msg = e.analysis.sparse_rewards_flag
+      ? "Bu seride ödül verilen hafta sayısı çok az. Tahmin modeli seçmek için yeterli veri yok."
+      : "Bu seride en düşük geçmiş hata " + modelNames[e.analysis.exploratory_best_baseline] +
+        " yönteminde. Yalnızca " + e.analysis.fold_count + " geçmiş test dönemi var; sonuç kesin değildir.";
+    document.getElementById("interpretation").textContent = msg +
+      " Farklı tokenların ham miktarları birbirine eklenemez veya USD getirisi gibi karşılaştırılamaz.";
+  }
+  async function load() {
+    try {
+      var response = await fetch("/api/results", {cache:"no-store"});
+      if (!response.ok) throw new Error("API: " + response.status);
+      var data = await response.json();
+      if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Beklenmeyen veri biçimi");
+      entries = data.backtest.results;
+      document.getElementById("error").style.display = "none";
+      document.getElementById("series-count").textContent = entries.length;
+      document.getElementById("pool-count").textContent = new Set(entries.map(function(e){return e.pool_index;})).size;
+      document.getElementById("week-count").textContent = entries.reduce(function(s,e){return s + e.analysis.observed_week_count;},0);
+      document.getElementById("fold-count").textContent = entries.length ? entries[0].analysis.fold_count : 0;
+      var picker = document.getElementById("series-picker");
+      var selected = picker.value;
+      clear(picker);
+      entries.forEach(function(e,i){
+        var option = node("option", "", idFor(e));
+        option.value = String(i);
+        picker.appendChild(option);
+      });
+      if (entries.length) {
+        picker.value = selected && Number(selected) < entries.length ? selected : "0";
+        paintForecast(Number(picker.value));
+      }
+      paintBars();
+      paintTable();
+    } catch(e) {
+      error("Veriler yüklenemedi: " + e.message + ". Önce python scripts/backtest_pool_fees.py komutunu çalıştırıp paneli yenileyin.");
+    }
+  }
+  document.getElementById("series-picker").addEventListener("change", function(e){
+    paintForecast(Number(e.target.value));
+  });
+  document.getElementById("refresh").addEventListener("click", load);
+  load();
+})();
+</script>
+</body>
+</html>

@@ -200,43 +200,52 @@ incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.
 
 
-### Optional Windows 11 + WSL weekly schedule
+### Automatic hourly refresh on Windows 11 + WSL
 
-A local Windows Task Scheduler installer is available for users who run the
-project in **WSL Ubuntu** and want a weekly refresh after Aerodrome's Thursday
-00:00 UTC epoch boundary. Example for a machine with the named WSL
-distribution, Linux user and path (substitute your own as needed):
+For fresh USD quote inputs and repeated FEES and BRIBES collection, use the
+**hourly** scheduler, not the old Thursday-only installer. It runs at every
+**HH:15 Turkey time**, so the Thursday 03:15 run occurs after the 00:00 UTC
+Aerodrome epoch boundary. Example for the project WSL environment:
 
 ```bash
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/install_weekly_task.ps1)" -Distribution Ubuntu-24.04 -LinuxUser eser -LinuxProjectPath /home/eser/aeropredict-ai
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/install_hourly_task.ps1)" -Distribution Ubuntu-24.04 -LinuxUser eser -LinuxProjectPath /home/eser/aeropredict-ai
 ```
 
-The task is named **AeroPredict AI Weekly Refresh**, runs every Thursday at
-**03:15 Windows local time** (only correct for Turkey Standard Time, which
-the installer explicitly verifies), and invokes
-`scripts/weekly_refresh_runner.py` under the project's Python virtualenv.
-This runner uses an exclusive Linux file lock and saves stdout/stderr and
-completion status under `data/weekly_refresh_logs/`, retaining the 24 most
-recent logs. It refuses overlapping launches.
+The Windows task is named **AeroPredict AI Hourly Refresh**. It refreshes
+12-week FEES histories, walk-forward backtests, four-week BRIBES and token USD
+quotes, and trading pair metadata on every successful run. It uses an exclusive
+WSL lock to prevent overlapping scheduled runs. Per-attempt logs are kept in
+`data/hourly_refresh_logs/` (most recent 168 runs). If an older
+**AeroPredict AI Weekly Refresh** task exists, installation removes that
+task after successfully registering the hourly replacement.
 
-This scheduling mechanism does not need Windows Administrator permissions
-and does not store a Windows password. It runs only while the relevant
-**Windows user is logged on**; a powered-off machine will not execute tasks
-and missed runs are only attempted later when Windows/task scheduling
-conditions permit. Keep WSL, the project directory and Python venv
-installed and accessible. Task registration itself does **not** trigger a
-data refresh. You can inspect it in **Task Scheduler** and optionally trigger
-it manually for testing.
+No admin rights or Windows password storage are required. Windows must be
+powered on and the same Windows user must be **logged on**. If Windows was
+unavailable at a scheduled time, the trigger may run later. Repetition is
+configured for approximately ten years; renew the task before expiry.
+Frequent chain reads can hit public RPC rate limits; a failed attempt
+keeps the last complete dashboard data. This is still a *local* computer
+workflow, not a cloud-hosted always-on service.
 
-Note that the dashboard's USD quote freshness window is **36 hours**.
-A Thursday-only refresh will not provide valid optimizer quotes all week.
-Do not remove that safety check; introduce more frequent price refreshes or
-a separate price-only collector before promising continuously usable yield
-scenarios.
+Each completed collection publishes a validated dashboard snapshot in
+`data/expanded_dashboard_bundle.json` with an atomic file replacement.
+The read-only local dashboard serves this *complete* bundle on
+`/api/results`, avoiding mixed-epoch component data while a refresh is in
+progress. The original seven-pool demo files remain unchanged.
 
+The dashboard also requests `/api/refresh-status` every 15 seconds.
+Its English status strip shows the **last successful data snapshot in Turkey
+time**, current progress ("Updating now…"), or failure while retaining
+previous data. Once the new bundle is published the analytical panels
+reload automatically; press **Calculate Optimal Allocation** again to
+recompute hypothetical voting rewards. Starting the hourly task registration
+does not itself trigger a refresh; check Task Scheduler and the WSL log
+folder to confirm actual runs.
 
-
-
+A single-hour schedule is only an update *frequency*: FEES/BRIBES calculations
+still represent past completed weekly epochs with current token price quotes
+and unsynchronized latest-state onchain reads. It is not new onchain payout
+every hour, a guaranteed yield, or a validated forecasting AI.
 
 This initial merge includes only pools that were **active when each scan ran**,
 not a synchronized snapshot. The fee collector checks whether each pool remains

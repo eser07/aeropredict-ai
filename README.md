@@ -221,6 +221,14 @@ WSL lock to prevent overlapping scheduled runs. Per-attempt logs are kept in
 **AeroPredict AI Weekly Refresh** task exists, installation removes that
 task after successfully registering the hourly replacement.
 
+The installer creates a user-local hidden launcher under
+`%LOCALAPPDATA%\\AeroPredictAI\\hourly-refresh-hidden.vbs` so Task Scheduler
+does not open an additional console window every hour. It requires Windows
+Script Host (`wscript.exe`), which may be disabled by Windows policy.
+After pulling newer code, **rerun the installer** to update an older task that
+still launches a visible `wsl.exe` console. Do not close a currently running
+console until its data refresh has finished.
+
 No admin rights or Windows password storage are required. Windows must be
 powered on and the same Windows user must be **logged on**. If Windows was
 unavailable at a scheduled time, the trigger may run later. Repetition is

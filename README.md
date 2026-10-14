@@ -177,12 +177,14 @@ price estimates and actual pool trading-pair metadata in the correct order:
 python scripts/refresh_expanded_data.py
 ```
 
-**Stop the local dashboard first with Ctrl+C.** The script collects into a
+The local dashboard **may remain open** because the refresher publishes an
+atomically replaced validated bundle. The script collects into a
 temporary subfolder within `data/`, checks Base chain ID, active pool
 identities, reward-series counts, collection epoch and metadata alignment,
 and only then publishes the four expanded JSON files. It creates temporary
-backups to restore on ordinary publish errors. The four-file publish is
-**not one atomic transaction**; do not run the server simultaneously.
+backups to restore on ordinary publish errors. Its four component JSON file
+updates are **not one atomic transaction**, but the dashboard reads only the
+separately atomically published, complete JSON bundle after a successful run.
 A collection-stage error keeps the existing expanded files unchanged.
 The original seven-pool demo files and the merged scan candidate list
 are never replaced. If a later refresh discovers inactive gauges, the

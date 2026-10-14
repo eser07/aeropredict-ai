@@ -167,6 +167,34 @@ original sample, stop the server and run:
 python scripts/serve_dashboard.py
 ```
 
+### One-command expanded dataset refresh (after each voting epoch)
+
+Once the 16-pool expanded preview has been created, the following command
+refreshes its FEES histories, 12-week statistical backtest, FEES+BRIBES
+price estimates and actual pool trading-pair metadata in the correct order:
+
+```bash
+python scripts/refresh_expanded_data.py
+```
+
+**Stop the local dashboard first with Ctrl+C.** The script collects into a
+temporary subfolder within `data/`, checks Base chain ID, active pool
+identities, reward-series counts, collection epoch and metadata alignment,
+and only then publishes the four expanded JSON files. It creates temporary
+backups to restore on ordinary publish errors. The four-file publish is
+**not one atomic transaction**; do not run the server simultaneously.
+A collection-stage error keeps the existing expanded files unchanged.
+The original seven-pool demo files and the merged scan candidate list
+are never replaced. If a later refresh discovers inactive gauges, the
+new panel may show fewer than 16 active pools; no missing rewards are
+automatically treated as zero.
+
+The voting epoch begins on Thursdays at **00:00 UTC** (03:00 in
+Turkey, UTC+3). Refresh after the boundary when the new epoch starts, and
+again whenever price timestamps become stale. This is still a read-only,
+non-synchronized, experimental historical reward scenario, **not** a
+yield guarantee or a trained AI prediction.
+
 After any Base voting epoch rollover, recollect expanded FEES history and
 incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.

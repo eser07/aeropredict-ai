@@ -39,6 +39,31 @@ Open **http://localhost:8765/** in your browser. Press **Ctrl+C** in the dashboa
 
 The local server binds only to `127.0.0.1` and serves the dashboard plus a restricted JSON results endpoint. It does not expose the full repository or allow data changes. The **Reload saved data** button re-reads locally saved JSON; it does **not** re-query Base. To refresh the on-chain snapshot, rerun the data collection and backtest commands above.
 
+### Experimental vote allocation optimizer
+
+To include USD-denominated FEES + BRIBES diagnostic data from the registered pool sample, after refreshing `pool_fee_histories_base.json` run:
+
+```bash
+python scripts/backtest_pool_fees.py
+python scripts/collect_pool_incentives_base.py --max-bribe-tokens 20
+python scripts/serve_dashboard.py
+```
+
+The dashboard now contains **Vote Allocation Optimizer**. Enter an amount of **locked AERO** and select the **remaining lock duration**, then click **Calculate Optimal Allocation**. The app estimates voting power using `locked AERO × remaining years / 4`, a linear approximation based on Aerodrome lock economics; Auto-Max can maintain full four-year weight. This is not a wallet-derived veNFT balance. It is user-initiated and read-only.
+
+Only fully priced pools with positive current vote weight from the saved sampled set qualify. The app selects hypothetical new-voter allocations in **1-percentage-point increments**, allocating exactly 100% under a **voluntary 30%-per-pool maximum**. It maximizes the sum of the chosen pools' illustrative pro-rata payouts ON THAT GRID:
+
+```text
+estimated allocation USD = past-four-week-average total pool rewards valued at
+                            current token prices
+                          × your allocated veAERO votes
+                          ÷ (current pool votes + your allocated votes)
+```
+
+It reports a hypothetical weekly USD total and a pool-by-pool breakdown. It is a transparent mathematical scenario tool, **not a trained AI optimizer**; it does not connect a wallet, actually vote, or forecast future fees. This 30% maximum is a user-experience diversification rule, not an Aerodrome protocol constraint. If fewer than four sampled pools have complete USD price coverage, the calculator refuses to optimize rather than assigning fabricated zero prices.
+
+It blocks stale saved incentives (older than 36 hours) or a changed weekly epoch. Refresh all data after the epoch changes. Current price quotes are applied to past token allocations; BRIBES, FEES and pool voting-weight snapshots are not perfectly aligned to a real voting epoch; their release/eligibility conditions and actual claimability are not verified. **Do not use this tool as a financial return forecast.**
+
 ### Experimental veAERO voting reward simulator
 
 Once you have pulled the latest code, **rerun the pool fee history collector and backtest** so the JSON includes `pool_vote_weight_raw`. Earlier JSON snapshots do not contain voting weights and the simulator will intentionally display *Not available* instead of inventing them.
@@ -58,6 +83,7 @@ The dashboard's data files are created locally:
 - `data/pool_scan_base.json` — sampled pools and gauge metadata.
 - `data/pool_fee_histories_base.json` — weekly reward allocation series.
 - `data/pool_fee_backtest_base.json` — per-series backtest errors and baselines.
+- `data/pool_incentives_base.json` — FEES + BRIBES observations, current USD quotes, price coverage and per-pool approximation data.
 
 Historical reads use the free Base RPC by default (`https://base-rpc.publicnode.com`), or `BASE_RPC_URL` if supplied. The public endpoint may impose rate limits or require an access token for archive-state reads. Never commit credentials.
 

@@ -5,6 +5,7 @@ Run: python -m unittest discover -s tests -p "discover_active_pools_test.py"
 """
 import importlib.util
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -109,6 +110,70 @@ class TestDiscovery(unittest.TestCase):
         self.assertFalse(module.RESULT.exists())
         resumed = module.run_scan(page_size=2, max_pages=2, delay=0)
         self.assertTrue(resumed["complete"])
+
+    def test_automatic_scan_completes_all_pages_in_one_call(self):
+        result = module.run_scan(page_size=2, max_pages=1, delay=0, until_complete=True)
+        self.assertEqual(result["next_index"], 5)
+        self.assertEqual(result["active_pool_count"], 3)
+        self.assertTrue(result["complete"])
+        self.assertTrue(module.RESULT.is_file())
+
+    def test_temporary_http_429_retries_same_call(self):
+        module.run_scan(page_size=2, max_pages=1, delay=0)
+        original = module.read_uint
+        hit_count = [0]
+
+        def intermittent(signature, argument, tag):
+            if signature == "weights(address)" and argument == POOL[2]:
+                hit_count[0] += 1
+                if hit_count[0] == 1:
+                    raise subprocess.CalledProcessError(
+                        22, ["curl"], stderr="curl: (22) The requested URL returned error: 429"
+                    )
+            return original(signature, argument, tag)
+
+        with patch.object(module, "read_uint", side_effect=intermittent):
+            with patch.object(module.time, "sleep") as sleep:
+                result = module.run_scan(
+                    page_size=2, max_pages=1, delay=0,
+                    retry_attempts=2, retry_delay=1,
+                )
+        self.assertEqual(hit_count[0], 2)
+        self.assertEqual(result["next_index"], 4)
+        self.assertEqual(result["active_pool_count"], 2)
+        sleep.assert_called_once_with(1)
+
+    def test_http_403_archive_denial_stops_without_losing_page(self):
+        module.run_scan(page_size=2, max_pages=1, delay=0)
+        original = module.read_uint
+
+        def archive_denial(signature, argument, tag):
+            if signature == "length()":
+                raise subprocess.CalledProcessError(
+                    22, ["curl"], stderr="curl: (22) The requested URL returned error: 403"
+                )
+            return original(signature, argument, tag)
+
+        with patch.object(module, "read_uint", side_effect=archive_denial):
+            with patch.object(module.time, "sleep") as sleep:
+                with self.assertRaisesRegex(RuntimeError, "HTTP 403"):
+                    module.run_scan(page_size=2, max_pages=1, delay=0)
+        sleep.assert_not_called()
+        checkpoint = json.loads(module.CHECKPOINT.read_text())
+        self.assertEqual(checkpoint["next_index"], 2)
+        self.assertEqual(checkpoint["active_pool_count"], 1)
+        self.assertFalse(module.RESULT.exists())
+
+    def test_exclusive_lock_stops_second_scan(self):
+        import fcntl
+        module.DATA.mkdir(parents=True, exist_ok=True)
+        with (module.DATA / ".pool_discovery.lock").open("a+") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            try:
+                with self.assertRaisesRegex(RuntimeError, "already running"):
+                    module.run_scan(page_size=2, max_pages=1, delay=0)
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
     def test_rejects_tampered_checkpoint(self):
         module.run_scan(page_size=2, max_pages=1, delay=0)

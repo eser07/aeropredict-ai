@@ -202,6 +202,49 @@ incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.
 
 
+### Start the local dashboard automatically at Windows logon
+
+On Windows 11 with WSL Ubuntu, you can register a **separate**, hidden Task
+Scheduler job that launches the expanded dashboard at each Windows user logon.
+This does not modify the **AeroPredict AI Hourly Refresh** task:
+
+```bash
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/install_dashboard_autostart.ps1)" -Distribution Ubuntu-24.04 -LinuxUser eser -LinuxProjectPath /home/eser/aeropredict-ai
+```
+
+Windows registers **AeroPredict AI Dashboard Autostart**, triggered **At log
+on** for the interactive Windows account. Its `wscript.exe` launcher is in
+`%LOCALAPPDATA%\\AeroPredictAI\\dashboard-autostart-hidden.vbs`. It launches
+`scripts/dashboard_autostart_runner.py` under WSL's existing virtualenv,
+which supervises `python scripts/serve_dashboard.py --dataset expanded` on
+`127.0.0.1:8765`. No public-network listener, wallet connection or elevated
+Windows permissions are needed.
+
+The task is deliberately long-running and normally appears **Running** in
+Task Scheduler while signed in. It uses a Linux file lock to prevent multiple
+supervisors. If someone started the web panel manually in a terminal, the
+supervisor detects that port 8765 is already taken and waits without
+interfering. If that manual server stops, the supervisor attempts to start its
+own server after up to ten seconds. Likewise, if the supervised server exits,
+it attempts to start it again. If another application uses port 8765, the
+supervisor cannot take that port and will keep waiting. Activity is written to
+`data/dashboard_server.log`. The frequent 15-second dashboard status-poll
+requests are omitted from this log to avoid log growth.
+
+**Registration does not launch the web server immediately.** To test without
+logging out or restarting Windows, run a separate command:
+
+```bash
+powershell.exe -NoProfile -Command 'Start-ScheduledTask -TaskName "AeroPredict AI Dashboard Autostart"; Get-ScheduledTask -TaskName "AeroPredict AI Dashboard Autostart" | Select-Object TaskName,State'
+```
+
+Keep the Windows PC powered on and its user logged in for this local service
+to be available. It is not a public deployment and cannot serve other users
+while your PC is off. After registration and testing, stop any previously
+manually launched dashboard with **Ctrl+C**; the background supervisor should
+take over. The dashboard remains reachable from the Windows browser via
+`http://localhost:8765/` once the supervisor has started its server.
+
 ### Automatic hourly refresh on Windows 11 + WSL
 
 For fresh USD quote inputs and repeated FEES and BRIBES collection, use the

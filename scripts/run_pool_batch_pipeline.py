@@ -104,7 +104,7 @@ def publish_batch(files, folder, expected_count, anchor_epoch):
     if report["pool_count"] < 1 or report["pool_count"] > expected_count:
         raise ValueError("Unexpected active pool count in offline audit")
     # Verify output from standalone audit CLI matches independent in-process check.
-    generated = read_json(staged / "audit.json")
+    generated = read_json(staged / files["audit"].name)
     if (generated.get("pool_count") != report["pool_count"] or
             generated.get("audited_complete_usd_count") !=
             report["audited_complete_usd_count"]):
@@ -113,7 +113,7 @@ def publish_batch(files, folder, expected_count, anchor_epoch):
     for name, target in (
         ("fees.json", files["fees"]),
         ("incentives.json", files["incentives"]),
-        ("audit.json", files["audit"]),
+        (files["audit"].name, files["audit"]),
     ):
         save_atomic(target, read_json(staged / name))
     status = {
@@ -172,26 +172,54 @@ def process_one(folder, number, anchor_epoch, weeks=4):
         return
     staged = files["staging"]
     staged.mkdir(parents=True, exist_ok=True)
-    fee_tmp, incentive_tmp, audit_tmp = [staged / p for p in ("fees.json", "incentives.json", "audit.json")]
-    print(f"Batch {number:03d}: collecting FEES for {count} planned pools", flush=True)
-    cli_call(
-        f"Batch {number:03d} FEES",
-        ["scripts/pool_fee_histories_base.py", "--scan-file", str(files["input"]),
-         "--output-file", str(fee_tmp), "--weeks", str(weeks),
-         "--max-pools", str(count), "--max-tokens", "4"],
-    )
-    # Stop BEFORE querying BRIBES if a new Thursday epoch has started.
-    if read_json(fee_tmp).get("current_epoch_start_utc") != anchor_epoch:
-        raise RuntimeError(
-            "Epoch has changed since first batch; stop to avoid mixing snapshots. "
-            "Completed prior batches are kept unchanged."
+    fee_tmp = staged / "fees.json"
+    incentive_tmp = staged / "incentives.json"
+    # Audit CLI requires output basename beginning with audit_.
+    audit_tmp = staged / files["audit"].name
+    staged_complete = fee_tmp.is_file() and incentive_tmp.is_file()
+    if staged_complete:
+        fees, incentives = read_json(fee_tmp), read_json(incentive_tmp)
+        if (fees.get("current_epoch_start_utc") != anchor_epoch or
+                incentives.get("current_epoch_utc") != anchor_epoch):
+            raise RuntimeError(
+                f"Batch {number:03d}: saved staging epoch differs from first batch; "
+                "refusing to discard or mix existing data."
+            )
+        collected = fees.get("pools")
+        if not isinstance(collected, list) or len(collected) != count:
+            raise RuntimeError("Saved staged FEES pool count differs from batch input")
+        for got, planned in zip(collected, source["pools"]):
+            if (got.get("index") != planned.get("index") or
+                    got.get("pool_address", "").lower() !=
+                    planned.get("pool_address", "").lower()):
+                raise RuntimeError("Saved staged FEES identities differ from batch input")
+        # Re-validate saved quotes at current time rather than silently trust
+        # a previous CLI success; never fall back to zero for expired quotes.
+        audit(fees, incentives)
+        print(
+            f"Batch {number:03d}: reusing validated saved FEES + BRIBES data; "
+            "no new RPC or price download for this batch", flush=True,
         )
-    print(f"Batch {number:03d}: collecting BRIBES and saved-current-price USD", flush=True)
-    cli_call(
-        f"Batch {number:03d} BRIBES",
-        ["scripts/collect_pool_incentives_base.py", "--input-file", str(fee_tmp),
-         "--output-file", str(incentive_tmp), "--max-bribe-tokens", "40"],
-    )
+    else:
+        print(f"Batch {number:03d}: collecting FEES for {count} planned pools", flush=True)
+        cli_call(
+            f"Batch {number:03d} FEES",
+            ["scripts/pool_fee_histories_base.py", "--scan-file", str(files["input"]),
+             "--output-file", str(fee_tmp), "--weeks", str(weeks),
+             "--max-pools", str(count), "--max-tokens", "4"],
+        )
+        # Stop BEFORE querying BRIBES if a new Thursday epoch has started.
+        if read_json(fee_tmp).get("current_epoch_start_utc") != anchor_epoch:
+            raise RuntimeError(
+                "Epoch has changed since first batch; stop to avoid mixing snapshots. "
+                "Completed prior batches are kept unchanged."
+            )
+        print(f"Batch {number:03d}: collecting BRIBES and saved-current-price USD", flush=True)
+        cli_call(
+            f"Batch {number:03d} BRIBES",
+            ["scripts/collect_pool_incentives_base.py", "--input-file", str(fee_tmp),
+             "--output-file", str(incentive_tmp), "--max-bribe-tokens", "40"],
+        )
     cli_call(
         f"Batch {number:03d} AUDIT",
         ["scripts/audit_pool_rewards_base.py", "--fees", str(fee_tmp),

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <title>AeroPredict AI | Havuz Analizi</title>
+  <title>AeroPredict AI | Aerodrome Reward Analytics</title>
   <style>
     :root{--bg:#080d1d;--card:#111b32;--line:#26334e;--text:#e8eefc;--muted:#9eacc8;--cyan:#54e7d4;--blue:#7095ff;--amber:#f4c66b;--red:#ff8f92}
     *{box-sizing:border-box}
@@ -67,42 +67,42 @@
 <main class="wrap">
   <header class="brand">
     <div class="brand-name">AERO<span>PREDICT</span> <span style="color:#abb9d7">AI</span></div>
-    <span class="tag">BASE MAINNET · YEREL DEMO</span>
+    <span class="tag">BASE MAINNET · LOCAL DEMO</span>
   </header>
-  <h1>Aerodrome ödül analizi<br><span style="color:var(--cyan)">tek ekranda.</span></h1>
-  <p class="lead">Havuz ve ödül tokenına göre haftalık tahsis geçmişi, geçmiş tahmin hataları ve istatistiksel başlangıç tahminleri. Bu panel yatırım tavsiyesi veya kişisel veAERO getiri hesaplayıcısı değildir.</p>
+  <h1>Aerodrome reward intelligence<br><span style="color:var(--cyan)">in one dashboard.</span></h1>
+  <p class="lead">Explore weekly Aerodrome fee allocations, historical forecast errors, and statistical baselines by pool and reward token. This dashboard is not financial advice or a personal veAERO yield calculator.</p>
   <div id="error" class="error" role="alert"></div>
-  <section class="stats" aria-label="Özet veriler">
-    <div class="stat"><label>İncelenen aktif havuz</label><b id="pool-count">—</b><small>Mevcut örneklem</small></div>
-    <div class="stat"><label>Ödül serisi</label><b id="series-count">—</b><small>Havuz + token çifti</small></div>
-    <div class="stat"><label>Toplam haftalık gözlem</label><b id="week-count">—</b><small>Tamamlanmış epoch</small></div>
-    <div class="stat"><label>Değerlendirme dönemi</label><b id="fold-count">—</b><small>Seri başına geriye dönük tahmin</small></div>
+  <section class="stats" aria-label="Data overview">
+    <div class="stat"><label>Active pools analyzed</label><b id="pool-count">—</b><small>Current sample</small></div>
+    <div class="stat"><label>Reward series</label><b id="series-count">—</b><small>Pool-token pairs</small></div>
+    <div class="stat"><label>Weekly observations</label><b id="week-count">—</b><small>Completed epochs across series</small></div>
+    <div class="stat"><label>Backtest periods</label><b id="fold-count">—</b><small>Out-of-sample weeks per series</small></div>
   </section>
   <section class="panel">
     <div class="headerline">
-      <div><h2>Öngörülebilirlik karşılaştırması</h2><p class="sub">Her seride en düşük geçmiş WAPE. Düşük hata = daha tutarlı tahmin; yüksek getiri değil.</p></div>
-      <button type="button" id="refresh" title="Yalnızca yerel dosyalarda kayıtlı verileri yeniden yükler">Kaydedilmiş veriyi yükle ↻</button>
+      <div><h2>Forecast predictability</h2><p class="sub">Lowest historical WAPE per reward series. Lower forecast error does not imply higher yields.</p></div>
+      <button type="button" id="refresh" title="Reloads previously saved local files; does not fetch fresh on-chain data">Reload saved data ↻</button>
     </div>
-    <div class="bars" id="bars" aria-label="WAPE değerleri"></div>
-    <p class="note">Seyrek ödül serileri turuncu gösterilir ve güvenilir sıralamaya alınmaz. WAPE farklı tokenlar arasında ölçekten bağımsız bir hata ölçüsüdür, ancak tek başına yatırım karşılaştırması değildir. Yukarıdaki düğme Base ağını yeniden sorgulamaz.</p>
+    <div class="bars" id="bars" aria-label="WAPE error comparison"></div>
+    <p class="note">Sparse reward series are flagged and excluded from model ranking. WAPE is a scale-independent forecast error metric, not a stand-alone measure of investment returns. Reloading does not query Base Mainnet.</p>
   </section>
   <section class="panel">
     <div class="headerline">
-      <div><h2>12 haftalık ödül geçmişi</h2>
-        <p class="sub">Seçilen havuzun FEES token tahsisi; son tamamlanan haftalar. Token tutarları USD değildir.</p>
+      <div><h2>12-week reward allocation history</h2>
+        <p class="sub">Weekly FEES token allocations for the selected pool, covering completed epochs. Values are token units, not USD.</p>
       </div>
-      <select id="history-picker" aria-label="Ödül geçmişi için havuz ve token seç"></select>
+      <select id="history-picker" aria-label="Choose pool and token for reward history"></select>
     </div>
-    <div class="history-chart" id="history-chart" role="img" aria-label="Seçilen ödül tokenının haftalık tahsis grafiği"></div>
-    <div class="history-summary" id="history-summary">Veriler yükleniyor…</div>
+    <div class="history-chart" id="history-chart" role="img" aria-label="Weekly reward token allocation chart"></div>
+    <div class="history-summary" id="history-summary">Loading reward data…</div>
     <p class="note" id="data-timestamp"></p>
   </section>
   <section class="panel">
-    <h2>Tüm havuzlar · modeller</h2>
-    <p class="sub">Önceki hafta, 4 haftalık ortalama ve 4 haftalık medyan yöntemlerinin WAPE (%) sonuçları.</p>
+    <h2>All pools · forecasting baselines</h2>
+    <p class="sub">Historical WAPE (%) for the previous-week, four-week mean, and four-week median baselines.</p>
     <div class="table-overflow">
       <table>
-        <thead><tr><th>Havuz / token</th><th>Ödül görülen hafta</th><th>Önceki hafta</th><th>4 hf. ortalama</th><th>4 hf. medyan</th><th>Durum</th></tr></thead>
+        <thead><tr><th>Pool / token</th><th>Weeks with rewards</th><th>Previous week</th><th>4-week mean</th><th>4-week median</th><th>Data quality</th></tr></thead>
         <tbody id="table-body"></tbody>
       </table>
     </div>
@@ -110,30 +110,30 @@
   <div class="cols">
     <section class="panel">
       <div class="headerline">
-        <div><h2>İstatistiksel başlangıç değerleri</h2><p class="sub">Seçilen havuz/token için geçmiş dört haftadan hesaplanır.</p></div>
-        <select id="series-picker" aria-label="Ödül serisi seç"></select>
+        <div><h2>Statistical forecast baselines</h2><p class="sub">Calculated from the four previous completed weeks for each pool-token series.</p></div>
+        <select id="series-picker" aria-label="Select reward series"></select>
       </div>
       <div id="forecast" class="forecast"></div>
     </section>
     <section class="panel">
-      <h2>Bu sonuçlar ne söylüyor?</h2>
-      <p class="sub" id="interpretation">Yükleniyor…</p>
+      <h2>How to interpret these results</h2>
+      <p class="sub" id="interpretation">Loading…</p>
       <div class="disclaimer">
-        <strong>Önemli sınırlamalar</strong>
-        <p>Bu veriler geçmiş epoch anahtarlarının Base ağındaki <code>latest</code> durumundan okunmasıyla derlendi. Geçmiş blok anlık görüntüsü değildir. Ödül tahsisi, bireysel veAERO kazancı, APR veya garanti edilen ödeme değildir.</p>
-        <p>12 haftalık veri yalnızca 8 test dönemi sunar. Modeller basit istatistiksel yöntemlerdir; doğrulanmış bir yapay zekâ tahmin sistemi henüz değildir.</p>
+        <strong>Important limitations</strong>
+        <p>Historical epoch keys were queried against the <code>latest</code> Base contract state. These are not immutable historical block snapshots. Reward allocations are not personal veAERO earnings, APR, claimable balances, or guaranteed payments.</p>
+        <p>Twelve weeks of observations provide only eight walk-forward test periods per series. These are simple statistical baselines, not a validated AI forecasting system.</p>
       </div>
     </section>
   </div>
-  <footer>© AeroPredict AI · Yerel prototip · Veri: Base Mainnet / Aerodrome FEES sözleşmeleri</footer>
+  <footer>© AeroPredict AI · Local prototype · Source: Base Mainnet / Aerodrome FEES contracts</footer>
 </main>
 <script>
 (function () {
   "use strict";
   var modelNames = {
-    previous_week: "Önceki hafta",
-    mean_4w: "4 haftalık ortalama",
-    median_4w: "4 haftalık medyan"
+    previous_week: "Previous week",
+    mean_4w: "4-week mean",
+    median_4w: "4-week median"
   };
   var models = Object.keys(modelNames);
   var entries = [];
@@ -147,7 +147,7 @@
   function formatWape(v) {
     if (v === null || v === undefined) return "N/A";
     var n = Number(v);
-    return Number.isFinite(n) ? n.toLocaleString("tr-TR", {maximumFractionDigits:2}) + "%" : "N/A";
+    return Number.isFinite(n) ? n.toLocaleString("en-US", {maximumFractionDigits:2}) + "%" : "N/A";
   }
   function error(message) {
     var el = document.getElementById("error");
@@ -179,7 +179,7 @@
     return el;
   }
   function shortNumber(n) {
-    return Number(n).toLocaleString("tr-TR", {maximumSignificantDigits:5});
+    return Number(n).toLocaleString("en-US", {maximumSignificantDigits:5});
   }
   function paintHistory(index) {
     var container = document.getElementById("history-chart");
@@ -188,7 +188,7 @@
     var entry = entries[index];
     var data = entry ? historySeries(entry) : null;
     if (!data || !Array.isArray(data.completed_weeks) || !data.completed_weeks.length) {
-      caption.textContent = "Bu ödül serisine ait geçmiş veri bulunamadı. Önce pool_fee_histories_base.py çalıştırılmalı.";
+      caption.textContent = "No reward history available for this series. Run pool_fee_histories_base.py first.";
       return;
     }
     var records = data.completed_weeks.slice().sort(function(a,b) {
@@ -196,7 +196,7 @@
     });
     var amounts = records.map(function(rec) {return Number(rec.token_amount);});
     if (amounts.some(function(n){return !Number.isFinite(n) || n < 0;})) {
-      caption.textContent = "Grafik için token ondalık bilgisi geçerli değil.";
+      caption.textContent = "Invalid token decimal data: unable to display this chart.";
       return;
     }
     var max = Math.max(0, ...amounts);
@@ -207,7 +207,7 @@
     var svg = svgEl("svg", {
       viewBox:"0 0 " + width + " " + height, preserveAspectRatio:"xMidYMid meet",
       role:"img",
-      "aria-label": idFor(entry) + " için " + records.length + " haftalık FEES tahsis geçmişi grafiği"
+      "aria-label": idFor(entry) + " — " + records.length + "-week FEES allocation history"
     });
     [0, .5, 1].forEach(function(step) {
       var ordinate = bottom - step * usableY;
@@ -245,8 +245,8 @@
     container.appendChild(svg);
     var positive = amounts.filter(function(n){return n > 0;}).length;
     caption.textContent = idFor(entry) + " · " + positive + "/" + records.length +
-      " hafta ödül · En yüksek " + shortNumber(max) + " " + (entry.token_symbol || "TOKEN") +
-      " · Son tamamlanan hafta " + records[records.length-1].epoch_start_utc.slice(0,10) +
+      " weeks with rewards · Peak " + shortNumber(max) + " " + (entry.token_symbol || "TOKEN") +
+      " · Latest completed week " + records[records.length-1].epoch_start_utc.slice(0,10) +
       ": " + records[records.length-1].token_amount + " " + (entry.token_symbol || "TOKEN");
   }
   function showSeries(index) {
@@ -273,7 +273,7 @@
       fill.style.width = v === null ? "0%" : Math.min(100, v / max * 100).toFixed(1) + "%";
       track.appendChild(fill);
       row.appendChild(track);
-      row.appendChild(node("span", "value", v === null ? "Seyrek" : formatWape(v)));
+      row.appendChild(node("span", "value", v === null ? "Sparse" : formatWape(v)));
       barBox.appendChild(row);
     });
   }
@@ -299,7 +299,7 @@
       });
       var status = node("td");
       status.appendChild(node("span", "status" + (e.analysis.sparse_rewards_flag ? " sparse" : ""),
-        e.analysis.sparse_rewards_flag ? "Seyrek ödül" : "Sınırlı örneklem"));
+        e.analysis.sparse_rewards_flag ? "Sparse rewards" : "Small sample"));
       tr.appendChild(status);
       tbody.appendChild(tr);
     });
@@ -309,35 +309,35 @@
     var box = document.getElementById("forecast");
     clear(box);
     if (!e) return;
-    var intro = node("p", "note", "İzleyen epoch: " + e.analysis.following_epoch_utc.slice(0, 10) + " · Bu değer önceden zincire kaydedilmiş bir tahmin değildir.");
+    var intro = node("p", "note", "Next analyzed epoch: " + e.analysis.following_epoch_utc.slice(0, 10) + " · This baseline was not registered on-chain before that epoch.");
     box.appendChild(intro);
     models.forEach(function(m) {
       var div = node("div", "prediction");
-      div.appendChild(node("span", "small", modelNames[m] + (e.analysis.exploratory_best_baseline === m ? " · en düşük geçmiş hata" : "")));
+      div.appendChild(node("span", "small", modelNames[m] + (e.analysis.exploratory_best_baseline === m ? " · lowest past error" : "")));
       var n = e.analysis.following_epoch_baselines_token_amount[m];
-      div.appendChild(node("b", "", (n === null ? "Ham birim: " + e.analysis.following_epoch_baselines_raw[m] : n) + " " + (e.token_symbol || "TOKEN")));
-      div.appendChild(node("div", "detail", "Geçmiş WAPE: " + formatWape(e.analysis.metrics[m].wape_percent)));
+      div.appendChild(node("b", "", (n === null ? "Raw units: " + e.analysis.following_epoch_baselines_raw[m] : n) + " " + (e.token_symbol || "TOKEN")));
+      div.appendChild(node("div", "detail", "Historical WAPE: " + formatWape(e.analysis.metrics[m].wape_percent)));
       box.appendChild(div);
     });
     var msg = e.analysis.sparse_rewards_flag
-      ? "Bu seride ödül verilen hafta sayısı çok az. Tahmin modeli seçmek için yeterli veri yok."
-      : "Bu seride en düşük geçmiş hata " + modelNames[e.analysis.exploratory_best_baseline] +
-        " yönteminde. Yalnızca " + e.analysis.fold_count + " geçmiş test dönemi var; sonuç kesin değildir.";
+      ? "This series has too few reward-paying weeks to identify a meaningful best baseline."
+      : "For this series, the lowest past error came from the " + modelNames[e.analysis.exploratory_best_baseline] +
+        " baseline. Only " + e.analysis.fold_count + " walk-forward test periods are available, so the ranking is not robust.";
     document.getElementById("interpretation").textContent = msg +
-      " Farklı tokenların ham miktarları birbirine eklenemez veya USD getirisi gibi karşılaştırılamaz.";
+      " Different reward tokens must not be summed or interpreted as comparable USD yields.";
   }
   async function load() {
     try {
       var response = await fetch("/api/results", {cache:"no-store"});
       if (!response.ok) throw new Error("API: " + response.status);
       var data = await response.json();
-      if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Beklenmeyen veri biçimi");
+      if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Unexpected response format");
       entries = data.backtest.results;
       history = data.history || null;
       document.getElementById("data-timestamp").textContent = history && history.collected_at_utc
-        ? "Veri toplama zamanı (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
-          " · Bu görünüm yerel JSON dosyalarından yükleniyor; otomatik zincir sorgusu değildir."
-        : "Ödül geçmişi dosyası bulunamadı veya yüklenemedi.";
+        ? "Collected at (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
+          " · Displayed from saved local JSON; not a live on-chain query."
+        : "Reward history file was not found or could not be loaded.";
       document.getElementById("error").style.display = "none";
       document.getElementById("series-count").textContent = entries.length;
       document.getElementById("pool-count").textContent = new Set(entries.map(function(e){return e.pool_index;})).size;
@@ -362,7 +362,7 @@
       paintBars();
       paintTable();
     } catch(e) {
-      error("Veriler yüklenemedi: " + e.message + ". Önce python scripts/backtest_pool_fees.py komutunu çalıştırıp paneli yenileyin.");
+      error("Could not load saved data: " + e.message + ". Run python scripts/backtest_pool_fees.py and reload this page.");
     }
   }
   document.getElementById("series-picker").addEventListener("change", function(e){

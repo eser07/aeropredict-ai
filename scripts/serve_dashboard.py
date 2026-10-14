@@ -3,7 +3,7 @@
 
 This only binds to loopback (127.0.0.1), serving two exact routes:
   GET /              -> dashboard/index.html
-  GET /api/results   -> existing local JSON backtest output
+  GET /api/results   -> existing local JSON backtest + FEES history output
 
 Unlike running 'python -m http.server' from the repo root, this deliberately
 does NOT expose .env, .git or any other repository files to the browser.
@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "dashboard" / "index.html"
 RESULTS = ROOT / "data" / "pool_fee_backtest_base.json"
+HISTORY = ROOT / "data" / "pool_fee_histories_base.json"
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -74,7 +75,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                     500, {"error": "Cannot parse local backtest JSON", "detail": str(exc)}
                 )
                 return
-            self.json_response(200, {"backtest": raw})
+            # Reward history is optional for older data sets. Serve only the
+            # specific, known local artifact; do not expose arbitrary files.
+            history = None
+            if HISTORY.is_file():
+                try:
+                    history = json.loads(HISTORY.read_text(encoding="utf-8"))
+                    if history.get("chain_id") != 8453:
+                        raise ValueError("History is not from Base Mainnet")
+                    if not isinstance(history.get("pools"), list):
+                        raise ValueError("History must contain a pools list")
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    self.json_response(
+                        500, {"error": "Cannot parse reward history", "detail": str(exc)}
+                    )
+                    return
+            self.json_response(200, {"backtest": raw, "history": history})
             return
 
         self.json_response(404, {"error": "Unknown endpoint"})
@@ -96,6 +112,7 @@ def main():
     print("AeroPredict AI | local read-only dashboard", flush=True)
     print(f"Windows browser URL: http://localhost:{args.port}/", flush=True)
     print(f"Reading results from: {RESULTS}", flush=True)
+    print(f"Reading reward histories from: {HISTORY}", flush=True)
     print("Dashboard is bound to 127.0.0.1 only. Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever(poll_interval=0.2)

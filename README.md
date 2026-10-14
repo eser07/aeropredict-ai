@@ -375,7 +375,13 @@ the independent reward/weight audit. Everything is first written to an
 **isolated staging subfolder**; only after the cross-file checks pass are
 individual outputs published to the batch folder, with a completed
 status marker written **last**. Finished batches are skipped when
-re-running the same command. Failed batches can be retried later.
+re-running the same command. When FEES and BRIBES were already saved in
+the per-batch staging folder but the final audit failed, rerunning the
+same command validates and reuses both staged datasets (including quote
+freshness) **without new RPC or token-price requests**. The staged audit
+uses the required `audit_batch_NNN.json` filename. Invalid or
+different-epoch staged data are never silently discarded. Failed
+batches can be retried later.
 The script is intentionally limited to **1–5 batches per invocation**,
 with a default 10-second pause between batches. It does not install
 a scheduled job or silently run all 928 pools unattended.

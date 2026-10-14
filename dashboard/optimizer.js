@@ -20,6 +20,8 @@
     ".opt-table th:nth-child(2),.opt-table th:nth-child(3),.opt-table th:nth-child(4){text-align:right}",
     ".opt-footnote{font-size:12px;color:var(--amber);line-height:1.65;margin-top:16px}",
     ".opt-muted{color:var(--muted);font-size:12px}",
+    ".opt-pool-detail{display:block;color:var(--muted);font-size:11px;margin-top:5px;line-height:1.6}",
+    ".opt-reward-detail{display:block;color:var(--reward-green);font-size:11px;margin-top:5px;line-height:1.6;opacity:.9}",
     "@media(max-width:750px){.opt-fields{grid-template-columns:1fr 1fr}.opt-run{grid-column:1/-1}}",
     "@media(max-width:480px){.opt-fields{grid-template-columns:1fr}}"
   ].join("");
@@ -104,7 +106,10 @@
     // highest remaining marginal gain per 1% point gives the best result
     // ON THIS GRID. It is not a continuous global-optimum proof.
     var positions = candidates.map(function(c) {
-      return {index:c.index, votes:c.votes, usd:c.usd, slices:0};
+      return {
+        index:c.index, votes:c.votes, usd:c.usd,
+        feesUsd:c.feesUsd, bribesUsd:c.bribesUsd, slices:0
+      };
     });
     var sliceVotes = votingPower / 100;
     for (var unit = 0; unit < 100; unit++) {
@@ -125,9 +130,23 @@
       .map(function(p) {
         p.allocatedVotes = p.slices * sliceVotes;
         p.estimatedRewardUsd = projected(p, p.allocatedVotes);
+        p.estimatedFeesUsd = p.feesUsd * p.allocatedVotes / (p.votes + p.allocatedVotes);
+        p.estimatedBribesUsd = p.bribesUsd * p.allocatedVotes / (p.votes + p.allocatedVotes);
         return p;
       })
       .sort(function(a,b){return b.estimatedRewardUsd - a.estimatedRewardUsd;});
+  }
+
+  function sumPricedRewardComponents(rewards) {
+    if (!Array.isArray(rewards)) return NaN;
+    var sum = 0;
+    for (var i = 0; i < rewards.length; i++) {
+      if (!rewards[i] || rewards[i].usd_at_current_price == null) return NaN;
+      var usdValue = Number(rewards[i].usd_at_current_price);
+      if (!Number.isFinite(usdValue) || usdValue < 0) return NaN;
+      sum += usdValue;
+    }
+    return sum;
   }
 
   function eligiblePools(report) {
@@ -145,6 +164,8 @@
           return {
             index: Number(p.index),
             usd: Number(p.four_week_avg_total_usd_at_current_prices),
+            feesUsd: sumPricedRewardComponents(p.fees),
+            bribesUsd: sumPricedRewardComponents(p.bribes),
             votes: Number(BigInt(p.pool_vote_weight_raw)) / 1e18
           };
         } catch (_) { return null; }
@@ -152,6 +173,8 @@
       .filter(function(p) {
         return p && Number.isInteger(p.index) &&
           Number.isFinite(p.usd) && p.usd > 0 &&
+          Number.isFinite(p.feesUsd) && Number.isFinite(p.bribesUsd) &&
+          Math.abs(p.feesUsd + p.bribesUsd - p.usd) <= Math.max(0.01, p.usd * 1e-8) &&
           Number.isFinite(p.votes) && p.votes > 0;
       });
   }
@@ -242,6 +265,22 @@
           var td = document.createElement("td");
           if (j === 3) td.className = "reward-amount";
           td.textContent = value;
+          if (j === 0) {
+            var context = document.createElement("small");
+            context.className = "opt-pool-detail";
+            context.textContent =
+              "Whole-pool weekly FEES + BRIBES: " + usd(row.usd) +
+              " · Existing pool votes: " + number(row.votes, 0) + " veAERO";
+            td.appendChild(context);
+          }
+          if (j === 3) {
+            var components = document.createElement("small");
+            components.className = "opt-reward-detail";
+            components.textContent =
+              "FEES " + usd(row.estimatedFeesUsd) +
+              " + BRIBES " + usd(row.estimatedBribesUsd);
+            td.appendChild(components);
+          }
           tr.appendChild(td);
         });
         rowsNode.appendChild(tr);
@@ -253,6 +292,17 @@
         " UTC · 4 completed weekly epochs · quotes from " +
         report.quote_provider +
         " · 1%-point allocation steps";
+      var excluded = report.pools.filter(function(p) {
+        return !eligible.some(function(e) {return e.index === Number(p.index);});
+      });
+      if (excluded.length) {
+        sourcesNode.textContent += " · Excluded from USD scenario: " +
+          excluded.map(function(p) {
+            var reasons = Array.isArray(p.missing_components) && p.missing_components.length
+              ? p.missing_components.join(", ") : "incomplete priced data or vote weight";
+            return "#" + p.index + " (" + reasons + ")";
+          }).join("; ");
+      }
     } catch (error) {
       message("Cannot calculate", error.message);
     } finally {

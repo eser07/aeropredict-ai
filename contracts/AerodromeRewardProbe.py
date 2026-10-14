@@ -49,10 +49,22 @@ class AerodromeRewardProbe(gl.contract.Contract):
                     }),
                 )
                 if response.status != 200 or response.body is None:
-                    raise gl.vm.UserError("Base RPC request failed")
+                    # Diagnostics for local RPC connectivity; never include keys.
+                    detail = (response.body or b"")[:240].decode(
+                        "utf-8", errors="replace"
+                    ).replace("\\n", " ")
+                    raise gl.vm.UserError(
+                        f"Base RPC {method} HTTP {response.status}: {detail}"
+                    )
                 answer = json.loads(response.body.decode("utf-8"))
-                if "error" in answer or "result" not in answer:
-                    raise gl.vm.UserError("Base RPC returned error or no result")
+                if "error" in answer:
+                    raise gl.vm.UserError(
+                        f"Base RPC {method} JSON-RPC error: {answer['error']}"
+                    )
+                if "result" not in answer:
+                    raise gl.vm.UserError(
+                        f"Base RPC {method} response missing result"
+                    )
                 return answer["result"]
 
             if int(rpc("eth_chainId", []), 16) != CHAIN_ID:

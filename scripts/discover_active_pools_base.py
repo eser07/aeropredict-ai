@@ -181,6 +181,30 @@ def inspect_page(progress, page_size, delay):
     return next_progress, len(active)
 
 
+def publish_completed(progress):
+    """Promote only complete inventories, including recovery after publish interruption."""
+    if not progress["complete"] or progress["next_index"] != progress["total_registered"]:
+        raise ValueError("Refusing to publish a partial pool inventory")
+    result = {
+        **progress,
+        "scan_end_exclusive": progress["total_registered"],
+        "fetched_at_utc": utc_now(),
+        "coverage_percent": 100,
+        "selection_policy": "all gauges alive at pinned Base block",
+        "publish_warning": (
+            "Independent discovery output. NOT used as dashboard or hourly "
+            "refresh input until a separate capacity-aware migration passes."
+        ),
+    }
+    validate_progress(result)
+    save_atomic(RESULT, result)
+    print(
+        f"COMPLETE: {result['active_pool_count']} active pools of "
+        f"{result['total_registered']} registered. Saved: {RESULT}",
+        flush=True,
+    )
+
+
 def run_scan(page_size=25, max_pages=1, delay=0.1, restart=False):
     DATA.mkdir(parents=True, exist_ok=True)
     if restart or not CHECKPOINT.is_file():
@@ -202,7 +226,10 @@ def run_scan(page_size=25, max_pages=1, delay=0.1, restart=False):
             raise RuntimeError("Pinned-block total voting weight mismatch; checkpoint retained")
 
     if progress["complete"]:
-        print("Inventory already complete. Use --restart for a new pinned block.", flush=True)
+        if not RESULT.is_file():
+            publish_completed(progress)
+        else:
+            print("Inventory already complete. Use --restart for a new pinned block.", flush=True)
         return progress
 
     print(
@@ -224,25 +251,8 @@ def run_scan(page_size=25, max_pages=1, delay=0.1, restart=False):
         )
 
     if progress["complete"]:
-        # Publish a discoverable, explicitly COMPLETE inventory only when
-        # the entire registry was traversed at the same pinned block.
-        result = {
-            **progress,
-            "scan_end_exclusive": progress["total_registered"],
-            "fetched_at_utc": utc_now(),
-            "coverage_percent": 100,
-            "selection_policy": "all gauges alive at pinned Base block",
-            "publish_warning": (
-                "Independent discovery output. NOT used as dashboard or hourly "
-                "refresh input until a separate capacity-aware migration passes."
-            ),
-        }
-        save_atomic(RESULT, result)
-        print(
-            f"COMPLETE: {result['active_pool_count']} active pools of "
-            f"{result['total_registered']} registered. Saved: {RESULT}",
-            flush=True,
-        )
+        # Promote the inventory only after full pinned-block coverage.
+        publish_completed(progress)
     else:
         remaining = progress["total_registered"] - progress["next_index"]
         percent = progress["next_index"] / progress["total_registered"] * 100

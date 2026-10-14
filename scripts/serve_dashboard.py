@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "dashboard" / "index.html"
 RESULTS = ROOT / "data" / "pool_fee_backtest_base.json"
 HISTORY = ROOT / "data" / "pool_fee_histories_base.json"
+INCENTIVES = ROOT / "data" / "pool_incentives_base.json"
+OPTIMIZER_JS = ROOT / "dashboard" / "optimizer.js"
 
 
 class DashboardHandler(BaseHTTPRequestHandler):
@@ -52,6 +54,15 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.json_response(500, {"error": "Dashboard HTML unavailable", "detail": str(exc)})
                 return
             self.send_payload(200, "text/html; charset=utf-8", data)
+            return
+
+        if path == "/optimizer.js":
+            try:
+                code = OPTIMIZER_JS.read_bytes()
+            except OSError:
+                self.json_response(404, {"error": "Optimizer frontend not available"})
+                return
+            self.send_payload(200, "application/javascript; charset=utf-8", code)
             return
 
         if path == "/api/results":
@@ -90,7 +101,22 @@ class DashboardHandler(BaseHTTPRequestHandler):
                         500, {"error": "Cannot parse reward history", "detail": str(exc)}
                     )
                     return
-            self.json_response(200, {"backtest": raw, "history": history})
+            incentives = None
+            if INCENTIVES.is_file():
+                try:
+                    incentives = json.loads(INCENTIVES.read_text(encoding="utf-8"))
+                    if incentives.get("chain_id") != 8453:
+                        raise ValueError("Incentives are not from Base Mainnet")
+                    if not isinstance(incentives.get("pools"), list):
+                        raise ValueError("Incentives must contain a pools list")
+                except (OSError, ValueError, KeyError, TypeError) as exc:
+                    self.json_response(
+                        500, {"error": "Cannot parse incentives JSON", "detail": str(exc)}
+                    )
+                    return
+            self.json_response(200, {
+                "backtest": raw, "history": history, "incentives": incentives
+            })
             return
 
         self.json_response(404, {"error": "Unknown endpoint"})
@@ -113,6 +139,7 @@ def main():
     print(f"Windows browser URL: http://localhost:{args.port}/", flush=True)
     print(f"Reading results from: {RESULTS}", flush=True)
     print(f"Reading reward histories from: {HISTORY}", flush=True)
+    print(f"Reading incentives from: {INCENTIVES}", flush=True)
     print("Dashboard is bound to 127.0.0.1 only. Ctrl+C to stop.", flush=True)
     try:
         server.serve_forever(poll_interval=0.2)

@@ -5,10 +5,12 @@ Run from the project root with the project's Python venv active:
     python scripts/refresh_expanded_data.py
 
 Each collector writes to a temporary location under data/. No production/demo
-snapshot is overwritten. Four expanded preview files are replaced only after
-the complete run passes basic chain, epoch and pool-identity checks.
-The four-file replacement is NOT one atomic transaction; stop the local
-dashboard while refreshing. Backups are restored on ordinary publish errors.
+snapshot is overwritten. Four component JSON files plus an atomically replaceable dashboard bundle
+are published only after chain, epoch and pool-identity checks pass. The
+dashboard reads ONLY the complete bundle once it exists, so its HTTP responses
+never mix components from separately published collection epochs.
+The five-file publication is NOT one atomic transaction for CLI consumers;
+backups are restored on ordinary publish errors.
 """
 import json
 import os
@@ -27,6 +29,8 @@ DESTINATIONS = {
     "backtest": DATA / "pool_fee_backtest_expanded_base.json",
     "incentives": DATA / "pool_incentives_expanded_base.json",
     "pairs": DATA / "pool_pairs_expanded_base.json",
+    # Last: atomically published for the dashboard. Do not reorder this entry.
+    "bundle": DATA / "expanded_dashboard_bundle.json",
 }
 CHAIN_ID = 8453
 MAX_POOLS = 50
@@ -133,6 +137,21 @@ def validate(staged, pool_count):
     )
 
 
+def stage_dashboard_bundle(staged):
+    """One self-consistent dashboard payload; published with a single os.replace."""
+    content = {
+        "dataset_mode": "expanded",
+        "backtest": read_json(staged["backtest"]),
+        "history": read_json(staged["history"]),
+        "incentives": read_json(staged["incentives"]),
+        "pairs": read_json(staged["pairs"]),
+    }
+    staged["bundle"].write_text(
+        json.dumps(content, ensure_ascii=False, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+
+
 def publish(staged, temp):
     backup_dir = temp / "backups"
     backup_dir.mkdir()
@@ -209,9 +228,10 @@ def main():
             "--output-file", staged["pairs"],
         )
         validate(staged, len(candidates))
+        stage_dashboard_bundle(staged)
         publish(staged, temp)
 
-    print("\nSUCCESS: Expanded dashboard data refreshed.", flush=True)
+    print("\nSUCCESS: Expanded dashboard data and atomic dashboard bundle refreshed.", flush=True)
     print("Start: python scripts/serve_dashboard.py --dataset expanded", flush=True)
     print(
         "Reminder: FEES/BRIBES and voting-weight snapshots remain unsynchronized; "

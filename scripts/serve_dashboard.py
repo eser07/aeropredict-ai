@@ -223,6 +223,10 @@ class DashboardHandler(BaseHTTPRequestHandler):
         self.json_response(405, {"error": "Read-only demo"})
 
     def log_message(self, fmt, *args):
+        # The dashboard polls this endpoint every 15 seconds. Avoid filling
+        # the unattended background server log with thousands of routine GETs.
+        if urlsplit(self.path).path == "/api/refresh-status":
+            return
         print("[%s] %s" % (self.log_date_time_string(), fmt % args), flush=True)
 
 

@@ -287,6 +287,8 @@
     return typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null;
   }
   function usdEquivalent(amount, entry) {
+    // Null token amounts mean decimals were unknown; never reinterpret as zero.
+    if (amount === null || amount === undefined || amount === "") return null;
     var price = quotePriceFor(entry);
     var quantity = Number(amount);
     if (price === null || !Number.isFinite(quantity) || quantity < 0) return null;

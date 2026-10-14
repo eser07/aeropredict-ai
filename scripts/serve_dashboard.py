@@ -23,6 +23,7 @@ HISTORY = ROOT / "data" / "pool_fee_histories_base.json"
 INCENTIVES = ROOT / "data" / "pool_incentives_base.json"
 PAIRS = ROOT / "data" / "pool_pairs_base.json"
 OPTIMIZER_JS = ROOT / "dashboard" / "optimizer.js"
+EXPANDED_BUNDLE = ROOT / "data" / "expanded_dashboard_bundle.json"
 # The expanded dataset is an opt-in local research preview. The original
 # seven-pool dashboard remains the default and is never overwritten here.
 DATASETS = {
@@ -81,6 +82,30 @@ class DashboardHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/results":
+            # Once created by the refresher, this one file contains all
+            # four validated data components. Atomic os.replace means a
+            # concurrent hourly refresh cannot mix old and new snapshots.
+            if self.server.dataset_mode == "expanded" and EXPANDED_BUNDLE.is_file():
+                try:
+                    bundle = json.loads(EXPANDED_BUNDLE.read_text(encoding="utf-8"))
+                    if not isinstance(bundle, dict) or bundle.get("dataset_mode") != "expanded":
+                        raise ValueError("Unexpected expanded dashboard bundle type")
+                    for key in ("backtest", "history", "incentives", "pairs"):
+                        block = bundle.get(key)
+                        if not isinstance(block, dict) or block.get("chain_id") != 8453:
+                            raise ValueError(f"Malformed Base Mainnet bundle component: {key}")
+                    if not isinstance(bundle["backtest"].get("results"), list):
+                        raise ValueError("Bundle has no backtest results")
+                    for key in ("history", "incentives", "pairs"):
+                        if not isinstance(bundle[key].get("pools"), list):
+                            raise ValueError(f"Bundle has no {key} pools")
+                except (OSError, ValueError, TypeError, KeyError) as exc:
+                    self.json_response(
+                        500, {"error": "Cannot read atomic expanded dashboard snapshot", "detail": str(exc)}
+                    )
+                    return
+                self.json_response(200, bundle)
+                return
             files = self.server.data_files
             if not files["backtest"].is_file():
                 self.json_response(

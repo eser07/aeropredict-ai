@@ -111,10 +111,10 @@
   </section>
   <section class="panel">
     <h2>All pools · forecasting baselines</h2>
-    <p class="sub">Historical WAPE (%) for the previous-week, four-week mean, and four-week median baselines.</p>
+    <p class="sub">Historical WAPE (%) for the previous-week, four-week mean, and four-week median baselines. Pair labels identify pool trading tokens; each row tracks a separate FEES reward token.</p>
     <div class="table-overflow">
       <table>
-        <thead><tr><th>Pool / token</th><th>Weeks with rewards</th><th>Previous week</th><th>4-week mean</th><th>4-week median</th><th>Data quality</th></tr></thead>
+        <thead><tr><th>Pool / pair · FEES token</th><th>Weeks with rewards</th><th>Previous week</th><th>4-week mean</th><th>4-week median</th><th>Data quality</th></tr></thead>
         <tbody id="table-body"></tbody>
       </table>
     </div>
@@ -128,7 +128,7 @@
       <span class="tag">FEES ONLY · NO BRIBES</span>
     </div>
     <div class="sim-grid">
-      <label class="sim-label">Pool / reward token
+      <label class="sim-label">Pool / pair / FEES reward token
         <select id="sim-pool" aria-label="Choose pool and reward token"></select>
       </label>
       <label class="sim-label">Effective voting power (veAERO)
@@ -151,6 +151,7 @@
     </label>
     <div class="sim-result">
       <div class="small">Hypothetical weekly FEES token allocation</div>
+      <div class="small" id="sim-selected-series"></div>
       <b id="sim-estimate">Waiting for pool vote data…</b>
       <div class="meta" id="sim-meta"></div>
     </div>
@@ -187,6 +188,7 @@
   var models = Object.keys(modelNames);
   var entries = [];
   var history = null;
+  var verifiedPairLabels = new Map();
   function node(tag, className, text) {
     var el = document.createElement(tag);
     if (className) el.className = className;
@@ -204,7 +206,15 @@
     el.textContent = message;
   }
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
-  function idFor(e) { return "#" + e.pool_index + " / " + (e.token_symbol || "TOKEN"); }
+  function idFor(e) {
+    // Trading pair is verified by BOTH pool index and address from token0/token1.
+    // The FEES reward token may differ from either trading token.
+    var key = String(e.pool_index) + "|" + String(e.pool_address).toLowerCase();
+    var pair = verifiedPairLabels.get(key);
+    return "Pool #" + e.pool_index +
+      (pair ? " · " + pair : " · pair unavailable") +
+      " · FEES: " + (e.token_symbol || "TOKEN");
+  }
   function winner(e) {
     var m = e.analysis.exploratory_best_baseline;
     if (!m || e.analysis.sparse_rewards_flag) return null;
@@ -324,6 +334,7 @@
       value.textContent = "Not available";
       detail.textContent = reason;
     }
+    document.getElementById("sim-selected-series").textContent = row ? idFor(row) : "";
     if (!row) return unavailable("Choose a reward series.");
     var pool = history && Array.isArray(history.pools)
       ? history.pools.find(function(p) {return String(p.pool_address).toLowerCase() === String(row.pool_address).toLowerCase();})
@@ -428,7 +439,7 @@
     var box = document.getElementById("forecast");
     clear(box);
     if (!e) return;
-    var intro = node("p", "note", "Next analyzed epoch: " + e.analysis.following_epoch_utc.slice(0, 10) + " · This baseline was not registered on-chain before that epoch.");
+    var intro = node("p", "note", "Baseline reference epoch: " + e.analysis.following_epoch_utc.slice(0, 10) + " · Calculated retrospectively from saved data, not registered on-chain before that epoch.");
     box.appendChild(intro);
     models.forEach(function(m) {
       var div = node("div", "prediction");
@@ -453,6 +464,19 @@
       if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Unexpected response format");
       entries = data.backtest.results;
       history = data.history || null;
+      verifiedPairLabels.clear();
+      if (data.pairs && data.pairs.chain_id === 8453 &&
+          Array.isArray(data.pairs.pools)) {
+        data.pairs.pools.forEach(function(p) {
+          if (Number.isInteger(p.index) && typeof p.pool_address === "string" &&
+              typeof p.pair_label === "string" && p.pair_label.length > 0 &&
+              p.pair_label.length <= 90) {
+            verifiedPairLabels.set(
+              String(p.index) + "|" + p.pool_address.toLowerCase(), p.pair_label
+            );
+          }
+        });
+      }
       document.getElementById("data-timestamp").textContent = history && history.collected_at_utc
         ? "Collected at (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
           " · Displayed from saved local JSON; not a live on-chain query."

@@ -144,6 +144,8 @@ def main():
             "pool_address": pool,
             "gauge_address": gauge,
             "active_at_collection": active,
+            "pool_vote_weight_raw": None,
+            "pool_vote_weight_snapshot_block_approx": tip_number,
             "fees_contract": None,
             "registered_fee_tokens": 0,
             "tokens_truncated": False,
@@ -153,6 +155,15 @@ def main():
         print(f"Pool #{idx} | currently active: {active}", flush=True)
         if not active:
             continue
+
+        # Current Voter weight is measured in 18-decimal voting-power units.
+        # It is not a historical snapshot synchronized with prior fee epochs.
+        current_votes_raw = read_uint("weights(address)", pool, "latest")
+        record["pool_vote_weight_raw"] = str(current_votes_raw)
+        print(
+            f"  Snapshot vote weight: {human_amount(current_votes_raw, 18)} veAERO",
+            flush=True,
+        )
 
         fees = read_address("gaugeToFees(address)", gauge, "latest")
         if fees == ZERO:

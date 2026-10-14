@@ -13,6 +13,7 @@ AeroPredict AI examines Aerodrome pool-level FEES token allocations, displays hi
 - Evaluate three transparent baselines independently for each pool/reward-token series: previous week, four-week mean, and four-week median.
 - Compare past forecasting errors using MAE (in the specific token's units) and WAPE (percentage).
 - Display interactive 12-week history charts, model errors, and next-epoch statistical baselines in an English-language local web dashboard.
+- Run an **experimental veAERO voting reward scenario**: supply effective voting power and vote allocation, then examine a pro-rata share of a selected pool's FEES baseline. The data collector also saves its current `Voter.weights(pool)` value (18-decimal units). This is NOT a guaranteed or claimable reward.
 - Run an experimental GenLayer contract through the local GLSim environment that can read Base `eth_call(..., "latest")` reward allocations; direct RPC comparison has succeeded for a sample reward.
 - Maintain a separate prototype for forecast submission and future settlement, which still requires further verification and suitable historical-state RPC access.
 
@@ -37,6 +38,20 @@ python scripts/serve_dashboard.py
 Open **http://localhost:8765/** in your browser. Press **Ctrl+C** in the dashboard terminal to stop it.
 
 The local server binds only to `127.0.0.1` and serves the dashboard plus a restricted JSON results endpoint. It does not expose the full repository or allow data changes. The **Reload saved data** button re-reads locally saved JSON; it does **not** re-query Base. To refresh the on-chain snapshot, rerun the data collection and backtest commands above.
+
+### Experimental veAERO voting reward simulator
+
+Once you have pulled the latest code, **rerun the pool fee history collector and backtest** so the JSON includes `pool_vote_weight_raw`. Earlier JSON snapshots do not contain voting weights and the simulator will intentionally display *Not available* instead of inventing them.
+
+The simulator accepts **effective veAERO voting power** (not automatically the number of AERO locked), the percentage allocated to a pool, and one historical FEES baseline. For a hypothetical NEW pool voter it calculates:
+
+```text
+Your allocated votes = effective veAERO voting power × allocation percentage
+Illustrative vote share = your allocated votes / (currently recorded pool votes + your allocated votes)
+Illustrative token allocation = chosen FEES baseline token amount × illustrative vote share
+```
+
+If the voter's weight is already included in the current pool total, check the **already included** box to avoid adding it twice. This is an approximation for education: voting-power snapshots and historical reward allocations are not from the same epoch; it excludes BRIBES, rewards lag, token prices and actual claimability. No wallet or transaction is involved.
 
 The dashboard's data files are created locally:
 

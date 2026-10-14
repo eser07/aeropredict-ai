@@ -63,25 +63,43 @@ def main():
     parser.add_argument("--weeks", type=int, default=12, help="Completed weeks, 4-16")
     parser.add_argument(
         "--max-pools", type=int, default=5,
-        help="How many registration-order pools from scan to inspect, 1-25",
+        help="How many scan-listed pools to inspect, 1-50",
     )
     parser.add_argument(
         "--max-tokens", type=int, default=4,
         help="First N registered FEES tokens per active pool, 1-20",
     )
+    parser.add_argument(
+        "--scan-file", type=Path, default=INPUT,
+        help="Read saved pool scan; default keeps original demo sample",
+    )
+    parser.add_argument(
+        "--output-file", type=Path, default=OUTPUT,
+        help="Write fee history to specified JSON in data/",
+    )
     args = parser.parse_args()
+    data_dir = Path("data").resolve()
+    scan_file = args.scan_file.resolve()
+    output_file = args.output_file.resolve()
+    if any(
+        not p.is_relative_to(data_dir) or p.suffix.lower() != ".json"
+        for p in (scan_file, output_file)
+    ):
+        parser.error("Scan and output files must be .json paths under data/")
+    if output_file == scan_file:
+        parser.error("Output must not overwrite its scan input")
     if not 4 <= args.weeks <= 16:
         parser.error("--weeks must be 4-16")
-    if not 1 <= args.max_pools <= 25:
-        parser.error("--max-pools must be 1-25")
+    if not 1 <= args.max_pools <= 50:
+        parser.error("--max-pools must be 1-50")
     if not 1 <= args.max_tokens <= 20:
         parser.error("--max-tokens must be 1-20")
 
-    if not INPUT.is_file():
+    if not scan_file.is_file():
         raise RuntimeError(
-            "Missing scan. First run: python scripts/scan_pools_base.py --count 5"
+            f"Missing scan: {args.scan_file}. Run a pool scan first."
         )
-    scan = json.loads(INPUT.read_text(encoding="utf-8"))
+    scan = json.loads(scan_file.read_text(encoding="utf-8"))
     if int(scan.get("chain_id", 0)) != CHAIN_ID:
         raise RuntimeError("Saved scan was not made on Base Mainnet")
     if int(rpc("eth_chainId", []), 16) != CHAIN_ID:
@@ -116,13 +134,13 @@ def main():
         "chain_id": CHAIN_ID,
         "rpc": RPC,
         "base_tip_block_approx": tip_number,
-        "sample_source": str(INPUT),
+        "sample_source": str(args.scan_file),
         "current_epoch_start_utc": datetime.fromtimestamp(
             epoch, timezone.utc
         ).isoformat(),
         "collected_at_utc": datetime.now(timezone.utc).isoformat(),
         "completed_weeks_requested": args.weeks,
-        "scope": "First registration-order pool samples, currently active FEES only",
+        "scope": "Pools listed in selected scan input; currently active FEES only",
         "block_tag": "latest",
         "caveat": (
             "Historical epoch keys are read at current state; they are not "
@@ -237,12 +255,12 @@ def main():
             )
 
     out["series_count"] = series_count
-    OUTPUT.parent.mkdir(exist_ok=True, parents=True)
-    OUTPUT.write_text(
+    output_file.parent.mkdir(exist_ok=True, parents=True)
+    output_file.write_text(
         json.dumps(out, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-    print(f"Saved: {OUTPUT} | {series_count} token/pool reward series")
+    print(f"Saved: {args.output_file} | {series_count} token/pool reward series")
     print(
         "NOTE: Token amounts across different assets must not be added "
         "or compared as common currency."

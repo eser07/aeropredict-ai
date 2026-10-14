@@ -39,6 +39,8 @@
     .history-chart svg{display:block;width:100%;height:auto;max-height:300px}
     .history-summary{margin-top:10px;font-size:12px;color:var(--muted)}
     .reward-amount{color:var(--reward-green);font-weight:700;font-variant-numeric:tabular-nums}
+    .usd-equivalent{color:var(--reward-green);font-size:.82em;font-weight:650;overflow-wrap:anywhere}
+    .usd-unavailable{color:var(--muted);font-size:.8em;font-weight:400;overflow-wrap:anywhere}
     .value{text-align:right;font-variant-numeric:tabular-nums}
     .note{margin-top:16px;color:var(--muted);font-size:12px}
     .table-overflow{overflow:auto;margin-top:16px}
@@ -114,13 +116,14 @@
   <section class="panel">
     <div class="headerline">
       <div><h2>12-week reward allocation history</h2>
-        <p class="sub">Weekly FEES token allocations for the selected pool, covering completed epochs. Values are token units, not USD.</p>
+        <p class="sub">Weekly FEES token allocations for completed epochs. Approximate USD equivalents use recent saved token prices, not the prices from those past weeks.</p>
       </div>
       <select id="history-picker" aria-label="Choose pool and token for reward history"></select>
     </div>
     <div class="history-chart" id="history-chart" role="img" aria-label="Weekly reward token allocation chart"></div>
     <div class="history-summary" id="history-summary">Loading reward data…</div>
     <p class="note" id="data-timestamp"></p>
+    <p class="note" id="usd-quote-note">USD equivalents are approximate and use recent Base token-address quotes, not historical prices. Unavailable or stale quotes are not estimated.</p>
   </section>
   <section class="panel">
     <h2>All pools · forecasting baselines</h2>
@@ -168,12 +171,12 @@
       <b id="sim-estimate">Waiting for pool vote data…</b>
       <div class="meta" id="sim-meta"></div>
     </div>
-    <p class="sim-warning">Scenario, not a payout quote. The simulation combines a past-epoch FEES baseline with a separately collected current pool vote weight. Snapshots are not from the same epoch. It ignores BRIBES, reward distribution timing, market prices, and actual claiming eligibility. Enter your effective veAERO voting power, not necessarily your locked AERO balance. No payment is guaranteed.</p>
+    <p class="sim-warning">Scenario, not a payout quote. The simulation combines a past-epoch FEES baseline with a separately collected current pool vote weight. Snapshots are not from the same epoch. Approximate USD uses recent saved token prices, not historical prices. The scenario excludes BRIBES, future price changes, reward distribution timing, and actual claiming eligibility. Enter your effective veAERO voting power, not necessarily your locked AERO balance. No payment is guaranteed.</p>
   </section>
   <div class="cols">
     <section class="panel">
       <div class="headerline">
-        <div><h2>Statistical forecast baselines</h2><p class="sub">Calculated from the four previous completed weeks for each pool-token series.</p></div>
+        <div><h2>Statistical forecast baselines</h2><p class="sub">Calculated from four previous completed weeks per token series. Approximate USD amounts use recent quotes, not historical prices.</p></div>
         <select id="series-picker" aria-label="Select reward series"></select>
       </div>
       <div id="forecast" class="forecast"></div>
@@ -202,6 +205,10 @@
   var entries = [];
   var history = null;
   var verifiedPairLabels = new Map();
+  var tokenPricesUsd = new Map();
+  // Snapshot quotes are displayed as present-value approximations, never
+  // as a historical weekly price or guaranteed/claimable rewards.
+  var MAX_QUOTE_AGE_MS = 36 * 60 * 60 * 1000;
   var previousPublishedAt = null;
   function turkeyTime(ts) {
     var d = new Date(ts);
@@ -268,6 +275,43 @@
     if (v === null || v === undefined) return "N/A";
     var n = Number(v);
     return Number.isFinite(n) ? n.toLocaleString("en-US", {maximumFractionDigits:2}) + "%" : "N/A";
+  }
+  function recentTimestamp(timestamp) {
+    var milliseconds = Date.parse(timestamp);
+    var age = Date.now() - milliseconds;
+    return Number.isFinite(milliseconds) && age >= -300000 && age <= MAX_QUOTE_AGE_MS;
+  }
+  function quotePriceFor(entry) {
+    if (!entry || typeof entry.token_address !== "string") return null;
+    var price = tokenPricesUsd.get(entry.token_address.toLowerCase());
+    return typeof price === "number" && Number.isFinite(price) && price > 0 ? price : null;
+  }
+  function usdEquivalent(amount, entry) {
+    var price = quotePriceFor(entry);
+    var quantity = Number(amount);
+    if (price === null || !Number.isFinite(quantity) || quantity < 0) return null;
+    var dollars = quantity * price;
+    if (!Number.isFinite(dollars) || dollars < 0) return null;
+    if (dollars === 0) return "$0.00";
+    if (dollars < 0.00000001) return "< $0.00000001";
+    if (dollars < 0.01) {
+      return "$" + dollars.toLocaleString("en-US", {
+        minimumFractionDigits:0, maximumFractionDigits:8
+      });
+    }
+    return dollars.toLocaleString("en-US", {
+      style:"currency", currency:"USD",
+      minimumFractionDigits:2, maximumFractionDigits:2
+    });
+  }
+  function appendUsd(parent, tokenAmount, entry) {
+    var converted = usdEquivalent(tokenAmount, entry);
+    parent.appendChild(node("span", converted === null ? "usd-unavailable" : "usd-equivalent",
+      converted === null ? " (USD unavailable)" : " (≈ " + converted + ")"));
+  }
+  function priceLabel(amount, entry) {
+    var converted = usdEquivalent(amount, entry);
+    return converted === null ? " (USD unavailable)" : " (≈ " + converted + ")";
   }
   function error(message) {
     var el = document.getElementById("error");
@@ -367,7 +411,8 @@
         fill:"#7095ff", stroke:"#e8eefc", "stroke-width":"1.5"
       });
       dot.appendChild(svgEl("title", {}, row.epoch_start_utc.slice(0,10) + " · " +
-        row.token_amount + " " + (entry.token_symbol || "TOKEN")));
+        row.token_amount + " " + (entry.token_symbol || "TOKEN") +
+        priceLabel(row.token_amount, entry)));
       svg.appendChild(dot);
     });
     container.appendChild(svg);
@@ -377,6 +422,7 @@
     caption.textContent = idFor(entry) + " · " + positive + "/" + records.length +
       " weeks with rewards · Peak ";
     caption.appendChild(node("strong", "reward-amount", shortNumber(max) + " " + tokenName));
+    appendUsd(caption, max, entry);
     caption.appendChild(document.createTextNode(
       " · Latest completed week " + records[records.length - 1].epoch_start_utc.slice(0,10) + ": "
     ));
@@ -384,6 +430,7 @@
       "strong", "reward-amount",
       records[records.length - 1].token_amount + " " + tokenName
     ));
+    appendUsd(caption, records[records.length - 1].token_amount, entry);
   }
   function showSeries(index) {
     if (!Number.isInteger(index) || index < 0 || index >= entries.length) return;
@@ -448,11 +495,13 @@
       ? "< 0.000000000000000001"
       : estimate.toLocaleString("en-US", {maximumFractionDigits:18});
     value.textContent = formatted + " " + symbol;
+    appendUsd(value, estimate, row);
     detail.textContent = "Illustrative vote share: " +
       (share * 100).toLocaleString("en-US", {maximumFractionDigits:6}) + "%" +
       " · Pool votes: " + currentPoolVotes.toLocaleString("en-US", {maximumFractionDigits:4}) + " veAERO" +
       " · Your allocated votes: " + allocatedVotes.toLocaleString("en-US", {maximumFractionDigits:4}) + " veAERO" +
       " · Baseline: " + baselineText + " " + symbol +
+      priceLabel(baseline, row) +
       (row.analysis.sparse_rewards_flag ? " · CAUTION: sparse reward series" : "");
   }
   function paintBars() {
@@ -514,7 +563,11 @@
       var div = node("div", "prediction");
       div.appendChild(node("span", "small", modelNames[m] + (e.analysis.exploratory_best_baseline === m ? " · lowest past error" : "")));
       var n = e.analysis.following_epoch_baselines_token_amount[m];
-      div.appendChild(node("b", "", (n === null ? "Raw units: " + e.analysis.following_epoch_baselines_raw[m] : n) + " " + (e.token_symbol || "TOKEN")));
+      var amountNode = node("b", "",
+        (n === null ? "Raw units: " + e.analysis.following_epoch_baselines_raw[m] : n) +
+        " " + (e.token_symbol || "TOKEN"));
+      appendUsd(amountNode, n, e);
+      div.appendChild(amountNode);
       div.appendChild(node("div", "detail", "Historical WAPE: " + formatWape(e.analysis.metrics[m].wape_percent)));
       box.appendChild(div);
     });
@@ -533,6 +586,28 @@
       if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Unexpected response format");
       entries = data.backtest.results;
       history = data.history || null;
+      tokenPricesUsd.clear();
+      var incentiveReport = data.incentives;
+      var priceNote = document.getElementById("usd-quote-note");
+      priceNote.textContent = "USD equivalents use saved Base token-address quotes; missing or stale prices are shown as unavailable.";
+      if (incentiveReport && incentiveReport.chain_id === 8453 &&
+          incentiveReport.prices && typeof incentiveReport.prices === "object" &&
+          recentTimestamp(incentiveReport.collected_at_utc)) {
+        Object.keys(incentiveReport.prices).forEach(function(address) {
+          var quote = incentiveReport.prices[address];
+          if (!/^0x[0-9a-f]{40}$/i.test(address) || !quote ||
+              !recentTimestamp(quote.price_timestamp_utc)) return;
+          var price = Number(quote.price_usd);
+          if (quote.price_usd != null && Number.isFinite(price) && price > 0) {
+            tokenPricesUsd.set(address.toLowerCase(), price);
+          }
+        });
+        priceNote.textContent = "Approximate USD equivalents use current Base token-address prices (" +
+          (incentiveReport.quote_provider || "saved quote provider") + "), saved " +
+          turkeyTime(incentiveReport.collected_at_utc) +
+          ". Applied to past token amounts; NOT historical USD valuations or guaranteed rewards. " +
+          "Prices missing or older than 36 hours are shown as unavailable.";
+      }
       var mode = data.dataset_mode === "expanded" ? "expanded" : "demo";
       document.getElementById("dataset-mode-label").textContent =
         mode === "expanded"

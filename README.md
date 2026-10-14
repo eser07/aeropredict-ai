@@ -139,9 +139,39 @@ Then collect BRIBES and current USD quotes separately for those same pools
 python scripts/collect_pool_incentives_base.py --input-file data/pool_fee_histories_expanded_base.json --output-file data/pool_incentives_expanded_base.json --max-bribe-tokens 20
 ```
 
-The expanded files do **not** automatically appear in the current seven-pool
-dashboard. Inspect data coverage and missing/stale token quotes before a
-new panel mode or any wider allocation ranking is enabled.
+Next, collect actual token0/token1 trading pair symbols from each expanded
+pool. Keep these separate from the original seven-pool pair labels:
+
+```bash
+python scripts/collect_pool_pairs_base.py --input-file data/pool_incentives_expanded_base.json --output-file data/pool_pairs_expanded_base.json
+```
+
+After verifying all four expanded files are present, start the **opt-in**
+expanded dashboard preview:
+
+```bash
+python scripts/serve_dashboard.py --dataset expanded
+```
+
+This is still a read-only loopback dashboard on http://localhost:8765/.
+The page identifies the expanded research preview, shows the 16 candidate
+pools and 32 FEES series if collected, and uses the separately saved
+FEES+BRIBES quote data for the what-if optimizer. It does NOT rank the
+entire Aerodrome pool universe, guarantee yield, use wallet voting,
+or serve synchronized historical block snapshots. Only complete,
+fully-priced pools qualify for USD estimates, and tiny/illiquid token
+quotes may be misleading even if marked fresh. To return to the
+original sample, stop the server and run:
+
+```bash
+python scripts/serve_dashboard.py
+```
+
+After any Base voting epoch rollover, recollect expanded FEES history and
+incentives before expecting the optimizer to run (its epoch freshness
+guard is intentional). Backtest and pair metadata can be refreshed as needed.
+
+
 
 This initial merge includes only pools that were **active when each scan ran**,
 not a synchronized snapshot. The fee collector checks whether each pool remains

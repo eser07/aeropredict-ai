@@ -57,6 +57,17 @@
     .prediction:last-child{border:none}
     .prediction b{display:block;margin:5px 0;font-size:22px;letter-spacing:-.02em;overflow-wrap:anywhere;color:var(--reward-green)}
     .prediction .detail{font-size:12px;color:var(--muted)}
+    .sim-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:19px 0}
+    .sim-label{display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:12px}
+    .sim-label input,.sim-label select{width:100%;min-width:0}
+    .sim-check{display:flex;gap:9px;align-items:flex-start;color:var(--muted);font-size:13px;margin-bottom:16px}
+    .sim-check input{accent-color:var(--reward-green);margin-top:5px}
+    .sim-result{border:1px solid #295941;background:linear-gradient(130deg,#122b27,#17233d);border-radius:14px;padding:20px}
+    .sim-result b{display:block;font-size:clamp(21px,2.6vw,32px);letter-spacing:-.025em;color:var(--reward-green);overflow-wrap:anywhere;margin:6px 0}
+    .sim-result .meta{font-size:12px;color:var(--muted)}
+    .sim-warning{font-size:12px;color:var(--amber);margin-top:13px;line-height:1.65}
+    @media(max-width:940px){.sim-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media(max-width:600px){.sim-grid{grid-template-columns:1fr}}
     .disclaimer{border:1px solid #56452c;border-radius:12px;background:#292318;padding:14px 17px;color:#f3dab0;font-size:12px;margin-top:20px}
     .error{border:1px solid #6a3a47;color:#ffb4bb;background:#291d29;padding:13px 17px;border-radius:12px;margin:16px 0;display:none}
     footer{font-size:12px;color:var(--muted);text-align:center;padding-top:24px}
@@ -107,6 +118,43 @@
         <tbody id="table-body"></tbody>
       </table>
     </div>
+  </section>
+  <section class="panel" id="voter-simulator">
+    <div class="headerline">
+      <div>
+        <h2>veAERO Voting Reward Simulator <span class="status">Experimental</span></h2>
+        <p class="sub">Explore hypothetical pro-rata FEES token allocations for a voting-power scenario. No wallet connection or transactions.</p>
+      </div>
+      <span class="tag">FEES ONLY · NO BRIBES</span>
+    </div>
+    <div class="sim-grid">
+      <label class="sim-label">Pool / reward token
+        <select id="sim-pool" aria-label="Choose pool and reward token"></select>
+      </label>
+      <label class="sim-label">Effective voting power (veAERO)
+        <input id="sim-power" type="number" min="0" max="1000000000" step="any" value="1000">
+      </label>
+      <label class="sim-label">Allocation to this pool (%)
+        <input id="sim-allocation" type="number" min="0" max="100" step="any" value="100">
+      </label>
+      <label class="sim-label">Historical reward baseline
+        <select id="sim-method" aria-label="Choose baseline method">
+          <option value="previous_week">Previous week</option>
+          <option value="mean_4w">4-week mean</option>
+          <option value="median_4w">4-week median</option>
+        </select>
+      </label>
+    </div>
+    <label class="sim-check">
+      <input id="sim-included" type="checkbox">
+      <span>My votes are already included in the displayed pool voting weight. (Leave unchecked to simulate adding new votes.)</span>
+    </label>
+    <div class="sim-result">
+      <div class="small">Hypothetical weekly FEES token allocation</div>
+      <b id="sim-estimate">Waiting for pool vote data…</b>
+      <div class="meta" id="sim-meta"></div>
+    </div>
+    <p class="sim-warning">Scenario, not a payout quote. The simulation combines a past-epoch FEES baseline with a separately collected current pool vote weight. Snapshots are not from the same epoch. It ignores BRIBES, reward distribution timing, market prices, and actual claiming eligibility. Enter your effective veAERO voting power, not necessarily your locked AERO balance. No payment is guaranteed.</p>
   </section>
   <div class="cols">
     <section class="panel">
@@ -264,6 +312,68 @@
     document.getElementById("history-picker").value = String(index);
     paintForecast(index);
     paintHistory(index);
+    document.getElementById("sim-pool").value = String(index);
+    document.getElementById("sim-method").value = entries[index].analysis.exploratory_best_baseline || "median_4w";
+    paintSimulator();
+  }
+  function paintSimulator() {
+    var row = entries[Number(document.getElementById("sim-pool").value)];
+    var value = document.getElementById("sim-estimate");
+    var detail = document.getElementById("sim-meta");
+    function unavailable(reason) {
+      value.textContent = "Not available";
+      detail.textContent = reason;
+    }
+    if (!row) return unavailable("Choose a reward series.");
+    var pool = history && Array.isArray(history.pools)
+      ? history.pools.find(function(p) {return String(p.pool_address).toLowerCase() === String(row.pool_address).toLowerCase();})
+      : null;
+    if (!pool || pool.pool_vote_weight_raw === undefined || pool.pool_vote_weight_raw === null) {
+      return unavailable("Pool vote weights not yet collected. Run pool_fee_histories_base.py again, then run backtest_pool_fees.py and reload the page.");
+    }
+    var raw;
+    try { raw = BigInt(pool.pool_vote_weight_raw); }
+    catch (_) { return unavailable("Invalid on-chain vote weight."); }
+    if (raw < 0n) return unavailable("Invalid negative voting weight.");
+    // Voter.weights(pool) is 18-decimal veAERO voting weight.
+    // Number conversion is approximate and ONLY for the what-if display.
+    var currentPoolVotes = Number(raw) / 1e18;
+    var powerField = document.getElementById("sim-power");
+    var allocationField = document.getElementById("sim-allocation");
+    var power = Number(powerField.value);
+    var allocation = Number(allocationField.value);
+    if (!powerField.value || !allocationField.value ||
+        !Number.isFinite(power) || power < 0 || power > 1e9 ||
+        !Number.isFinite(allocation) || allocation < 0 || allocation > 100) {
+      return unavailable("Enter positive or zero veAERO power (maximum 1 billion) and an allocation from 0% to 100%.");
+    }
+    var selectedMethod = document.getElementById("sim-method").value;
+    if (models.indexOf(selectedMethod) < 0) return unavailable("Unknown model.");
+    var baselineText = row.analysis.following_epoch_baselines_token_amount[selectedMethod];
+    if (baselineText === null || baselineText === undefined) return unavailable("Reward token decimals unavailable.");
+    var baseline = Number(baselineText);
+    if (!Number.isFinite(baseline) || baseline < 0) return unavailable("Invalid reward baseline.");
+    var allocatedVotes = power * allocation / 100;
+    var included = document.getElementById("sim-included").checked;
+    var denominator = currentPoolVotes + (included ? 0 : allocatedVotes);
+    if (included && allocatedVotes > currentPoolVotes) {
+      return unavailable("Your chosen votes exceed the recorded pool weight. Uncheck 'already included' for a new-vote scenario.");
+    }
+    if (!Number.isFinite(denominator) || denominator <= 0) return unavailable("The pool has zero recorded vote weight.");
+    var share = allocatedVotes / denominator;
+    var estimate = baseline * share;
+    if (!Number.isFinite(estimate)) return unavailable("Value out of range.");
+    var symbol = row.token_symbol || "TOKEN";
+    var formatted = estimate > 0 && estimate < 1e-18
+      ? "< 0.000000000000000001"
+      : estimate.toLocaleString("en-US", {maximumFractionDigits:18});
+    value.textContent = formatted + " " + symbol;
+    detail.textContent = "Illustrative vote share: " +
+      (share * 100).toLocaleString("en-US", {maximumFractionDigits:6}) + "%" +
+      " · Pool votes: " + currentPoolVotes.toLocaleString("en-US", {maximumFractionDigits:4}) + " veAERO" +
+      " · Your allocated votes: " + allocatedVotes.toLocaleString("en-US", {maximumFractionDigits:4}) + " veAERO" +
+      " · Baseline: " + baselineText + " " + symbol +
+      (row.analysis.sparse_rewards_flag ? " · CAUTION: sparse reward series" : "");
   }
   function paintBars() {
     var barBox = document.getElementById("bars");
@@ -357,6 +467,8 @@
       var selected = picker.value;
       clear(picker);
       clear(historyPicker);
+      var simPicker = document.getElementById("sim-pool");
+      clear(simPicker);
       entries.forEach(function(e,i){
         var option = node("option", "", idFor(e));
         option.value = String(i);
@@ -364,6 +476,9 @@
         var historyOption = node("option", "", idFor(e));
         historyOption.value = String(i);
         historyPicker.appendChild(historyOption);
+        var simOption = node("option", "", idFor(e));
+        simOption.value = String(i);
+        simPicker.appendChild(simOption);
       });
       if (entries.length) {
         showSeries(selected && Number(selected) < entries.length ? Number(selected) : 0);
@@ -379,6 +494,16 @@
   });
   document.getElementById("history-picker").addEventListener("change", function(e){
     showSeries(Number(e.target.value));
+  });
+  document.getElementById("sim-pool").addEventListener("change", function(e) {
+    var index = Number(e.target.value);
+    var row = entries[index];
+    if (row) document.getElementById("sim-method").value = row.analysis.exploratory_best_baseline || "median_4w";
+    paintSimulator();
+  });
+  ["sim-power","sim-allocation","sim-method","sim-included"].forEach(function(id) {
+    document.getElementById(id).addEventListener("input", paintSimulator);
+    document.getElementById(id).addEventListener("change", paintSimulator);
   });
   document.getElementById("refresh").addEventListener("click", load);
   load();

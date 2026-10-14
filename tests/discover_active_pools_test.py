@@ -95,15 +95,24 @@ class TestDiscovery(unittest.TestCase):
     def test_rpc_error_does_not_advance_partially_completed_page(self):
         original = module.read_uint
         module.run_scan(page_size=2, max_pages=1, delay=0)
+        attempts = [0]
 
         def fail_on_third_pool(signature, argument, tag):
             if signature == "weights(address)" and argument == POOL[2]:
+                attempts[0] += 1
                 raise RuntimeError("Simulated rate limit")
             return original(signature, argument, tag)
 
         with patch.object(module, "read_uint", side_effect=fail_on_third_pool):
-            with self.assertRaisesRegex(RuntimeError, "Simulated rate limit"):
-                module.run_scan(page_size=2, max_pages=1, delay=0)
+            # Mock only the delays: verify real backoff choices without
+            # making this offline regression test wait 3 + 6 + 12 seconds.
+            with patch.object(module.time, "sleep") as sleep:
+                with self.assertRaisesRegex(
+                    RuntimeError, "rate limit after 4 attempts; checkpoint retained"
+                ):
+                    module.run_scan(page_size=2, max_pages=1, delay=0)
+        self.assertEqual(attempts[0], 4)
+        self.assertEqual([call.args[0] for call in sleep.call_args_list], [3, 6, 12])
         checkpoint = json.loads(module.CHECKPOINT.read_text())
         self.assertEqual(checkpoint["next_index"], 2)
         self.assertEqual(checkpoint["active_pool_count"], 1)

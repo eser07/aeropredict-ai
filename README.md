@@ -126,6 +126,23 @@ After checking the printed IDs, collect extended FEES histories separately:
 python scripts/pool_fee_histories_base.py --scan-file data/pool_scan_active_expanded.json --output-file data/pool_fee_histories_expanded_base.json --weeks 12 --max-pools 16 --max-tokens 4
 ```
 
+Backtest the expanded 12-week FEES histories to a separate result file:
+
+```bash
+python scripts/backtest_pool_fees.py --input-file data/pool_fee_histories_expanded_base.json --output-file data/pool_fee_backtest_expanded_base.json
+```
+
+Then collect BRIBES and current USD quotes separately for those same pools
+(**before** the Base weekly voting epoch changes, or refresh FEES history first):
+
+```bash
+python scripts/collect_pool_incentives_base.py --input-file data/pool_fee_histories_expanded_base.json --output-file data/pool_incentives_expanded_base.json --max-bribe-tokens 20
+```
+
+The expanded files do **not** automatically appear in the current seven-pool
+dashboard. Inspect data coverage and missing/stale token quotes before a
+new panel mode or any wider allocation ranking is enabled.
+
 This initial merge includes only pools that were **active when each scan ran**,
 not a synchronized snapshot. The fee collector checks whether each pool remains
 active on Base at collection time. Existing demo histories, baseline errors,

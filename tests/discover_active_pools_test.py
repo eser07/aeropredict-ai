@@ -1,16 +1,19 @@
 """Offline regression tests for resumable Aerodrome pool discovery.
 
 No real RPC calls, wallet, external network or production data files.
-Run: python -m unittest discover_active_pools_test
+Run: python -m unittest discover -s tests -p "discover_active_pools_test.py"
 """
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "discover_active_pools_base.py"
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+MODULE_PATH = SCRIPTS / "discover_active_pools_base.py"
 SPEC = importlib.util.spec_from_file_location("discover_active_pools_base", MODULE_PATH)
 module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)

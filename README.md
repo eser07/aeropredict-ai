@@ -200,6 +200,43 @@ incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.
 
 
+### Optional Windows 11 + WSL weekly schedule
+
+A local Windows Task Scheduler installer is available for users who run the
+project in **WSL Ubuntu** and want a weekly refresh after Aerodrome's Thursday
+00:00 UTC epoch boundary. Example for a machine with the named WSL
+distribution, Linux user and path (substitute your own as needed):
+
+```bash
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/install_weekly_task.ps1)" -Distribution Ubuntu-24.04 -LinuxUser eser -LinuxProjectPath /home/eser/aeropredict-ai
+```
+
+The task is named **AeroPredict AI Weekly Refresh**, runs every Thursday at
+**03:15 Windows local time** (only correct for Turkey Standard Time, which
+the installer explicitly verifies), and invokes
+`scripts/weekly_refresh_runner.py` under the project's Python virtualenv.
+This runner uses an exclusive Linux file lock and saves stdout/stderr and
+completion status under `data/weekly_refresh_logs/`, retaining the 24 most
+recent logs. It refuses overlapping launches.
+
+This scheduling mechanism does not need Windows Administrator permissions
+and does not store a Windows password. It runs only while the relevant
+**Windows user is logged on**; a powered-off machine will not execute tasks
+and missed runs are only attempted later when Windows/task scheduling
+conditions permit. Keep WSL, the project directory and Python venv
+installed and accessible. Task registration itself does **not** trigger a
+data refresh. You can inspect it in **Task Scheduler** and optionally trigger
+it manually for testing.
+
+Note that the dashboard's USD quote freshness window is **36 hours**.
+A Thursday-only refresh will not provide valid optimizer quotes all week.
+Do not remove that safety check; introduce more frequent price refreshes or
+a separate price-only collector before promising continuously usable yield
+scenarios.
+
+
+
+
 
 This initial merge includes only pools that were **active when each scan ran**,
 not a synchronized snapshot. The fee collector checks whether each pool remains

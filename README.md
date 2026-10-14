@@ -113,6 +113,26 @@ current FEES history and dashboard. To inspect later registration indexes
 python scripts/scan_pools_base.py --start 20 --count 25 --output data/pool_scan_20_44.json
 ```
 
+To combine the **first 20** and **20–44** scan batches into a separate
+16-active-candidate input, do not replace the existing demo sample:
+
+```bash
+python scripts/merge_active_pool_scans.py data/pool_scan_base.json data/pool_scan_20_44.json --output data/pool_scan_active_expanded.json
+```
+
+After checking the printed IDs, collect extended FEES histories separately:
+
+```bash
+python scripts/pool_fee_histories_base.py --scan-file data/pool_scan_active_expanded.json --output-file data/pool_fee_histories_expanded_base.json --weeks 12 --max-pools 16 --max-tokens 4
+```
+
+This initial merge includes only pools that were **active when each scan ran**,
+not a synchronized snapshot. The fee collector checks whether each pool remains
+active on Base at collection time. Existing demo histories, baseline errors,
+incentive data and dashboard are left unchanged. Extended backtest, BRIBES,
+USD pricing and dashboard promotion are later steps; don't claim that newly
+discovered pools have been profitability-ranked before those steps are done.
+
 The scan uses a pinned Base block and prints how many of the requested
 registration-order pools have active gauges. It also displays the largest
 vote weights *within that one batch*; this is **not** a ranking of voting

@@ -230,7 +230,26 @@ python scripts/discover_active_pools_base.py --page-size 25 --max-pages 1
 
 The first run validates the Base chain, pins a block and the Aerodrome Voter
 registry length, then scans just 25 registration indices. Subsequent runs
-resume from the saved checkpoint. A completed page is saved atomically to
+resume from the saved checkpoint. Once small batches have succeeded, run the
+**optional automatic full scan**, which scans all remaining indices from the
+existing checkpoint without changing the pinned block:
+
+```bash
+BASE_RPC_URL=https://mainnet.base.org python scripts/discover_active_pools_base.py --until-complete --page-size 25 --delay-seconds 0.5
+```
+
+This long-running command can take considerable time; keep the terminal open.
+Press **Ctrl+C** to pause safely and run it again later to resume. Completed
+pages are preserved, and a non-blocking lock prevents overlapping discovery
+processes from corrupting the checkpoint. The scanner backs off on temporary
+RPC errors (default: up to three additional attempts, starting at a 3-second
+wait and doubling), but **stops** on forbidden archive requests such as HTTP
+403 instead of endlessly retrying. If a provider rejects the original pinned
+block, use another archive-capable Base RPC via `BASE_RPC_URL`, without
+`--restart`. Changing the RPC **only on this one command** leaves the
+Windows hourly refresh task and dashboard RPC configuration unchanged.
+
+A completed page is saved atomically to
 `data/pool_discovery_checkpoint_base.json`; RPC interruptions do not publish
 partially written pages. The tool only creates
 `data/pool_discovery_active_base.json` after inspecting **every** index.
@@ -251,10 +270,12 @@ older pinned blocks during long resumptions; in that case the scanner
 preserves progress and pauses rather than mix different chain snapshots.
 An archive-capable RPC may be necessary for a multi-session complete scan.
 
-Offline regression tests (no network):
+Offline regression tests (no network; seven tests cover pagination,
+resume, HTTP 429 retry, HTTP 403 archive refusal, exclusive locking,
+RPC interruption and checkpoint integrity):
 
 ```bash
-python -m unittest discover -s tests -p "discover_active_pools_test.py"
+python -m unittest discover -s tests -p "discover_active_pools_test.py" -v
 ```
 
 ### Read token amounts and approximate USD equivalents

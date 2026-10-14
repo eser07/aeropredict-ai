@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Walk-forward backtest for the first AeroPredict AI pool-level FEES baseline.
 
-Uses the 8 COMPLETED weekly USDbC allocations collected by
+Uses the completed weekly USDbC allocations collected by
 scripts/usdbc_fee_history.py. Every simulated forecast uses only earlier
 completed weeks. No LLM, training labels from the future, or external keys.
 
-WARNING: Only 4 forecast examples for an 8-week dataset. Results are
-illustrative, not evidence of predictive reliability, voting APR or income.
+WARNING: The number of walk-forward examples is dataset length minus four.
+Results are illustrative, not proof of reliable APR or income prediction.
 """
 import json
 import sys
@@ -175,7 +175,7 @@ def main():
     )
     print(f"Saved: {OUTPUT}")
     print(
-        "CAUTION: These four backtest folds cannot establish reliable "
+        "CAUTION: These few backtest folds cannot establish reliable "
         "predictive accuracy. Next: more pools, epochs and realistic features."
     )
 

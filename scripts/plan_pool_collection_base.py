@@ -32,6 +32,13 @@ def fingerprint(value):
 def validate_complete_inventory(document):
     if not isinstance(document, dict):
         raise ValueError("Inventory must be a JSON object")
+    # Give a clear error for explicitly inactive gauges before the shared
+    # checkpoint validator's more general malformed-record rejection.
+    pools = document.get("pools")
+    if isinstance(pools, list):
+        for pool in pools:
+            if isinstance(pool, dict) and pool.get("gauge_active") is False:
+                raise ValueError("Inventory includes a gauge not marked alive")
     validate_progress(document)
     if document.get("complete") is not True:
         raise ValueError("Inventory is partial; wait for discovery COMPLETE")

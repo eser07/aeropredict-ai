@@ -318,6 +318,40 @@ Offline planner regression tests (six cases):
 python -m unittest discover -s tests -p "plan_pool_collection_test.py" -v
 ```
 
+### P2 — Independently audit a completed 25-pool FEES+BRIBES batch
+
+After collecting FEES and BRIBES/USD into the *same isolated collection-batch
+folder*, inspect their epoch, pool identities, token records, current quote
+freshness and missing data **offline**:
+
+```bash
+python scripts/audit_pool_rewards_base.py --fees data/pool_collection_batches_base/block_52595092/votes_25/fee_histories_batch_001.json --incentives data/pool_collection_batches_base/block_52595092/votes_25/incentives_batch_001.json --output data/pool_collection_batches_base/block_52595092/votes_25/audit_batch_001.json
+```
+
+The audit re-checks FEES entries against the source FEES history and refuses
+to mix unrelated epochs, pool addresses or voting weights. It suppresses USD
+totals for truncated registries, nonzero rewards without current prices, and
+quotes older than 36 hours. Its saved independent JSON includes the four
+weekly USD values, count of positive FEES/BRIBES weeks, largest week's
+share of the four-week total, approximate mean USD per week and mean USD
+per **one million snapshot voting-power units**, which is an *illustrative
+relative ratio only*, not a personal payout formula or recommendation.
+Pools with zero recorded votes have no vote-efficiency ratio. The script
+prints two separate descriptive top-five rankings for the batch.
+
+This does not call Base RPC, fetch fresh token prices, update the current
+16-pool panel, or enable a 928-pool optimizer. Four historical epoch
+allocations are valued at a **saved current USD quote**, not past prices.
+Voting weights and past rewards are not from synchronized blocks; thin or
+misleading token quotes can make USD totals appear unrealistic. A ranking by
+pool total is not a ranking of voter returns.
+
+Offline regression tests:
+
+```bash
+python -m unittest discover -s tests -p "audit_pool_rewards_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

@@ -1,4 +1,4 @@
-# Installs a hourly HH:15 Turkey-time local AeroPredict AI refresh task.
+# Installs an hourly HH:15 Turkey-time local AeroPredict AI refresh task.
 # Usage from WSL:
 # powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$(wslpath -w scripts/install_hourly_task.ps1)" -Distribution Ubuntu-24.04 -LinuxUser eser -LinuxProjectPath /home/eser/aeropredict-ai
 #
@@ -44,7 +44,28 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 $Arguments = "--distribution $Distribution --user $LinuxUser --exec $PythonExe $Runner"
-$Action = New-ScheduledTaskAction -Execute $WslExe -Argument $Arguments
+
+# Task Scheduler starts an interactive wsl.exe in a visible console by default.
+# A small user-local Windows Script Host launcher runs WSL with window style 0
+# (hidden) and waits for exit, so the task still records WSL's real exit code.
+$WScriptExe = Join-Path $env:WINDIR 'System32\wscript.exe'
+if (-not (Test-Path -LiteralPath $WScriptExe)) {
+    throw "Windows Script Host unavailable: $WScriptExe. Hourly task not changed."
+}
+$LauncherDir = Join-Path $env:LOCALAPPDATA 'AeroPredictAI'
+New-Item -ItemType Directory -Path $LauncherDir -Force | Out-Null
+$LauncherPath = Join-Path $LauncherDir 'hourly-refresh-hidden.vbs'
+$Command = '"' + $WslExe + '" ' + $Arguments
+$EscapedCommand = $Command.Replace('"', '""')
+$LauncherContents = @"
+Option Explicit
+Dim shell, exitCode
+Set shell = CreateObject("WScript.Shell")
+exitCode = shell.Run("$EscapedCommand", 0, True)
+WScript.Quit exitCode
+"@
+Set-Content -LiteralPath $LauncherPath -Value $LauncherContents -Encoding Ascii
+$Action = New-ScheduledTaskAction -Execute $WScriptExe -Argument ('"' + $LauncherPath + '"')
 # Start on the upcoming HH:15 boundary and repeat hourly for ten years.
 # Task Scheduler's Once/repetition trigger is independent of Ubuntu cron.
 $Now = Get-Date
@@ -78,6 +99,8 @@ Write-Output "WSL: $Distribution / $LinuxUser"
 Write-Output "Scheduled: Every hour at HH:15 (Turkey Standard Time)"
 Write-Output "Next scheduled run: $($Info.NextRunTime)"
 Write-Output "State: $($Registered.State)"
+Write-Output "Window: Hidden (no extra WSL terminal window)"
+Write-Output "Launcher: $LauncherPath"
 Write-Output "Log directory in WSL: $LinuxProjectPath/data/hourly_refresh_logs"
 Write-Output "Missed scheduled runs may start later when Windows is available."
 Write-Output "The original seven-pool demo is not modified."

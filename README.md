@@ -352,6 +352,50 @@ Offline regression tests:
 python -m unittest discover -s tests -p "audit_pool_rewards_test.py" -v
 ```
 
+### P2 — Safely run additional collection batches, one command at a time
+
+After the first 25-pool batch has successfully collected FEES, BRIBES,
+current-price USD data, and its independent audit, an opt-in orchestration
+script can collect subsequent batches **without touching** the 16-pool
+dashboard or automated hourly refresher. For a first dry run:
+
+```bash
+python scripts/run_pool_batch_pipeline.py --start-batch 2 --max-batches 1 --dry-run
+```
+
+Then, when prepared for live Base RPC and DefiLlama requests:
+
+```bash
+BASE_RPC_URL=https://mainnet.base.org python scripts/run_pool_batch_pipeline.py --start-batch 2 --max-batches 1
+```
+
+A single call collects FEES (4 weeks, up to 4 tokens), then BRIBES
+(up to 40 registered tokens) and their current USD prices, then runs
+the independent reward/weight audit. Everything is first written to an
+**isolated staging subfolder**; only after the cross-file checks pass are
+individual outputs published to the batch folder, with a completed
+status marker written **last**. Finished batches are skipped when
+re-running the same command. Failed batches can be retried later.
+The script is intentionally limited to **1–5 batches per invocation**,
+with a default 10-second pause between batches. It does not install
+a scheduled job or silently run all 928 pools unattended.
+
+The **first batch's already completed 2026-10-08 epoch** is the anchor:
+if the on-chain voting epoch rolls over before or during a subsequent
+batch, the pipeline **pauses**, retaining completed data, rather than
+silently mixing two voting weeks. Starting a new epoch-wide dataset
+requires a separate next-epoch collection workflow, not overwriting
+the old completed reports. Other limitations remain: archived blocks
+are not used for FEES/BRIBES epoch lookups, missing token prices are
+not zero, active gauges can change, and snapshot vote weights do not
+predict returns. CLI outputs are for research, not wallet payouts.
+
+Offline tests:
+
+```bash
+python -m unittest discover -s tests -p "run_pool_batch_pipeline_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

@@ -79,7 +79,7 @@
 <main class="wrap">
   <header class="brand">
     <div class="brand-name">AERO<span>PREDICT</span> <span style="color:#abb9d7">AI</span></div>
-    <span class="tag">BASE MAINNET · LOCAL DEMO</span>
+    <span class="tag" id="dataset-mode-label">BASE MAINNET · LOCAL DEMO</span>
   </header>
   <h1>Aerodrome reward intelligence<br><span style="color:var(--cyan)">in one dashboard.</span></h1>
   <p class="lead">Explore weekly Aerodrome fee allocations, historical forecast errors, and statistical baselines by pool and reward token. This dashboard is not financial advice or a personal veAERO yield calculator.</p>
@@ -464,6 +464,11 @@
       if (!data.backtest || !Array.isArray(data.backtest.results)) throw new Error("Unexpected response format");
       entries = data.backtest.results;
       history = data.history || null;
+      var mode = data.dataset_mode === "expanded" ? "expanded" : "demo";
+      document.getElementById("dataset-mode-label").textContent =
+        mode === "expanded"
+          ? "BASE MAINNET · EXPANDED RESEARCH PREVIEW"
+          : "BASE MAINNET · LOCAL DEMO";
       verifiedPairLabels.clear();
       if (data.pairs && data.pairs.chain_id === 8453 &&
           Array.isArray(data.pairs.pools)) {
@@ -478,7 +483,7 @@
         });
       }
       document.getElementById("data-timestamp").textContent = history && history.collected_at_utc
-        ? "Collected at (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
+        ? (mode === "expanded" ? "Expanded sample · " : "Original sample · ") + "Collected at (UTC): " + history.collected_at_utc.replace("T"," ").slice(0,19) +
           " · Displayed from saved local JSON; not a live on-chain query."
         : "Reward history file was not found or could not be loaded.";
       document.getElementById("error").style.display = "none";

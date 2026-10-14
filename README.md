@@ -49,6 +49,21 @@ python scripts/collect_pool_incentives_base.py --max-bribe-tokens 20
 python scripts/serve_dashboard.py
 ```
 
+Collect the actual pool trading pair metadata separately (fast; reads only a few
+on-chain values per active pool):
+
+```bash
+python scripts/collect_pool_pairs_base.py
+```
+
+This queries each pool contract's `token0()` and `token1()`, then queries
+the underlying ERC-20 `symbol()` values. It saves
+`data/pool_pairs_base.json`. The optimizer joins the pair labels by
+**both pool index and contract address** and shows **Pool #11 · TOKEN0 / TOKEN1**
+with the *actual* fetched symbols. It never confuses reward tokens with
+pool trading pairs; unreadable pairs are explicitly marked as unavailable.
+This metadata collection does not alter FEES, BRIBES, prices or reward calculations.
+
 The dashboard now contains **Vote Allocation Optimizer**. Enter an amount of **locked AERO** and select the **remaining lock duration**, then click **Calculate Optimal Allocation**. The app estimates voting power using `locked AERO × remaining years / 4`, a linear approximation based on Aerodrome lock economics; Auto-Max can maintain full four-year weight. This is not a wallet-derived veNFT balance. It is user-initiated and read-only.
 
 Only fully priced pools with positive current vote weight from the saved sampled set qualify. The app selects hypothetical new-voter allocations in **1-percentage-point increments**, allocating exactly 100% under a **voluntary 30%-per-pool maximum**. It maximizes the sum of the chosen pools' illustrative pro-rata payouts ON THAT GRID:
@@ -84,6 +99,7 @@ The dashboard's data files are created locally:
 - `data/pool_fee_histories_base.json` — weekly reward allocation series.
 - `data/pool_fee_backtest_base.json` — per-series backtest errors and baselines.
 - `data/pool_incentives_base.json` — FEES + BRIBES observations, current USD quotes, price coverage and per-pool approximation data.
+- `data/pool_pairs_base.json` — actual pool token0/token1 on-chain symbols and addresses, collected separately.
 
 Historical reads use the free Base RPC by default (`https://base-rpc.publicnode.com`), or `BASE_RPC_URL` if supplied. The public endpoint may impose rate limits or require an access token for archive-state reads. Never commit credentials.
 

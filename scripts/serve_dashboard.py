@@ -24,6 +24,7 @@ INCENTIVES = ROOT / "data" / "pool_incentives_base.json"
 PAIRS = ROOT / "data" / "pool_pairs_base.json"
 OPTIMIZER_JS = ROOT / "dashboard" / "optimizer.js"
 EXPANDED_BUNDLE = ROOT / "data" / "expanded_dashboard_bundle.json"
+REFRESH_STATUS = ROOT / "data" / "expanded_refresh_status.json"
 # The expanded dataset is an opt-in local research preview. The original
 # seven-pool dashboard remains the default and is never overwritten here.
 DATASETS = {
@@ -79,6 +80,47 @@ class DashboardHandler(BaseHTTPRequestHandler):
                 self.json_response(404, {"error": "Optimizer frontend not available"})
                 return
             self.send_payload(200, "application/javascript; charset=utf-8", code)
+            return
+
+        if path == "/api/refresh-status":
+            if self.server.dataset_mode != "expanded":
+                self.json_response(200, {"state": "not_enabled", "stage": "Demo dataset"})
+                return
+            try:
+                status = json.loads(REFRESH_STATUS.read_text(encoding="utf-8"))
+                if not isinstance(status, dict):
+                    raise ValueError("Invalid status format")
+            except (OSError, ValueError):
+                status = {"state": "idle", "stage": "No automated refresh recorded"}
+            # A killed process should never leave the UI permanently spinning.
+            if status.get("state") == "running":
+                try:
+                    pid = int(status["pid"])
+                    cmdline = (Path("/proc") / str(pid) / "cmdline").read_bytes()
+                    if b"refresh_expanded_data.py" not in cmdline:
+                        status["state"] = "interrupted"
+                        status["stage"] = "Previous refresh was interrupted"
+                except (OSError, ValueError, KeyError, TypeError):
+                    status["state"] = "interrupted"
+                    status["stage"] = "Previous refresh was interrupted"
+            latest = None
+            try:
+                if EXPANDED_BUNDLE.is_file():
+                    payload = json.loads(EXPANDED_BUNDLE.read_text(encoding="utf-8"))
+                    latest = payload.get("published_at_utc") or payload["incentives"].get("collected_at_utc")
+                elif self.server.data_files["incentives"].is_file():
+                    saved = json.loads(self.server.data_files["incentives"].read_text(encoding="utf-8"))
+                    latest = saved.get("collected_at_utc")
+            except (OSError, ValueError, TypeError, KeyError):
+                pass
+            # Return only validated UI fields, not process identifiers or paths.
+            self.json_response(200, {
+                "state": status.get("state", "idle"),
+                "stage": str(status.get("stage") or "")[:140],
+                "last_updated_utc": latest,
+                "last_success_utc": status.get("last_success_utc"),
+                "last_failure_utc": status.get("last_failure_utc"),
+            })
             return
 
         if path == "/api/results":

@@ -202,6 +202,61 @@ incentives before expecting the optimizer to run (its epoch freshness
 guard is intentional). Backtest and pair metadata can be refreshed as needed.
 
 
+### Development priorities and safe full-pool discovery
+
+The next milestones, in implementation order, are:
+
+1. **P1 — Complete pool inventory**: discover every registered Aerodrome
+   Voter pool and identify gauges alive at one pinned Base block.
+2. **P2 — Coverage and collection reliability**: measure how many active
+   pools and FEES/BRIBES tokens can be collected; introduce bounded RPC
+   concurrency, caching, retry/backoff, and incremental refresh. Require
+   validated data before any promotion to the production dashboard.
+3. **P3 — Better vote allocation analysis**: rank available pools using
+   transparent FEES+BRIBES USD figures, fresh effective voting weights,
+   missing-price safeguards, and clear concentration/volatility caveats.
+4. **P4 — Discovery interface**: pool/token search, filters, sortable USD
+   reward metrics, and labeled data coverage.
+5. **P5 — Predictive evaluation**: longer point-in-time archives, held-out
+   comparison of real forecasting models against simple baselines.
+6. **P6 — Beginner/researcher views**: contextual explanations for beginners
+   and richer research controls for advanced users.
+
+**P1 implementation, opt-in (not a dashboard migration):**
+
+```bash
+python scripts/discover_active_pools_base.py --page-size 25 --max-pages 1
+```
+
+The first run validates the Base chain, pins a block and the Aerodrome Voter
+registry length, then scans just 25 registration indices. Subsequent runs
+resume from the saved checkpoint. A completed page is saved atomically to
+`data/pool_discovery_checkpoint_base.json`; RPC interruptions do not publish
+partially written pages. The tool only creates
+`data/pool_discovery_active_base.json` after inspecting **every** index.
+Output explicitly includes the pinned block, registered and active counts,
+coverage and a completion flag. `--max-pages` (1-20) and `--page-size`
+(1-100) adjust the work done per invocation; default RPC pacing is
+0.1 seconds per index. To intentionally discard a checkpoint and take a
+new pinned block, use `--restart`.
+
+**A registry inventory is not a weekly reward dataset.** Active gauge status
+does not prove that FEES or BRIBES have nonzero rewards, complete USD quotes,
+or synchronized voting weights. The discovery result does not modify
+`data/pool_scan_active_expanded.json`, the existing 16-pool dashboard files,
+the hourly task, the old seven-pool demo, or the web server. P2 must first
+support collections greater than the current 50-pool maximum and prove data
+quality at larger scale. Public RPC providers can rate-limit calls or refuse
+older pinned blocks during long resumptions; in that case the scanner
+preserves progress and pauses rather than mix different chain snapshots.
+An archive-capable RPC may be necessary for a multi-session complete scan.
+
+Offline regression tests (no network):
+
+```bash
+python -m unittest discover -s tests -p "discover_active_pools_test.py"
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

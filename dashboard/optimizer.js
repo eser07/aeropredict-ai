@@ -15,7 +15,7 @@
     ".opt-output strong{display:block;color:var(--reward-green);font-size:clamp(22px,3vw,33px);letter-spacing:-.02em}",
     ".opt-output .meta{color:var(--muted);font-size:12px;margin-top:5px}",
     ".opt-table-wrap{overflow-x:auto;margin:12px 0}",
-    ".opt-table{min-width:610px}",
+    ".opt-table{min-width:780px}",
     ".opt-table td:nth-child(2),.opt-table td:nth-child(3),.opt-table td:nth-child(4){text-align:right}",
     ".opt-table th:nth-child(2),.opt-table th:nth-child(3),.opt-table th:nth-child(4){text-align:right}",
     ".opt-footnote{font-size:12px;color:var(--amber);line-height:1.65;margin-top:16px}",
@@ -54,7 +54,7 @@
     '<div class="meta" id="opt-summary">No wallet connection required.</div>',
     '</div>',
     '<div class="opt-table-wrap"><table class="opt-table">',
-    '<thead><tr><th>Pool</th><th>Vote allocation</th><th>Your votes</th><th>Illustrative USD / week</th></tr></thead>',
+    '<thead><tr><th>Pool / trading pair</th><th>Vote allocation</th><th>Your votes</th><th>Illustrative USD / week</th></tr></thead>',
     '<tbody id="opt-rows"><tr><td colspan="4">No allocation calculated yet.</td></tr></tbody>',
     '</table></div>',
     '<p class="opt-muted" id="opt-sources"></p>',
@@ -208,11 +208,32 @@
         number(effectivePower, 2) + " estimated veAERO · " +
         allocation.length + " pools · exactly 100% allocated · 30% cap per pool";
 
+      // Pair labels are read from the pool contracts' token0()/token1()
+      // functions; never infer trading pairs from FEES/BRIBES token names.
+      // Match both pool index and pool address to avoid stale mislabeling.
+      var pairLabels = new Map();
+      if (data.pairs && data.pairs.chain_id === 8453 &&
+          Array.isArray(data.pairs.pools)) {
+        data.pairs.pools.forEach(function(p) {
+          if (Number.isInteger(p.index) && typeof p.pool_address === "string" &&
+              typeof p.pair_label === "string" && p.pair_label.length > 0 &&
+              p.pair_label.length <= 90) {
+            pairLabels.set(p.index + "|" + p.pool_address.toLowerCase(), p.pair_label);
+          }
+        });
+      }
+      var incentivePools = new Map();
+      report.pools.forEach(function(p) {
+        if (Number.isInteger(p.index) && typeof p.pool_address === "string") {
+          incentivePools.set(p.index, p.pool_address.toLowerCase());
+        }
+      });
       clearRows();
       allocation.forEach(function(row) {
         var tr = document.createElement("tr");
         var data = [
-          "Pool #" + row.index,
+          "Pool #" + row.index + " · " +
+            (pairLabels.get(row.index + "|" + incentivePools.get(row.index)) || "pair unavailable"),
           row.slices + "%",
           number(row.allocatedVotes, 2) + " veAERO",
           usd(row.estimatedRewardUsd)

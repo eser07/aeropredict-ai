@@ -43,10 +43,18 @@ def read_address(signature, argument, block):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--start", type=int, default=0, help="First registration index")
-    parser.add_argument("--count", type=int, default=5, help="Number of pools (1-25)")
+    parser.add_argument("--count", type=int, default=5, help="Number of pools (1-100)")
+    parser.add_argument(
+        "--output", type=Path, default=Path("data/pool_scan_base.json"),
+        help="Save scan to a separate JSON file under data/ (default: current sample)",
+    )
     args = parser.parse_args()
-    if args.start < 0 or not (1 <= args.count <= 25):
-        parser.error("--start must be >= 0 and --count must be between 1 and 25")
+    if args.start < 0 or not (1 <= args.count <= 100):
+        parser.error("--start must be >= 0 and --count must be between 1 and 100")
+    data_folder = Path("data").resolve()
+    output_path = args.output.resolve()
+    if not output_path.is_relative_to(data_folder) or output_path.suffix != ".json":
+        parser.error("--output must be a .json file inside the data/ directory")
 
     if int(rpc("eth_chainId", []), 16) != CHAIN_ID:
         raise RuntimeError("Unexpected chain ID")
@@ -65,6 +73,8 @@ def main():
         "block_number": block,
         "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
         "total_registered": length,
+        "scan_start": args.start,
+        "scan_end_exclusive": end,
         "total_voting_weight_raw": str(total_weight),
         "notice": "Registration-order sample. Active gauges or vote weights are not yield estimates.",
         "pools": [],
@@ -91,10 +101,27 @@ def main():
         print(f"[{i}] active={active} vote_share={share or 'N/A'}% "
               f"pool={pool} gauge={gauge}", flush=True)
 
-    file = Path("data/pool_scan_base.json")
+    active_pools = [p for p in report["pools"] if p["gauge_active"]]
+    report["active_pool_count"] = len(active_pools)
+    print(
+        f"Scanned {len(report['pools'])} pools | currently active {len(active_pools)}",
+        flush=True,
+    )
+    if active_pools:
+        print("Largest CURRENT vote weights IN THIS SCANNED BATCH (not yield rankings):")
+        for row in sorted(
+            active_pools, key=lambda p: int(p["weight_raw"]), reverse=True
+        )[:8]:
+            print(
+                f"  Pool #{row['index']} | vote share {row['vote_share_percent']}%",
+                flush=True,
+            )
+    file = args.output
     file.parent.mkdir(parents=True, exist_ok=True)
-    file.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                    encoding="utf-8")
+    file.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
     print(f"Saved: {file}", flush=True)
 
 

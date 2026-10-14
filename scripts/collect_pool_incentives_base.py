@@ -93,12 +93,34 @@ def record_reward(token, symbol, decimals, periods):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--max-bribe-tokens", type=int, default=8)
+    parser.add_argument(
+        "--input-file", type=Path, default=SOURCE,
+        help="FEES history file (default original dashboard sample)",
+    )
+    parser.add_argument(
+        "--output-file", type=Path, default=OUTPUT,
+        help="BRIBES + USD quote file (default original dashboard sample)",
+    )
     args = parser.parse_args()
+    data_dir = Path("data").resolve()
+    input_file = args.input_file.resolve()
+    output_file = args.output_file.resolve()
+    if any(
+        not p.is_relative_to(data_dir) or p.suffix.lower() != ".json"
+        for p in (input_file, output_file)
+    ):
+        parser.error("Both JSON paths must be inside data/")
+    if input_file == output_file:
+        parser.error("Input and output must be different files")
+    if input_file != SOURCE.resolve() and output_file == OUTPUT.resolve():
+        parser.error(
+            "Custom FEES input requires a custom --output-file to protect the demo"
+        )
     if not 1 <= args.max_bribe_tokens <= 40:
         parser.error("--max-bribe-tokens must be between 1 and 40")
-    if not SOURCE.is_file():
-        raise RuntimeError("Missing saved fees history; run pool_fee_histories_base.py")
-    source = json.loads(SOURCE.read_text(encoding="utf-8"))
+    if not input_file.is_file():
+        raise RuntimeError(f"Missing saved fees history: {args.input_file}")
+    source = json.loads(input_file.read_text(encoding="utf-8"))
     if source.get("chain_id") != CHAIN_ID:
         raise RuntimeError("Input is not Base Mainnet")
     if int(rpc("eth_chainId", []), 16) != CHAIN_ID:
@@ -237,7 +259,7 @@ def main():
 
     report = {
         "chain_id": CHAIN_ID, "current_epoch_utc": iso(epoch),
-        "source_file": str(SOURCE), "collected_at_utc": iso(int(time.time())),
+        "source_file": str(args.input_file), "collected_at_utc": iso(int(time.time())),
         "quote_provider": "DefiLlama current token address prices",
         "week_count": 4, "quote_max_age_hours": 36,
         "fully_priced_pools": good,
@@ -251,12 +273,12 @@ def main():
             "BRIBES and FEES distribution timing and voting eligibility require checking",
         ],
     }
-    OUTPUT.parent.mkdir(exist_ok=True, parents=True)
-    OUTPUT.write_text(
+    output_file.parent.mkdir(exist_ok=True, parents=True)
+    output_file.write_text(
         json.dumps(report, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
-    print(f"Saved: {OUTPUT} | fully priced: {good}/{len(pools)} active pools")
+    print(f"Saved: {args.output_file} | fully priced: {good}/{len(pools)} active pools")
     print("Not yet an optimizer or a guaranteed veAERO income forecast.")
 
 

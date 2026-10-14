@@ -121,6 +121,45 @@ class TestBatchPipeline(unittest.TestCase):
                     p.cli_call("mock failure", ["script.py"])
         self.assertFalse(files["status"].exists())
 
+    def test_failed_audit_resumes_staged_quotes_without_redownloading(self):
+        """Regression: staged audit_ filename and 25-pool FEES/BRIBES reuse."""
+        stage = p.paths_for(self.folder, 2)["staging"]
+        stage.mkdir(parents=True)
+        source = json.loads((self.folder / "batch_002.json").read_text())
+        (stage / "fees.json").write_text(json.dumps({
+            "current_epoch_start_utc": EPOCH, "pools": source["pools"],
+        }))
+        (stage / "incentives.json").write_text(json.dumps({
+            "current_epoch_utc": EPOCH, "pools": source["pools"],
+        }))
+        status = {"audited_active_pools": 1, "fully_priced_pools": 1}
+        with patch.object(p, "audit", return_value={"pool_count": 1}) as check:
+            with patch.object(p, "cli_call") as run:
+                with patch.object(p, "publish_batch", return_value=status):
+                    p.process_one(self.folder, 2, EPOCH)
+        check.assert_called_once()
+        self.assertEqual(run.call_count, 1)
+        label, argv = run.call_args.args
+        self.assertEqual(label, "Batch 002 AUDIT")
+        self.assertEqual(Path(argv[-1]).name, "audit_batch_002.json")
+        self.assertTrue(all("BRIBES" not in str(x) and "FEES" not in str(x)
+                            for x in run.call_args.args[:1]))
+
+    def test_staged_epoch_mismatch_aborts_without_network_calls(self):
+        stage = p.paths_for(self.folder, 2)["staging"]
+        stage.mkdir(parents=True)
+        (stage / "fees.json").write_text(json.dumps({
+            "current_epoch_start_utc": "2026-10-15T00:00:00+00:00",
+            "pools": [],
+        }))
+        (stage / "incentives.json").write_text(json.dumps({
+            "current_epoch_utc": EPOCH,
+        }))
+        with patch.object(p, "cli_call") as run:
+            with self.assertRaisesRegex(RuntimeError, "saved staging epoch differs"):
+                p.process_one(self.folder, 2, EPOCH)
+            run.assert_not_called()
+
     def test_epoch_mismatch_prevents_skipping(self):
         files = p.paths_for(self.folder, 2)
         self.put("batch_002_status.json", {

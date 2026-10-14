@@ -103,6 +103,24 @@ The dashboard's data files are created locally:
 
 Historical reads use the free Base RPC by default (`https://base-rpc.publicnode.com`), or `BASE_RPC_URL` if supplied. The public endpoint may impose rate limits or require an access token for archive-state reads. Never commit credentials.
 
+### Safe batched pool discovery
+
+The existing `data/pool_scan_base.json` holds the original sample used by the
+current FEES history and dashboard. To inspect later registration indexes
+**without overwriting that sample**, specify a different output:
+
+```bash
+python scripts/scan_pools_base.py --start 20 --count 25 --output data/pool_scan_20_44.json
+```
+
+The scan uses a pinned Base block and prints how many of the requested
+registration-order pools have active gauges. It also displays the largest
+vote weights *within that one batch*; this is **not** a ranking of voting
+rewards, profitability or a complete Aerodrome scan. The optional scan
+file is stored separately so existing history/backtest/incentive snapshots
+remain unchanged. Subsequent steps will choose suitable active pools from
+these samples and only then expand the reward collector.
+
 ## How to interpret the analytics
 
 **A pool's FEES token allocation is not an individual's veAERO income.** It is a reward-contract accounting value for a given token and epoch. To estimate a voter's actual reward, future versions must additionally consider their effective voting power, voted allocation, the pool's total voting weight, bribes, relevant token prices, and Aerodrome's reward/claim rules.

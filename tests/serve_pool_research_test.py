@@ -202,7 +202,7 @@ class TestResearchServer(unittest.TestCase):
         def weeks(fees, bribes):
             return [
                 {
-                    "week_start_utc": "2026-09-" + str(10 + i * 7).zfill(2) + "T00:00:00+00:00",
+                    "week_start_utc": ["2026-09-10", "2026-09-17", "2026-09-24", "2026-10-01"][i] + "T00:00:00+00:00",
                     "fees_usd": str(a), "bribes_usd": str(b),
                     "total_usd": str(Decimal(a) + Decimal(b)),
                 }

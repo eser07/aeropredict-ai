@@ -230,6 +230,48 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertNotIn('innerHTML', self.javascript)
         self.assertNotIn('localStorage', self.javascript)
 
+    def test_p63_mobile_researcher_retains_provenance_with_compact_disclosure(self):
+        for term in (
+            'id="researcher-jump"',
+            'class="researcher-mobile-summary researcher-only"',
+            'class="researcher-alert"',
+            'class="researcher-mobile-provenance"',
+            'class="researcher-mobile-directory researcher-only"',
+            'class="researcher-methodology research-only"',
+            'class="researcher-methodology">',
+            'Full screening and old-vote-ratio methodology',
+            'How the 0–100 historical research score works',
+            '32 pinned Base blocks',
+            'Missing USD stays',
+            'Reward weeks',
+        ):
+            self.assertIn(term, self.page)
+        self.assertIn('Voting weights are not synchronized to the rewards', self.page)
+        self.assertIn('Scores do not predict APR', self.page)
+        for term in (
+            '$("researcher-jump").addEventListener("click"',
+            'field.scrollIntoView({behavior: "smooth", block: "center"})',
+            'field.focus({preventScroll: true})',
+        ):
+            self.assertIn(term, self.javascript)
+        for term in (
+            '.wrap[data-view="beginner"] .researcher-only{display:none!important}',
+            '.researcher-mobile-summary,.researcher-mobile-directory,#researcher-jump{display:none}',
+            '.wrap[data-view="researcher"] .notice,',
+            '.wrap[data-view="researcher"] .provenance-strip,',
+            '.wrap[data-view="researcher"] .directory-tech-note{display:none}',
+            '.wrap[data-view="researcher"] .researcher-mobile-summary{display:block',
+            '.wrap[data-view="researcher"] .researcher-mobile-directory{display:block}',
+            '.wrap[data-view="researcher"] #researcher-jump{display:block',
+            'min-height:44px',
+            '@media(max-width:700px)',
+        ):
+            self.assertIn(term, self.css)
+        self.assertIn('selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc)',
+                      self.javascript)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

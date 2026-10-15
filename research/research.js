@@ -71,8 +71,16 @@
     const voteContext = votes === null ? 0 :
       20 * Math.max(0, Math.min(1, Math.log10(Math.max(votes, 100) / 100) / 2));
     const raw = Math.round(regularity + size + coverage + voteContext);
-    // Fragile research denominators / tiny reward totals cannot enter high ranks.
-    return sizeCautions(p).length ? Math.min(39, raw) : raw;
+    // Graded evidence discount avoids giving every tiny pool exactly 39/100.
+    // These cutoffs are transparent UI heuristics, NOT statistical confidence.
+    if (sizeCautions(p).length) {
+      const rewardAdequacy = Math.min(1, usd / MIN_RESEARCH_WEEKLY_USD);
+      const voteAdequacy = votes === null ? 0 :
+        Math.min(1, votes / MIN_OLD_SNAPSHOT_VOTES);
+      const evidenceFactor = 0.25 + 0.75 * Math.min(rewardAdequacy, voteAdequacy);
+      return Math.min(39, Math.round(raw * evidenceFactor));
+    }
+    return raw;
   }
   function drawLeaders() {
     const epoch = $("epoch").value;
@@ -183,6 +191,8 @@
         const qa = Number(!a.usd_coverage_complete || sizeCautions(a).length > 0);
         const qb = Number(!b.usd_coverage_complete || sizeCautions(b).length > 0);
         if (qa !== qb) return qa - qb;
+        // Fragile or unpriced ratios are not meaningfully rankable by value.
+        if (qa && qb) return a.index - b.index;
       }
       const field = direction === "weekly"
         ? "avg_pool_usd_per_week_at_collection_quote"
@@ -223,8 +233,10 @@
         ? money(p.avg_pool_usd_per_week_at_collection_quote)
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
       cell(tr, researchScore(p) === null ? "Unrated" : researchScore(p) + "/100", "right num");
+      const fragileRatio = sizeCautions(p).length > 0;
       const ratio = cell(tr, p.usd_coverage_complete
-        ? money(p.illustrative_usd_per_million_inventory_votes)
+        ? (fragileRatio && p.illustrative_usd_per_million_inventory_votes !== null
+          ? "Unreliable" : money(p.illustrative_usd_per_million_inventory_votes))
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
       if (p.usd_coverage_complete && p.illustrative_usd_per_million_inventory_votes !== null) {
         const cautions = sizeCautions(p);
@@ -384,7 +396,11 @@
         ["Old snapshot votes", plain(p.inventory_snapshot_votes) + " veAERO"],
         ["USD coverage", p.usd_coverage_complete ? "Complete" : "Incomplete"],
         ["USD / 1M old votes", p.usd_coverage_complete
-          ? money(p.illustrative_usd_per_million_inventory_votes) : "Unknown"],
+          ? (sizeCautions(p).length &&
+             p.illustrative_usd_per_million_inventory_votes !== null
+             ? "Unreliable — see pool details"
+             : money(p.illustrative_usd_per_million_inventory_votes))
+          : "Unknown"],
       ];
       pairs.forEach(([label, value]) => {
         const line = make("div");

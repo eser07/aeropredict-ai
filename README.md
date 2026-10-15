@@ -608,6 +608,20 @@ calculator**; neither historical reward observations nor unsynchronized old
 voting weights establish current voting profitability. The UI does not offer
 cross-epoch optimization until reliable synchronized data is available.
 
+**P5 / P5.1 — Four-week reward evidence.** Pool details and same-epoch
+three-pool comparisons include audited four-week FEES and BRIBES USD totals
+using each batch's saved token quote. P5.1 adds **retrospective evidence
+notes** (not numerical confidence or investment-risk scores): BRIBES reliance,
+how many of four weeks contained priced FEES/BRIBES, the largest week's share,
+latest-week changes including low prior-week denominator caveats, saved quote
+coverage/timing, and separate P4 voting-block provenance. Display-only alert
+thresholds are **80% / 50% BRIBES share**, **50% / 40% peak-week share**,
+and **100% / 50% absolute latest-week change**. Incomplete USD coverage
+returns unknown explanations, never a $0 composition or a confident score;
+all-zero observed weeks have undefined reward-mix and concentration shares.
+Only four historical weeks exist. No APR, payout, probability, or stability
+claim follows from these observations.
+
 Offline server regression tests:
 
 ```bash

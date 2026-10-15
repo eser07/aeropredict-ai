@@ -455,6 +455,68 @@ Run the offline preparation regression tests with:
 python -m unittest discover -s tests -p "prepare_next_epoch_collection_test.py" -v
 ```
 
+### P2 — After a weekly Aerodrome epoch rolls over
+
+A 25-pool collection batch always belongs to a particular Thursday 00:00
+UTC Aerodrome reward epoch. The original pinned Base inventory from block
+52595092 had 928 active gauges and 38 batches. **Original batches 001–015
+were collected for the 2026-10-08 epoch** (375 audited pools); the USD
+coverage count can be lower than the audited pool count.
+
+Do **not** try to continue the original plan into a different epoch:
+the live pipeline refuses an expired epoch. Instead, after the new epoch
+begins, prepare a *new isolated subset plan* for previously uncollected
+batches. The preparation operation is **offline** and will first check that
+old results and completed status markers are consistent, report incomplete
+old USD records with missing/truncated reasons, and reject any already
+started batch incorrectly classified as uncollected.
+
+```bash
+python scripts/prepare_remaining_epoch_batches_base.py --dry-run
+```
+
+When the plan looks right:
+
+```bash
+python scripts/prepare_remaining_epoch_batches_base.py
+```
+
+This generates a **new manifest and 23 renumbered groups** for the remaining
+553 snapshot pools under
+`data/pool_collection_batches_base/block_52595092/votes_25/epoch_2026-10-15/`
+if run in the new 2026-10-15 Aerodrome week (for later weeks, the script
+uses the current Thursday UTC). Old batch inputs, original 375 audits,
+and the 16-pool dashboard/hourscheduler are untouched.
+
+The fresh new manifest pins `collection_epoch_utc` and permits bootstrapping
+group 1 (former original group 16):
+
+```bash
+BASE_RPC_URL=https://mainnet.base.org python scripts/run_pool_batch_pipeline.py --folder data/pool_collection_batches_base/block_52595092/votes_25/epoch_2026-10-15 --start-batch 1 --max-batches 1
+```
+
+Continue with subsequent batch numbers within the same newly pinned
+weekly epoch. The pipeline allows at most five 25-pool batches in one
+call, stages and audits each separately and suppresses USD estimates for
+missing token prices or truncated reward lists. When the epoch ends,
+prepare a further epoch-specific plan for any **still uncollected** pools
+rather than mixing dates.
+
+**Important comparability limits:** old and new four-week windows
+overlap but differ. Price quotes are sampled when each batch is run,
+not at matched historical blocks. Vote weights remain from the
+original pinned Base block, so USD per million snapshot votes is a
+descriptive ratio, not a synchronized weekly veAERO yield. Never
+merge the old and new batch rankings into one homogeneous
+backtest/performance comparison or claim 928 identically dated pools.
+
+Offline regression tests:
+
+```bash
+python -m unittest discover -s tests -p "prepare_remaining_epoch_batches_test.py" -v
+python -m unittest discover -s tests -p "run_pool_batch_pipeline_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

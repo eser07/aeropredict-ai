@@ -189,6 +189,47 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertNotIn('innerHTML', self.javascript)
         self.assertNotIn('localStorage', self.javascript)
 
+    def test_p62_mobile_beginner_has_quick_search_cards_and_accessible_provenance(self):
+        # Narrow-screen behavior stays a presentation-only transform.
+        for term in (
+            'class="beginner-data-notes"',
+            'class="beginner-glossary"',
+            'class="beginner-explanation"',
+            'id="jump-to-search"',
+            'class="beginner-directory-intro"',
+            'class="directory-tech-note"',
+            '<option value="10" selected>',
+            'How should I read these historical numbers?',
+            'BRIBES:</strong>',
+            'veAERO:</strong>',
+            'Epoch:</strong>',
+        ):
+            self.assertIn(term, self.page)
+        for term in (
+            '$("jump-to-search").addEventListener("click"',
+            'field.scrollIntoView({behavior: "smooth", block: "center"})',
+            'td.dataset.label = mobileLabels[i]',
+            '"Mean USD / week", "Research score"',
+            '"USD / 1M old votes", "Explore / compare"',
+        ):
+            self.assertIn(term, self.javascript)
+        for term in (
+            '.wrap[data-view="beginner"] .notice{display:none}',
+            '.wrap[data-view="beginner"] .directory-tech-note{display:none}',
+            '.wrap[data-view="researcher"] .beginner-data-notes',
+            '.table-wrap tbody tr{display:grid',
+            '.table-wrap td::before{content:attr(data-label)',
+            '.table-wrap .compare-actions button{min-height:44px',
+            '.wrap[data-view="beginner"] .provenance-strip{display:none}',
+            '.beginner-actions button{min-height:44px}',
+            '@media(max-width:700px)',
+        ):
+            self.assertIn(term, self.css)
+        self.assertIn('selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc)',
+                      self.javascript)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

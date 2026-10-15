@@ -6,6 +6,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
@@ -154,6 +155,13 @@ class TestFullResearchBuild(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        # The production collector intentionally rejects paths outside
+        # data/pool_collection_batches_base. For OFFLINE unit tests only,
+        # point the isolated root to the temporary test fixture directory.
+        # Never relax the protection inside build_full_pool_research_base.py.
+        root_patch = patch.object(m, "BATCH_ROOT", self.root)
+        root_patch.start()
+        self.addCleanup(root_patch.stop)
         self.old, self.new = mock_files(self.root)
 
     def test_exhaustive_928_and_two_epochs_without_global_rank(self):

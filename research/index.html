@@ -114,6 +114,30 @@
     This panel uses only saved local P2 records, never live blockchain reads,
     old P4 vote ratios, or prospective yields.</p>
   </section>
+  <details class="panel research-only p74-overview" id="p74-overview">
+    <summary>P7.4 · What the saved evidence can (and cannot) verify</summary>
+    <p>These are independent data-quality observations, <strong>not</strong>
+    a confidence percentage, investment score or current market health check.</p>
+    <div class="p74-overview-grid">
+      <p><strong>USD prices:</strong> Complete means the saved reward USD
+      amounts were covered by collection-time quotes. Missing prices are
+      Unknown, not $0. Coverage does not establish token liquidity.</p>
+      <p><strong>Quote timestamps:</strong> Some reward-token quotes have
+      saved UTC timestamps; their presence and range can be inspected per
+      pool. A missing timestamp does not prove a missing price, and a
+      timestamp does not make the quote live.</p>
+      <p><strong>Four-week evidence:</strong> Positive FEES/BRIBES observations
+      cover four completed weeks only. Zero weeks are observations, not
+      predictions. Truncated registry markers remain visible.</p>
+      <p><strong>Independent P4 votes:</strong> The inventory's older
+      block and individually pinned P4 vote blocks/times are not synchronized
+      with weekly rewards or across all pools.</p>
+    </div>
+    <p class="mini">The source cohort is an epoch identifier, not the
+    exact collection timestamp. Open a pool's Details for its batch,
+    available quote times, separately observed vote block/time and
+    explicit missing-data indicators.</p>
+  </details>
   <section class="panel" id="pool-directory">
     <div class="section-head">
       <div><h2>Pool directory</h2><p class="beginner-directory-intro">Search a pool, then open Details to see its observed rewards and evidence cautions. Saved historical data only.</p><p class="directory-tech-note">P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p><details class="researcher-mobile-directory researcher-only"><summary>How pair labels and P5.1 evidence are sourced</summary><p>P5.1 uses saved four-week evidence notes and incomplete-price cautions without modifying historical research scores. Pool pairs come from saved token0/token1 metadata (927 of 928 identified), not reward-token symbols.</p></details></div>
@@ -177,6 +201,15 @@
           <option value="unknown">Unavailable · incomplete saved prices</option>
         </select>
       </label>
+      <label class="research-only">P7.4 · Data provenance filter
+        <select id="provenance-filter">
+          <option value="all">All saved provenance observations</option>
+          <option value="usd-missing">Incomplete USD coverage</option>
+          <option value="quote-time-gap">Missing quote timestamp · positive reward token</option>
+          <option value="registry-truncated">Reward registry truncated</option>
+          <option value="timestamped">Complete USD + all positive-token quote times</option>
+        </select>
+      </label>
       <label class="research-only">Evidence / size filter
         <select id="evidence">
           <option value="all">All observations · show cautions</option>
@@ -206,6 +239,11 @@
       composition with concentration of <em>total</em> rewards, and does
       <strong>not</strong> prove BRIBES caused that peak. Missing USD stays
       Unknown, and previous-week totals below $10 can exaggerate percentages.</p>
+    <p class="research-only p72-hint"><strong>P7.4:</strong> Provenance
+      filters flag missing information rather than ranking reliability.
+      A timestamp gap is not necessarily a missing token price; even
+      complete quote timestamps do not establish synchronized rewards,
+      current price, liquidity or veAERO income.</p>
     <div class="toolbar">
       <p id="count" aria-live="polite">Loading saved research data…</p>
       <div class="pagesize"><label for="page-size">Rows</label>
@@ -240,6 +278,15 @@
     </details>
     <details class="researcher-methodology research-only">
       <summary>Full screening and old-vote-ratio methodology</summary>
+      <p class="footnote"><strong>P7.4 provenance:</strong> Data-quality flags
+      show saved USD coverage, quote timestamp availability for
+      positive-reward tokens, any truncated-registry indicator, the
+      collection cohort and independent older vote observation context.
+      A complete-USD pool may still lack UTC quote timestamps. The
+      “Complete USD + all positive-token quote times” filter requires
+      positive observations, not simply a zero-reward pool. No confidence
+      score, probability, synchronized vote yield or freshness claim is
+      derived from these indicators.</p>
       <p class="footnote"><strong>P7.3 historical patterns:</strong> Only
       complete saved-price four-week TOTAL USD records support concentration
       and recent-week changes. The previous week must be positive before

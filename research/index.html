@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>AeroPredict AI | 928-Pool Research Explorer</title>
+  <link rel="stylesheet" href="/research.css">
+  <script defer src="/research.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <header class="brand">
+    <div class="mark">AERO<span>PREDICT</span> <small>AI</small></div>
+    <nav><a href="http://localhost:8765/" rel="noopener">Original dashboard ↗</a></nav>
+  </header>
+  <div class="eyebrow">BASE MAINNET · PINNED HISTORICAL INVENTORY · LOCAL RESEARCH</div>
+  <h1>Explore <em>928 Aerodrome pools.</em></h1>
+  <p class="lead">Search pool contracts and reward tokens, compare four completed weeks of FEES + BRIBES, and separate missing prices from actual zero-reward observations.</p>
+  <div class="notice" role="note">
+    <strong>Two distinct observation periods.</strong>
+    375 pools were collected during October 8, 2026 and 553 during October 15, 2026.
+    Vote weights are from older block 52,595,092. Quoted USD uses token prices saved at each collection.
+    This is <strong>not</strong> one synchronized snapshot, live APR, or a promise of veAERO income.
+  </div>
+  <p id="error" class="error" role="alert" hidden></p>
+  <section class="stats" aria-label="Research coverage">
+    <article class="stat"><span>Snapshot pools audited</span><b id="stat-pools">—</b><small>of 928 in the pinned inventory</small></article>
+    <article class="stat"><span>Complete saved USD coverage</span><b id="stat-priced">—</b><small id="stat-coverage">—</small></article>
+    <article class="stat"><span>Incomplete USD coverage</span><b id="stat-missing">—</b><small>Unknown value ≠ $0</small></article>
+    <article class="stat"><span>No observed rewards</span><b id="stat-zero">—</b><small>in four completed weeks</small></article>
+  </section>
+  <section class="panel">
+    <div class="section-head">
+      <div><h2>Pool directory</h2><p>Reward token symbols are <strong>not</strong> verified pool trading pairs.</p></div>
+      <p class="mini" id="data-generated">Locally saved, not live</p>
+    </div>
+    <div class="filters">
+      <label class="search-label">Pool index, contract, reward symbol or token address
+        <input id="search" type="search" spellcheck="false" placeholder="Try #1930, USDC or 0x..." autocomplete="off">
+      </label>
+      <label>Collection epoch
+        <select id="epoch">
+          <option value="2026-10-15T00:00:00+00:00">Oct 15 · 553 pools</option>
+          <option value="2026-10-08T00:00:00+00:00">Oct 8 · 375 pools</option>
+          <option value="both">Both · inventory order only</option>
+        </select>
+      </label>
+      <label>Reward / USD status
+        <select id="status">
+          <option value="all">All pool statuses</option>
+          <option value="positive">Observed rewards (1–4 weeks)</option>
+          <option value="zero">No observed rewards (0/4)</option>
+          <option value="complete">Complete saved USD quote</option>
+          <option value="incomplete">Incomplete USD coverage</option>
+        </select>
+      </label>
+      <label>Sort within selected epoch
+        <select id="sort">
+          <option value="index">Registry pool index</option>
+          <option value="frequency">Most active reward weeks</option>
+          <option value="weekly">Pool USD / week (complete only)</option>
+          <option value="ratio">USD / million old snapshot votes</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar">
+      <p id="count" aria-live="polite">Loading saved research data…</p>
+      <div class="pagesize"><label for="page-size">Rows</label>
+        <select id="page-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th scope="col">Pool</th><th scope="col">Collection epoch</th>
+          <th scope="col">Rewards observed</th><th scope="col">USD coverage</th>
+          <th scope="col" class="right">Mean USD / week*</th>
+          <th scope="col" class="right">USD / 1M old votes*</th>
+          <th scope="col">Explore</th>
+        </tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="pager">
+      <button id="prev" type="button" disabled>← Previous</button>
+      <span id="page-count" aria-live="polite">—</span>
+      <button id="next" type="button" disabled>Next →</button>
+    </div>
+    <p class="footnote">*Historical reward quantities valued using token USD prices saved at that batch's collection. Vote ratios use unsynchronized older voting weights and can explode for tiny denominators. USD sorting is disabled when both epochs are selected.</p>
+  </section>
+  <section class="panel detail" id="detail" aria-live="polite" hidden>
+    <div class="section-head"><h2 id="detail-title">Pool detail</h2><button id="close-detail" type="button">Close</button></div>
+    <p class="mini" id="detail-intro"></p>
+    <div id="detail-content"></div>
+  </section>
+  <footer>Independent local P2 explorer · No wallets · No transactions · No fresh RPC/price lookups · Existing 8765 dashboard is unchanged</footer>
+</main>
+</body>
+</html>

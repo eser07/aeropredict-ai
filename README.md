@@ -660,6 +660,31 @@ screening-methodology note and leaderboard formula now have accessible
 expandable explanations. The full top provenance remains visible at
 desktop sizes. No extra providers, requests, wallets, or scripts are needed.
 
+**P7.1 — Saved reward observation coverage (Researcher view).** The
+928 audited pools are split into **two distinct saved collection cohorts**,
+October 8 (375 pools) and October 15 (553 pools). Each cohort's distribution
+shows **0, 1, 2, 3 or 4 of 4 completed weeks** with observed positive
+FEES or BRIBES token allocations, plus each row's **complete/incomplete
+saved USD-quote coverage**. It also gives the per-cohort count with any
+FEES observations and with any BRIBES observations; those two sets
+can overlap and must not be added together as unique pools.
+
+All distribution figures are derived in the browser from the already-loaded
+local P2 JSON. The totals **must reconcile** against the source dataset's
+per-epoch audited, USD coverage and no-reward counts, and the global totals.
+If validation fails, the chart is withheld with an error instead of presenting
+zero or partial statistics. **0/4** means no positive token amounts observed
+in these saved four weeks, not that a pool can never reward voters. **4/4**
+means positive amounts were observed across four saved weeks, **not** a
+statistically established repeatable reward stream. USD prices can be
+incomplete even when tokens were allocated; incomplete is not zero.
+The epochs contain different pools; P7.1 does not infer changes from
+October 8 to October 15 or combine them into synchronized returns.
+
+This is a read-only client-side distribution in **Researcher view**.
+It does not change the historical research score, P4 rolling block votes,
+P5.1 reward summaries, the 8765 app, scheduled Windows tasks, or data files.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

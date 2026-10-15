@@ -918,6 +918,64 @@ Offline mock-based tests (no real Base RPC):
 python -m unittest discover -s tests -p "p8_probe_live_registry_test.py" -v
 ```
 
+**P8.4 — New pinned Base Voter registry discovery, isolated from all prior data.**
+P8.3 verified three previously saved registry indexes (`1930`, `1774`,
+`1414`) at Base block **52,654,476**. All three were alive with the
+same gauge addresses as their historical records. The on-chain
+registration length observed was **2,011** (versus **1,991** at the
+older inventory block); **2,011 is NOT an active-pool count**.
+A new complete registry scan is necessary to know how many gauges were
+alive at the same pinned snapshot block.
+
+The existing `discover_active_pools_base.py` script cannot simply be
+run from its default CLI for P8: its normal checkpoint/result paths
+are used by the historical inventory. The P8.4 wrapper reuses its
+tested pinned-block, atomic-page, resume/retry implementation but
+overrides its output paths **in-process and only during the invocation**
+to the separate fixed directory
+`data/pool_collection_batches_base/p8_registry_discovery/`.
+The old `data/pool_discovery_checkpoint_base.json` and
+`data/pool_discovery_active_base.json` are untouched.
+
+Begin with a read-only preview (no RPC, no files):
+
+```bash
+python scripts/p8_discover_current_registry.py
+```
+
+After reviewing the output, explicitly opt in to read **only 10
+registration indexes** and save an independent P8 checkpoint:
+
+```bash
+python scripts/p8_discover_current_registry.py --live
+```
+
+Each invocation is deliberately limited to 1–25 indexes/page and 1–3
+pages/call (at most 75 indexes). You may adjust the bound for subsequent
+runs using `--page-size` and `--max-pages`; **no**
+`--until-complete` or `--restart` option is exposed. Completed
+pages resume on the **same first-run pinned Base block**. If a
+provider cannot read that older block, the script pauses and retains
+the saved checkpoint rather than silently blending snapshots; do not
+delete/restart a checkpoint without reviewing the state and RPC
+archive support.
+
+A partial result is **not** a complete active-gauge count. Once every
+registration index has been inspected, a verified
+`active_pools.json` is published under the P8-only folder.
+Only then may P8 planning compare the new *pinned-block active gauges*
+with the older 928 historical identities. Differences represent
+the respective **different block observations**, not necessarily
+newly created or deactivated gauges since a given reward week.
+New epoch FEES/BRIBES, prices, old-vote ratios, 8766 migration,
+scheduling and full-research live updates remain unimplemented.
+
+Offline regression tests:
+
+```bash
+python -m unittest discover -s tests -p "p8_discover_current_registry_test.py" -v
+```
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

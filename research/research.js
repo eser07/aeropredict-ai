@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const $ = id => document.getElementById(id);
-  const doc = { pools: [], meta: null, filtered: [], page: 0 };
+  const doc = { pools: [], meta: null, filtered: [], page: 0, compared: [], compareError: "" };
   const EPOCH8 = "2026-10-08T00:00:00+00:00";
   const EPOCH15 = "2026-10-15T00:00:00+00:00";
   const make = (tag, cls, val) => {
@@ -37,6 +37,35 @@
     ? text.slice(0, 9) + "…" + text.slice(-6) : "Unavailable";
   const epochName = e => e === EPOCH8 ? "Oct 8, 2026" :
     e === EPOCH15 ? "Oct 15, 2026" : "Unknown epoch";
+  const numeric = value => {
+    if (value === null || value === undefined || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  };
+  // Display-only, explicitly arbitrary research-size thresholds. They do NOT
+  // verify voting eligibility, liquidity, tradability or predictable income.
+  const MIN_RESEARCH_WEEKLY_USD = 10;
+  const MIN_OLD_SNAPSHOT_VOTES = 100;
+  function sizeCautions(p) {
+    const warnings = [];
+    const votes = numeric(p.inventory_snapshot_votes);
+    const usd = numeric(p.avg_pool_usd_per_week_at_collection_quote);
+    if (votes === null || votes < MIN_OLD_SNAPSHOT_VOTES)
+      warnings.push("Tiny / unknown old voting denominator (< 100 veAERO)");
+    if (p.usd_coverage_complete && (usd === null || usd < MIN_RESEARCH_WEEKLY_USD))
+      warnings.push("Small saved-price reward total (< $10/week)");
+    return warnings;
+  }
+  function evidenceMatch(p, setting) {
+    if (setting === "all") return true;
+    if (p.observed_any_reward_positive_weeks !== 4) return false;
+    if (setting === "regular") return true;
+    return setting === "context" && p.usd_coverage_complete &&
+      numeric(p.avg_pool_usd_per_week_at_collection_quote) !== null &&
+      numeric(p.avg_pool_usd_per_week_at_collection_quote) >= MIN_RESEARCH_WEEKLY_USD &&
+      numeric(p.inventory_snapshot_votes) !== null &&
+      numeric(p.inventory_snapshot_votes) >= MIN_OLD_SNAPSHOT_VOTES;
+  }
   function error(message) {
     $("error").hidden = !message;
     $("error").textContent = message || "";
@@ -70,6 +99,7 @@
     const query = $("search").value.toLowerCase().trim();
     const period = $("epoch").value;
     const status = $("status").value;
+    const evidence = $("evidence").value;
     const sort = $("sort").value;
     const all = period === "both";
     [...$("sort").options].forEach(opt => {
@@ -78,7 +108,7 @@
     if (all && sort !== "index") $("sort").value = "index";
     doc.filtered = doc.pools.filter(p => {
       if (!all && p.collection_epoch_utc !== period) return false;
-      if (!searchMatch(p, query)) return false;
+      if (!searchMatch(p, query) || !evidenceMatch(p, evidence)) return false;
       if (status === "positive" && p.observed_any_reward_positive_weeks === 0) return false;
       if (status === "zero" && p.observed_any_reward_positive_weeks !== 0) return false;
       if (status === "complete" && !p.usd_coverage_complete) return false;
@@ -91,6 +121,13 @@
       if (direction === "frequency") {
         return b.observed_any_reward_positive_weeks -
           a.observed_any_reward_positive_weeks || a.index - b.index;
+      }
+      // An enormous ratio from almost zero old votes and sub-$10 rewards
+      // is a denominator artifact, not a leading research opportunity.
+      if (direction === "ratio") {
+        const qa = Number(!a.usd_coverage_complete || sizeCautions(a).length > 0);
+        const qb = Number(!b.usd_coverage_complete || sizeCautions(b).length > 0);
+        if (qa !== qb) return qa - qb;
       }
       const field = direction === "weekly"
         ? "avg_pool_usd_per_week_at_collection_quote"
@@ -128,14 +165,31 @@
       cell(tr, p.usd_coverage_complete
         ? money(p.avg_pool_usd_per_week_at_collection_quote)
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
-      cell(tr, p.usd_coverage_complete
+      const ratio = cell(tr, p.usd_coverage_complete
         ? money(p.illustrative_usd_per_million_inventory_votes)
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
+      if (p.usd_coverage_complete && p.illustrative_usd_per_million_inventory_votes !== null) {
+        const cautions = sizeCautions(p);
+        if (cautions.length) {
+          const notice = make("span", "ratio-caution", "⚠ Fragile ratio");
+          notice.title = cautions.join("; ");
+          ratio.append(notice);
+        }
+      }
       const action = cell(tr);
+      const actions = make("div", "compare-actions");
       const button = make("button", "detail-button", "Details ↗");
       button.type = "button";
       button.addEventListener("click", () => showDetails(p));
-      action.append(button);
+      actions.append(button);
+      const selected = doc.compared.includes(p.index);
+      const cmp = make("button", "compare-button" + (selected ? " selected" : ""),
+                       selected ? "Remove" : "+ Compare");
+      cmp.type = "button";
+      cmp.setAttribute("aria-pressed", String(selected));
+      cmp.addEventListener("click", () => toggleCompare(p));
+      actions.append(cmp);
+      action.append(actions);
       frag.append(tr);
     });
     if (!visible.length) {
@@ -176,6 +230,8 @@
       p.observed_bribes_positive_weeks + " BRIBES)");
     sectionValue(row, "Old snapshot voting power", plain(p.inventory_snapshot_votes) + " veAERO");
     root.append(row);
+    sizeCautions(p).forEach(message =>
+      root.append(make("p", "warnline", "⚠ " + message + ". An old vote ratio is not a current yield.")));
     const identity = make("p", "mini");
     identity.append(make("strong", "", "Pool address: "));
     const addr = String(p.address || "");
@@ -238,6 +294,78 @@
     root.append(tokens);
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }
+  function drawComparison() {
+    const section = $("compare-panel");
+    section.hidden = doc.compared.length === 0 && !doc.compareError;
+    $("compare-error").hidden = !doc.compareError;
+    $("compare-error").textContent = doc.compareError;
+    const target = $("compare-items");
+    target.replaceChildren();
+    const selected = doc.compared.map(id => doc.pools.find(p => p.index === id))
+      .filter(Boolean);
+    $("compare-note").textContent = selected.length
+      ? "Selected observation epoch: " + epochName(selected[0].collection_epoch_utc) +
+        " · " + selected.length + " / 3 · Other epochs cannot be mixed"
+      : "Compare up to three pools from the SAME saved collection epoch.";
+    selected.forEach(p => {
+      const card = make("article", "compare-card");
+      card.append(make("h3", "", "Pool #" + p.index));
+      card.append(make("p", "", shortAddr(p.address) +
+        " · " + epochName(p.collection_epoch_utc)));
+      const metrics = make("div", "compare-metrics");
+      const pairs = [
+        ["Mean weekly pool rewards", p.usd_coverage_complete
+          ? money(p.avg_pool_usd_per_week_at_collection_quote) : "Unknown"],
+        ["Positive reward weeks", p.observed_any_reward_positive_weeks + " / 4"],
+        ["FEES weeks", p.observed_fees_positive_weeks + " / 4"],
+        ["BRIBES weeks", p.observed_bribes_positive_weeks + " / 4"],
+        ["Old snapshot votes", plain(p.inventory_snapshot_votes) + " veAERO"],
+        ["USD coverage", p.usd_coverage_complete ? "Complete" : "Incomplete"],
+        ["USD / 1M old votes", p.usd_coverage_complete
+          ? money(p.illustrative_usd_per_million_inventory_votes) : "Unknown"],
+      ];
+      pairs.forEach(([label, value]) => {
+        const line = make("div");
+        line.append(make("span", "", label));
+        line.append(make("strong", "", value));
+        metrics.append(line);
+      });
+      card.append(metrics);
+      sizeCautions(p).forEach(message => card.append(make("p", "warnline", "⚠ " + message)));
+      if (!p.usd_coverage_complete)
+        card.append(make("p", "warnline", "⚠ Missing USD quotes; not a $0 reward total."));
+      if (p.observed_any_reward_positive_weeks < 4)
+        card.append(make("p", "warnline", "⚠ Rewards were not observed in all four weeks."));
+      const button = make("button", "compare-button selected", "Remove from comparison");
+      button.type = "button";
+      button.addEventListener("click", () => toggleCompare(p));
+      card.append(button);
+      target.append(card);
+    });
+  }
+  function toggleCompare(p) {
+    doc.compareError = "";
+    if (doc.compared.includes(p.index)) {
+      doc.compared = doc.compared.filter(id => id !== p.index);
+    } else {
+      const selected = doc.compared.map(id => doc.pools.find(t => t.index === id))
+        .filter(Boolean);
+      if (selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc))
+        doc.compareError = "Cross-epoch comparison is disabled. Clear the existing selection first.";
+      else if (selected.length >= 3)
+        doc.compareError = "Select at most three pools. Remove one before adding another.";
+      else doc.compared.push(p.index);
+    }
+    drawComparison();
+    drawPage();
+    if (!$("compare-panel").hidden) $("compare-panel").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  $("clear-compare").addEventListener("click", () => {
+    doc.compared = [];
+    doc.compareError = "";
+    drawComparison();
+    drawPage();
+  });
   $("prev").addEventListener("click", () => { if (doc.page > 0) {doc.page--; drawPage();} });
   $("next").addEventListener("click", () => {
     if ((doc.page + 1) * Number($("page-size").value) < doc.filtered.length) {
@@ -248,7 +376,7 @@
     $("detail").hidden = true;
     $("search").focus();
   });
-  ["search", "epoch", "status", "sort"].forEach(id => {
+  ["search", "epoch", "status", "sort", "evidence"].forEach(id => {
     $(id).addEventListener("input", apply);
     $(id).addEventListener("change", apply);
   });

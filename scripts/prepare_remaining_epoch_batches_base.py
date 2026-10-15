@@ -120,6 +120,14 @@ def prepare(source, completed_through=15, now=None, dry_run=False):
     selected = manifest["batches"][completed_through:]
     if not selected:
         raise ValueError("No uncollected batches remain")
+    for old in selected:
+        files = paths_for(source, old["number"])
+        if any(files[key].exists() for key in (
+                "fees", "incentives", "audit", "status", "staging")):
+            raise RuntimeError(
+                f"Original batch {old['number']:03d} already has collected or "
+                "staged data; refusing to treat it as uncollected"
+            )
     target = source / f"epoch_{target_epoch.date().isoformat()}"
     target_manifest = target / "manifest.json"
     new_batches = []
@@ -165,10 +173,15 @@ def prepare(source, completed_through=15, now=None, dry_run=False):
         "collection_epoch_utc": target_epoch.isoformat(),
         "previous_epoch_utc": prior["source_epoch_utc"],
         "parent_plan_folder": str(source),
+        "parent_active_pool_count": manifest["active_pool_count"],
         "parent_completed_through_batch": completed_through,
         "parent_previously_audited_pools": prior["previous_audited_pools"],
         "parent_previously_usd_complete": prior["previous_complete_usd"],
         "active_pool_count": len(remaining_indexes),
+        "zero_weight_active_count": sum(
+            int(pool["weight_raw"]) == 0
+            for _, item in new_inputs for pool in item["pools"]
+        ),
         "all_batches_pool_count": len(remaining_indexes),
         "batch_count": len(selected),
         "batches": new_batches,

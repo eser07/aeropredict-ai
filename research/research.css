@@ -238,3 +238,35 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
   .wrap[data-view="researcher"] #pool-directory .section-head{margin-bottom:13px}
   .wrap[data-view="researcher"] #pool-directory .section-head h2{margin-bottom:7px}
 }
+
+/* P7.1 historical reward-week distribution, grouped by collection epoch.
+   Both cohorts have their own denominator; no cross-epoch yield ranking. */
+.p7-distribution{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+.p7-cohort{padding:18px;border:1px solid var(--line);border-radius:13px;background:#101f39;min-width:0}
+.p7-cohort h3{font-size:18px;margin:0 0 4px}
+.p7-cohort .p7-subtitle{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 16px}
+.p7-totals{display:grid;gap:8px;margin-bottom:17px}
+.p7-total{display:flex;justify-content:space-between;gap:13px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:6px;font-size:12px}
+.p7-total span{color:var(--muted)}
+.p7-total strong{font-variant-numeric:tabular-nums;white-space:nowrap}
+.p7-cohort h4{font-size:13px;margin:0 0 9px}
+.p7-legend{display:flex;flex-wrap:wrap;gap:8px 16px;margin:4px 0 13px;font-size:11px;color:var(--muted)}
+.p7-key{display:inline-flex;align-items:center;gap:6px}
+.p7-key::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--cyan)}
+.p7-key-incomplete::before{background:var(--amber)}
+.p7-rows{display:grid;gap:3px}
+.p7-row{display:grid;grid-template-columns:38px minmax(0,1fr) 90px;gap:9px;align-items:center}
+.p7-week-label{font-size:12px;color:var(--text);font-weight:700}
+.p7-track{background:#253651;border-radius:6px;display:flex;height:13px;overflow:hidden;min-width:0}
+.p7-segment{height:100%;min-width:0;display:block}
+.p7-complete{background:var(--cyan)}
+.p7-incomplete{background:var(--amber)}
+.p7-row-count{font-variant-numeric:tabular-nums;text-align:right;font-size:11px;white-space:nowrap;color:var(--text)}
+.p7-breakdown{font-size:10px;color:var(--muted);margin:0 0 7px 47px;line-height:1.45}
+@media(max-width:900px){.p7-distribution{grid-template-columns:1fr}}
+@media(max-width:480px){
+  .p7-cohort{padding:13px}
+  .p7-row{grid-template-columns:31px minmax(0,1fr) 84px;gap:6px}
+  .p7-breakdown{margin-left:37px}
+  .p7-row-count{font-size:10px}
+}

@@ -65,6 +65,101 @@ def saved_decimal(value):
     return number
 
 
+def four_week_evidence(values):
+    """Human-readable P5.1 evidence; thresholds are descriptive UI flags, not risk scores.
+
+    Input comprises four fully priced (FEES, BRIBES, total) Decimal tuples.
+    P4 votes, projections, APR and current prices are deliberately excluded.
+    """
+    fees_weeks = sum(fees > 0 for fees, _, _ in values)
+    bribes_weeks = sum(bribes > 0 for _, bribes, _ in values)
+    total = sum((row[2] for row in values), Decimal(0))
+    fees = sum((row[0] for row in values), Decimal(0))
+    bribes = sum((row[1] for row in values), Decimal(0))
+    pct = lambda value, base: format(
+        (100 * value / base).quantize(Decimal("0.01")), "f"
+    ) if base else None
+    notes = []
+    def add(kind, level, text):
+        notes.append({"kind": kind, "level": level, "text": text})
+
+    if not total:
+        add("BRIBES reliance", "unknown",
+            "No positive priced rewards in the four observed weeks; the FEES/BRIBES split is undefined.")
+        add("Reward concentration", "unknown",
+            "No positive priced total; one-week concentration is undefined.")
+    else:
+        share = 100 * bribes / total
+        label = pct(bribes, total)
+        if share >= 80:
+            add("BRIBES reliance", "caution",
+                f"{label}% of the observed four-week USD total came from BRIBES "
+                f"seen in {bribes_weeks}/4 weeks. This can change in future epochs.")
+        elif share >= 50:
+            add("BRIBES reliance", "caution",
+                f"BRIBES supplied {label}% of the observed four-week USD total "
+                f"and appeared in {bribes_weeks}/4 weeks.")
+        else:
+            add("BRIBES reliance", "context",
+                f"BRIBES supplied {label}% of four-week observed rewards "
+                f"and appeared in {bribes_weeks}/4 weeks.")
+        peak = max(row[2] for row in values)
+        share_peak = 100 * peak / total
+        peak_text = pct(peak, total)
+        if share_peak >= 50:
+            add("Reward concentration", "caution",
+                f"One completed week contributed {peak_text}% of the four-week total; "
+                "four observations cannot establish a repeatable pattern.")
+        elif share_peak >= 40:
+            add("Reward concentration", "caution",
+                f"The largest completed week contributed {peak_text}% of the four-week total.")
+        else:
+            add("Reward concentration", "context",
+                f"The largest completed week contributed {peak_text}% of the total. "
+                "Four weeks are insufficient to establish stability.")
+
+    add("FEES consistency", "caution" if fees_weeks < 4 else "context",
+        f"Positive priced FEES were observed in {fees_weeks}/4 weeks; "
+        f"BRIBES in {bribes_weeks}/4. Total reward-positive weeks may differ.")
+
+    previous, latest = values[-2][2], values[-1][2]
+    if previous == 0:
+        if latest > 0:
+            add("Weekly change", "caution",
+                "Latest rewards rose from a $0 prior week. A percentage change is undefined.")
+        else:
+            add("Weekly change", "context",
+                "Neither of the latest two completed weeks had positive priced rewards.")
+    else:
+        change = 100 * (latest - previous) / previous
+        mag = abs(change)
+        if mag >= 100:
+            prior_mean = total / 4
+            low_base = prior_mean > 0 and previous < prior_mean / 4
+            add("Weekly change", "caution",
+                f"Latest week changed by {format(change.quantize(Decimal('0.01')), 'f')}%. " +
+                ("The prior week was below 25% of the four-week average, "
+                 "so the percentage is sensitive to a low baseline." if low_base else
+                 "A large change over four weeks is not a reliable forward signal."))
+        elif mag >= 50:
+            add("Weekly change", "caution",
+                f"Latest week changed by {format(change.quantize(Decimal('0.01')), 'f')}%; "
+                "this is a retrospective, not predictive, comparison.")
+        else:
+            add("Weekly change", "context",
+                f"Latest week changed by {format(change.quantize(Decimal('0.01')), 'f')}% "
+                "compared with the prior completed week.")
+
+    add("USD quote coverage & timing", "context",
+        "All observed positive reward amounts were priced for this pool using its "
+        "batch-saved USD quotes. Quotes are NOT historical week prices and may "
+        "have different collection times across pools.")
+    add("Voting context", "context",
+        "P4 voting weights come from other Base blocks, not synchronized to these "
+        "reward weeks; they cannot establish personal veAERO income.")
+    return notes
+
+
 def weekly_trend_summary(weeks, usd_coverage_complete):
     """Descriptive P5 history; never infer APR, forecast or vote-based yield.
 
@@ -74,6 +169,14 @@ def weekly_trend_summary(weeks, usd_coverage_complete):
     unavailable = {
         "status": "unavailable_incomplete_usd",
         "reason": "Incomplete saved USD quotes prevent a reliable four-week total",
+        "evidence": [
+            {"kind": "USD quote coverage & timing", "level": "unknown",
+             "text": "Missing saved USD prices prevent FEES/BRIBES dependency, "
+                     "concentration and percentage-change analysis. Unknown is not $0."},
+            {"kind": "Voting context", "level": "context",
+             "text": "P4 voting weights were collected separately at other Base blocks "
+                     "and cannot establish personal veAERO income."},
+        ],
     }
     if not usd_coverage_complete:
         return unavailable
@@ -133,6 +236,7 @@ def weekly_trend_summary(weeks, usd_coverage_complete):
             "latest_change_state": state,
             "denominator_policy": "Percent change unavailable if previous week was $0",
             "interpretation": "Past observations priced at the collection-time quote; not yield or forecast",
+            "evidence": four_week_evidence(values),
         }
 
 

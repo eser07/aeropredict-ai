@@ -832,7 +832,45 @@ Offline P8.1 checks:
 python -m unittest discover -s tests -p 'p8_collection_preflight_test.py' -v
 ```
 
- This is a presentation-only, English-language local prototype. Research
+ **P8.2 — Read-only isolated future-period plan preview.** P8.1
+confirmed the 375/553 historical split and all 928 frozen research
+identities. The next task is a safe preview of the *same historical
+inventory identities* in a **separate** future Thursday reward period.
+This is a planning exercise, **not a claim that all 928 gauges are still
+active now** or a deployment of continuous collection.
+
+After the P8.1 integrity check, run:
+
+```bash
+python scripts/p8_preview_cohort_plan.py
+```
+
+The script selects the next Thursday 00:00 UTC strictly in the
+future (or accepts `--epoch YYYY-MM-DD` for a future Thursday).
+It verifies the archived dataset, both old manifests and all 38
+historical batch identities; it then prints a **proposed** separate
+path under `data/pool_collection_batches_base/p8_research_cohorts/`
+and 38 groups of up to 25 pools each. It does **not** create that
+path or a manifest, call Base RPC/price services, modify the existing
+38 archived batches, schedule jobs or change the 8765/8766 servers.
+
+The preview explicitly labels the source as the **frozen older Base
+inventory (block 52,595,092)**. Before a live rollout we must
+decide between (a) checking the same frozen subset for continuity
+with explicit survivor/inactive flags, and (b) re-discovering the
+current Voter pool registration and presenting it as a **different**
+active inventory. Either option requires fresh chain verification,
+per-epoch audit and rate-limited opt-in collection. Neither is
+implemented by P8.2. It is incorrect to treat P8.2 previewed 928
+historical pool IDs as 928 currently active gauges.
+
+Offline P8.2 tests:
+
+```bash
+python -m unittest discover -s tests -p "p8_preview_cohort_plan_test.py" -v
+```
+
+This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly
 refresh task are not changed. GenLayer is a separate later phase.

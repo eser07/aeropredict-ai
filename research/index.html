@@ -40,6 +40,15 @@
     </div>
     <p id="view-intro" class="mini" aria-live="polite">Begin with a pool search and its observed reward history. Switch to Researcher view for scoring, filters and old-vote ratios.</p>
   </section>
+  <details class="beginner-data-notes">
+    <summary>About this historical data and its limitations</summary>
+    <p>The 928 Aerodrome pools were collected in two separate groups: 375 on Oct 8 and
+    553 on Oct 15, 2026. FEES and BRIBES cover four completed weeks per pool.
+    Each batch uses its saved collection-time USD prices, not historical week prices.</p>
+    <p>P4 voting power was observed in 32 different Base blocks, not synchronized with
+    these reward weeks. Missing USD prices are unknown, not zero. Nothing shown is
+    live APR, claimable income or a prediction.</p>
+  </details>
   <section class="beginner-guide" aria-label="Getting started">
     <h2>Start with the evidence, not a predicted return.</h2>
     <div class="guide-steps">
@@ -48,18 +57,25 @@
       <p><strong>3. Compare</strong> up to three pools from the same saved collection period.</p>
     </div>
     <button type="button" id="try-example">Explore example: pool #1930</button>
-    <p class="mini">All rewards below are historical batch-saved observations. Voting weights were collected at different blocks. This screen has no live returns.</p>
+    <details class="beginner-glossary">
+      <summary>Quick guide: FEES, BRIBES, veAERO and epoch</summary>
+      <p><strong>FEES:</strong> swap fees allocated to the pool in completed weeks.</p>
+      <p><strong>BRIBES:</strong> voting incentives offered for a pool, which can change or disappear.</p>
+      <p><strong>veAERO:</strong> locked-AERO voting power; old observations do not show personal earnings.</p>
+      <p><strong>Epoch:</strong> a weekly Aerodrome reward and voting period.</p>
+    </details>
+    <p class="mini">Historical rewards only · No live APR or guaranteed veAERO earnings.</p>
   </section>
   <p id="error" class="error" role="alert" hidden></p>
-  <section class="stats" aria-label="Research coverage">
+  <section id="research-stats" class="stats" aria-label="Research coverage">
     <article class="stat"><span>Snapshot pools audited</span><b id="stat-pools">—</b><small>of 928 in the pinned inventory</small></article>
     <article class="stat"><span>Complete saved USD coverage</span><b id="stat-priced">—</b><small id="stat-coverage">—</small></article>
     <article class="stat"><span>Incomplete USD coverage</span><b id="stat-missing">—</b><small>Unknown value ≠ $0</small></article>
     <article class="stat"><span>No observed rewards</span><b id="stat-zero">—</b><small>in four completed weeks</small></article>
   </section>
-  <section class="panel">
+  <section class="panel" id="pool-directory">
     <div class="section-head">
-      <div><h2>Pool directory</h2><p>P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p></div>
+      <div><h2>Pool directory</h2><p class="beginner-directory-intro">Search a pool, then open Details to see its observed rewards and evidence cautions. Saved historical data only.</p><p class="directory-tech-note">P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p></div>
       <p class="mini" id="data-generated">Locally saved, not live</p>
     </div>
     <div class="filters">
@@ -102,7 +118,7 @@
     <div class="toolbar">
       <p id="count" aria-live="polite">Loading saved research data…</p>
       <div class="pagesize"><label for="page-size">Rows</label>
-        <select id="page-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
+        <select id="page-size"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option><option value="100">100</option></select>
       </div>
     </div>
     <div class="table-wrap">
@@ -124,7 +140,14 @@
       <button id="next" type="button" disabled>Next →</button>
     </div>
     <p class="mini research-only">Researcher filters and historical scores are exploratory only. Beginners should start with pool Details and evidence cautions.</p>
-    <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
+    <details class="beginner-explanation">
+      <summary>How should I read these historical numbers?</summary>
+      <p>Weekly USD figures use saved collection-time prices, not prices at the
+      historical reward weeks. Missing prices remain Unknown, not $0.
+      Old voting observations are not synchronized with these reward weeks.
+      The four-week figures do not predict future rewards or claimable veAERO income.</p>
+    </details>
+    <p class="footnote research-only">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
   </section>
   <section class="panel research-only" id="leaders-panel">
     <div class="section-head">

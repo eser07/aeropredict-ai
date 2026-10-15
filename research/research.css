@@ -95,3 +95,10 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .fee-bar{background:#54e7d4}.bribe-bar{background:#7195ff}
 .weekly-value{text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
 @media(max-width:500px){.weekly-bar-line{grid-template-columns:48px minmax(60px,1fr) 78px;gap:6px}}
+
+/* P4: block-specific vote observations. Deliberately separate from reward scores. */
+.vote-analysis{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+.vote-analysis h3{font-size:17px;margin:0 0 6px}
+.vote-content{margin-top:12px}
+.vote-content .detail-grid{margin-bottom:10px}
+.vote-content .detail-box strong{font-variant-numeric:tabular-nums}

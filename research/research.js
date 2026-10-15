@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const $ = id => document.getElementById(id);
-  const doc = { pools: [], meta: null, filtered: [], page: 0, compared: [], compareError: "", pairs: new Map() };
+  const doc = { pools: [], meta: null, filtered: [], page: 0, compared: [], compareError: "", pairs: new Map(), view: "beginner" };
   const EPOCH8 = "2026-10-08T00:00:00+00:00";
   const EPOCH15 = "2026-10-15T00:00:00+00:00";
   const make = (tag, cls, val) => {
@@ -148,6 +148,29 @@
       String(p.index), "#" + p.index, p.address || "",
       p.gauge_address || "", pairName(p) || "", ...tokens,
     ].some(s => String(s).toLowerCase().includes(query));
+  }
+  // P6.1: presentation-only beginner/researcher views.
+  // Neither mode changes the saved research data or computes yield.
+  function setView(mode) {
+    if (mode !== "beginner" && mode !== "researcher") return;
+    doc.view = mode;
+    document.querySelector(".wrap").dataset.view = mode;
+    [["beginner", "view-beginner"], ["researcher", "view-researcher"]]
+      .forEach(([name, id]) => {
+        const active = name === mode;
+        $(id).classList.toggle("active", active);
+        $(id).setAttribute("aria-pressed", String(active));
+      });
+    $("view-intro").textContent = mode === "beginner"
+      ? "Begin with a pool search and its observed reward history. Switch to Researcher view for scoring, filters and old-vote ratios."
+      : "Researcher view shows all saved-data filters and historical research heuristics; never APR or a current payout.";
+    // Hidden advanced filters must not silently restrict beginner results.
+    if (mode === "beginner") {
+      $("status").value = "all";
+      $("evidence").value = "all";
+      $("sort").value = "index";
+    }
+    apply();
   }
   function apply() {
     doc.page = 0;
@@ -750,6 +773,24 @@
     $(id).addEventListener("change", apply);
   });
   $("page-size").addEventListener("change", apply);
+  $("view-beginner").addEventListener("click", () => setView("beginner"));
+  $("view-researcher").addEventListener("click", () => setView("researcher"));
+  $("try-example").addEventListener("click", () => {
+    if (!doc.meta) {
+      error("Wait for the saved research inventory to finish loading.");
+      return;
+    }
+    error("");
+    setView("beginner");
+    $("epoch").value = EPOCH15;
+    $("search").value = "1930";
+    apply();
+    const example = doc.pools.find(p =>
+      p.index === 1930 && p.collection_epoch_utc === EPOCH15);
+    if (example) showDetails(example);
+    else $("search").focus();
+  });
+
   fetch("/api/research", {cache:"no-store"})
     .then(async response => {
       if (!response.ok) {

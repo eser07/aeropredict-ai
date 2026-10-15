@@ -255,7 +255,7 @@
       positiveTokens++;
       const stamp = token.quote_timestamp_utc;
       if (typeof stamp !== "string" ||
-          !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/i.test(stamp))
+          !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/i.test(stamp))
         continue;
       const milliseconds = Date.parse(stamp);
       if (Number.isFinite(milliseconds)) valid.push(milliseconds);

@@ -9,7 +9,7 @@
   <script defer src="/research.js"></script>
 </head>
 <body>
-<main class="wrap">
+<main class="wrap" data-view="beginner">
   <header class="brand">
     <div class="mark">AERO<span>PREDICT</span> <small>AI</small></div>
     <nav><a href="http://localhost:8765/" rel="noopener">Original dashboard ↗</a></nav>
@@ -28,6 +28,23 @@
     across pools or with historical FEES/BRIBES.
     This is <strong>not</strong> one synchronized snapshot, live APR, or a promise of veAERO income.
   </div>
+  <section class="view-control" aria-label="Explorer mode">
+    <div class="mode-switch" role="group" aria-label="Explorer mode">
+      <button type="button" id="view-beginner" class="mode-button active" aria-pressed="true">Beginner view</button>
+      <button type="button" id="view-researcher" class="mode-button" aria-pressed="false">Researcher view</button>
+    </div>
+    <p id="view-intro" class="mini" aria-live="polite">Begin with a pool search and its observed reward history. Switch to Researcher view for scoring, filters and old-vote ratios.</p>
+  </section>
+  <section class="beginner-guide" aria-label="Getting started">
+    <h2>Start with the evidence, not a predicted return.</h2>
+    <div class="guide-steps">
+      <p><strong>1. Search</strong> for a pool name, token pair, or registry number.</p>
+      <p><strong>2. Open Details</strong> to inspect four completed reward weeks, FEES/BRIBES mix and missing-data cautions.</p>
+      <p><strong>3. Compare</strong> up to three pools from the same saved collection period.</p>
+    </div>
+    <button type="button" id="try-example">Explore example: pool #1930</button>
+    <p class="mini">All rewards below are historical batch-saved observations. Voting weights were collected at different blocks. This screen has no live returns.</p>
+  </section>
   <p id="error" class="error" role="alert" hidden></p>
   <section class="stats" aria-label="Research coverage">
     <article class="stat"><span>Snapshot pools audited</span><b id="stat-pools">—</b><small>of 928 in the pinned inventory</small></article>
@@ -51,7 +68,7 @@
           <option value="both">Both · inventory order only</option>
         </select>
       </label>
-      <label>Reward / USD status
+      <label class="research-only">Reward / USD status
         <select id="status">
           <option value="all">All pool statuses</option>
           <option value="positive">Observed rewards (1–4 weeks)</option>
@@ -60,14 +77,14 @@
           <option value="incomplete">Incomplete USD coverage</option>
         </select>
       </label>
-      <label>Evidence / size filter
+      <label class="research-only">Evidence / size filter
         <select id="evidence">
           <option value="all">All observations · show cautions</option>
           <option value="regular">Rewards observed 4 of 4 weeks</option>
           <option value="context">4/4 + ≥$10/week + ≥100 old votes*</option>
         </select>
       </label>
-      <label>Sort within selected epoch
+      <label class="research-only">Sort within selected epoch
         <select id="sort">
           <option value="index">Registry pool index</option>
           <option value="score">Historical research priority · highest first</option>
@@ -84,7 +101,7 @@
       </div>
     </div>
     <div class="table-wrap">
-      <table>
+      <table id="pool-table">
         <thead><tr>
           <th scope="col">Pool</th><th scope="col">Collection epoch</th>
           <th scope="col">Rewards observed</th><th scope="col">USD coverage</th>
@@ -101,9 +118,10 @@
       <span id="page-count" aria-live="polite">—</span>
       <button id="next" type="button" disabled>Next →</button>
     </div>
+    <p class="mini research-only">Researcher filters and historical scores are exploratory only. Beginners should start with pool Details and evidence cautions.</p>
     <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
   </section>
-  <section class="panel" id="leaders-panel">
+  <section class="panel research-only" id="leaders-panel">
     <div class="section-head">
       <div><h2>Top Research Pools</h2>
       <p>Five highest historical research-priority scores within the selected collection epoch. Not an investment ranking.</p></div>

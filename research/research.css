@@ -164,3 +164,53 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .wrap[data-view="beginner"] #pool-table td:nth-child(7){display:none}
 @media(max-width:850px){.provenance-strip{grid-template-columns:1fr}.guide-steps{grid-template-columns:1fr}}
 @media(max-width:700px){.wrap[data-view="beginner"] .filters{grid-template-columns:1fr}.view-control{align-items:stretch}.mode-switch{width:100%}.mode-button{flex:1;padding:10px 8px}.beginner-guide{padding:15px}.wrap[data-view="beginner"] #pool-table{min-width:640px}}
+
+/* P6.2: progressive disclosure instead of making beginners read long provenance. */
+.wrap[data-view="beginner"] .notice{display:none}
+.wrap[data-view="beginner"] .directory-tech-note{display:none}
+.wrap[data-view="researcher"] .beginner-directory-intro,
+.wrap[data-view="researcher"] .beginner-data-notes,
+.wrap[data-view="researcher"] .beginner-explanation{display:none}
+.wrap[data-view="beginner"] .beginner-directory-intro{display:block}
+.beginner-data-notes,.beginner-explanation,.beginner-glossary{border:1px solid var(--line);border-radius:10px;background:#10203a;padding:10px 13px;margin:13px 0}
+.beginner-data-notes summary,.beginner-explanation summary,.beginner-glossary summary{font-size:12px;font-weight:650;color:var(--cyan);cursor:pointer}
+.beginner-data-notes p,.beginner-explanation p,.beginner-glossary p{font-size:12px;line-height:1.65;color:var(--muted);margin:9px 0 0}
+.beginner-glossary strong{color:var(--text)}
+.beginner-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px}
+#jump-to-search{background:#1b5a51;border-color:#54bfa5;color:#f1fff9}
+.wrap[data-view="beginner"] .section-head{margin-bottom:13px}
+.wrap[data-view="beginner"] .beginner-directory-intro{max-width:58ch}
+@media(max-width:700px){
+  /* One pool per card: no horizontal panning, even for Researcher view. */
+  .table-wrap{overflow:visible;border:0;background:transparent}
+  .table-wrap table,.wrap[data-view="beginner"] #pool-table{display:block;min-width:0;width:100%}
+  .table-wrap thead{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .table-wrap tbody{display:grid;gap:12px}
+  .table-wrap tbody tr{display:grid;gap:0;border:1px solid var(--line);border-radius:12px;background:#101f39;padding:10px 12px;min-width:0;overflow:hidden}
+  .table-wrap tbody tr:hover{background:#152842}
+  .table-wrap td{display:flex;align-items:flex-start;justify-content:space-between;gap:11px;padding:9px 0;border-bottom:1px solid #293852;min-width:0;text-align:right;overflow-wrap:anywhere}
+  .table-wrap td::before{content:attr(data-label);color:var(--muted);font-size:11px;font-weight:600;text-align:left;flex:0 0 42%}
+  .table-wrap td:first-child{display:block;text-align:left;padding:7px 0 12px}
+  .table-wrap td:first-child::before{display:none}
+  .table-wrap td:last-child{display:block;text-align:left;border-bottom:0;padding:13px 0 4px}
+  .table-wrap td:last-child::before{display:block;margin-bottom:8px}
+  .table-wrap .compare-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .table-wrap .compare-actions button{min-height:44px;padding:10px 7px;font-size:12px;white-space:normal}
+  .table-wrap .chip{white-space:normal}
+  .table-wrap .no-data{max-width:53%}
+  .wrap[data-view="beginner"] .provenance-strip{display:none}
+  .wrap[data-view="beginner"] .lead{font-size:14px;margin-bottom:10px}
+  .wrap[data-view="beginner"] .beginner-guide{padding:14px;margin:9px 0 16px}
+  .wrap[data-view="beginner"] .beginner-guide h2{font-size:17px}
+  .wrap[data-view="beginner"] .guide-steps{gap:6px}
+  .wrap[data-view="beginner"] .guide-steps p{padding:8px 10px}
+  .beginner-actions{display:grid;grid-template-columns:1fr;gap:8px}
+  .beginner-actions button{min-height:44px}
+  .wrap[data-view="beginner"] .stats{margin-bottom:15px}
+  .wrap[data-view="beginner"] .panel{margin-top:10px}
+  .wrap[data-view="beginner"] .directory-tech-note{display:none}
+  .toolbar{flex-wrap:wrap;gap:8px;margin:16px 0}
+  .toolbar p{font-size:12px}
+  .pager{justify-content:space-between}
+  .pager button{min-height:44px}
+}

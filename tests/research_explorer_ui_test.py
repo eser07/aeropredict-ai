@@ -363,6 +363,125 @@ process.stdout.write(JSON.stringify({result,bad,badWeeks,other}));
         self.assertEqual(out["other"]["incomplete"], 1)
         self.assertEqual(out["other"]["fourWeeks"], 1)
 
+    def test_p72_researcher_source_and_saved_price_share_controls(self):
+        for term in (
+            'id="source"',
+            'value="fees">FEES only',
+            'value="bribes">BRIBES only',
+            'value="both">FEES + BRIBES',
+            'value="none">Neither observed',
+            'id="bribes-share"',
+            'value="atleast25"',
+            'value="atleast50"',
+            'value="atleast75"',
+            'value="unknown">Undefined / incomplete',
+            'class="research-only p72-hint"',
+            'four-week USD total',
+            'Missing prices or a $0 priced total',
+        ):
+            self.assertIn(term, self.page)
+        for term in (
+            'function rewardSource(p)',
+            'function pricedBribesShare(p)',
+            'function matchesP72(p, source, shareFilter)',
+            'p.observed_fees_positive_weeks',
+            'p.observed_bribes_positive_weeks',
+            'p.usd_coverage_complete !== true',
+            'token.mean_usd_at_collection_quote',
+            'token.observed_positive_weeks !== 0',
+            'Math.abs(total - poolMean)',
+            'shareFilter === "unknown"',
+            'if (!matchesP72(p, source, shareFilter)) return false',
+            '$("source").value = "all"',
+            '$("bribes-share").value = "all"',
+            '"evidence", "source", "bribes-share"',
+            'Observed source: ',
+            'share.toFixed(1) + "% saved-price USD"',
+        ):
+            self.assertIn(term, self.javascript)
+        self.assertIn('.source-classification', self.css)
+        self.assertIn('.wrap[data-view="beginner"] .research-only',
+                      self.css)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js unavailable: skip P7.2 share behavior")
+    def test_p72_js_source_classification_and_price_reconciliation(self):
+        import json
+        num_start = self.javascript.index("  const numeric = value => {")
+        num_end = self.javascript.index("  // Display-only", num_start)
+        start = self.javascript.index("  function rewardSource(p)")
+        end = self.javascript.index("  function error(message)", start)
+        definitions = self.javascript[num_start:num_end] + self.javascript[start:end]
+        scenario = r"""
+const t = (type, usd, weeks) => ({
+  type, mean_usd_at_collection_quote:usd, observed_positive_weeks:weeks
+});
+const pool = (fees, bribes, mean, priced, tokens) => ({
+  observed_fees_positive_weeks:fees, observed_bribes_positive_weeks:bribes,
+  avg_pool_usd_per_week_at_collection_quote:mean,
+  usd_coverage_complete:priced, token_rewards:tokens
+});
+const mixed = pool(2, 1, "10", true, [t("FEES","4",2),t("BRIBES","6",1)]);
+const onlyFees = pool(4, 0, "5", true, [t("FEES","5",4),t("BRIBES","0",0)]);
+const onlyBribes = pool(0, 1, "6", true, [t("BRIBES","6",1)]);
+const none = pool(0, 0, "0", true, []);
+const unpriced = pool(0, 1, null, false, [t("BRIBES",null,1)]);
+const invalid = pool(1, 1, "10", true, [t("FEES","4",1),t("BRIBES","7",1)]);
+const missingPositive = pool(1,1,"4",true,
+  [t("FEES","4",1),t("BRIBES",null,1)]);
+const missingZero = pool(1,0,"4",true,
+  [t("FEES","4",1),t("BRIBES",null,0)]);
+const cases = {
+  mixedSource:rewardSource(mixed),
+  feesSource:rewardSource(onlyFees),
+  bribesSource:rewardSource(onlyBribes),
+  noneSource:rewardSource(none),
+  mixedShare:pricedBribesShare(mixed),
+  feesShare:pricedBribesShare(onlyFees),
+  bribesShare:pricedBribesShare(onlyBribes),
+  noneShare:pricedBribesShare(none),
+  missingShare:pricedBribesShare(unpriced),
+  invalidShare:pricedBribesShare(invalid),
+  missingPositiveShare:pricedBribesShare(missingPositive),
+  missingZeroShare:pricedBribesShare(missingZero),
+  bothFilter:matchesP72(mixed,"both","all"),
+  wrongSource:matchesP72(mixed,"bribes","all"),
+  threshold50:matchesP72(mixed,"all","atleast50"),
+  threshold75:matchesP72(mixed,"all","atleast75"),
+  unknownMixed:matchesP72(mixed,"all","unknown"),
+  unknownUnpriced:matchesP72(unpriced,"all","unknown"),
+  feesOnlyFilter:matchesP72(onlyFees,"fees","all"),
+  noRewardsFilter:matchesP72(none,"none","all"),
+  zeroNotUnknown:matchesP72(onlyFees,"all","unknown")
+};
+process.stdout.write(JSON.stringify(cases));
+"""
+        result = subprocess.run(
+            [shutil.which("node"), "-e", definitions + scenario],
+            text=True, capture_output=True, check=False, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertEqual(out["mixedSource"], "both")
+        self.assertEqual(out["feesSource"], "fees")
+        self.assertEqual(out["bribesSource"], "bribes")
+        self.assertEqual(out["noneSource"], "none")
+        self.assertAlmostEqual(out["mixedShare"], 60)
+        self.assertAlmostEqual(out["feesShare"], 0)
+        self.assertAlmostEqual(out["bribesShare"], 100)
+        self.assertIsNone(out["noneShare"])
+        self.assertIsNone(out["missingShare"])
+        self.assertIsNone(out["invalidShare"])
+        self.assertIsNone(out["missingPositiveShare"])
+        self.assertAlmostEqual(out["missingZeroShare"], 0)
+        for key in ("bothFilter", "threshold50", "unknownUnpriced",
+                    "feesOnlyFilter", "noRewardsFilter"):
+            self.assertTrue(out[key], key)
+        for key in ("wrongSource", "threshold75", "unknownMixed",
+                    "zeroNotUnknown"):
+            self.assertFalse(out[key], key)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

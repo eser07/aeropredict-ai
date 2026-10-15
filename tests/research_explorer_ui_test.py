@@ -59,6 +59,18 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertIn('Unreliable in the table', self.page)
         self.assertIn('graded evidence discounts', self.page)
 
+    def test_saved_weekly_breakdown_is_read_only_and_explicitly_qualified(self):
+        self.assertIn('function renderWeeklyBreakdown(p, root)', self.javascript)
+        self.assertIn('fetch("/api/weekly?index="', self.javascript)
+        self.assertIn('doc.detailRequest = p.index', self.javascript)
+        self.assertIn('renderWeeklyBreakdown(p, root);', self.javascript)
+        self.assertIn('Unknown quotes are never treated as $0', self.javascript)
+        self.assertIn('data.weeks.length !== 4', self.javascript)
+        self.assertIn('Pool trading pairs are read separately', self.page)
+        self.assertIn('.weekly-analysis', self.css)
+        self.assertIn('.fee-bar', self.css)
+        self.assertIn('.bribe-bar', self.css)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

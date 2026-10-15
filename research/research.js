@@ -240,6 +240,114 @@
     return "P7.3 · Largest week: " + peak +
       " · Latest vs previous: " + latest + baseline;
   }
+  // P7.4: evidence availability, NOT a confidence score. Quote time
+  // coverage is independent from whether the saved USD amounts were priced.
+  // Reject invalid or timezone-free strings instead of inventing UTC times.
+  function quoteProvenance(p) {
+    if (!Array.isArray(p.token_rewards)) return null;
+    const valid = [];
+    let positiveTokens = 0;
+    for (const token of p.token_rewards) {
+      if (!token || !Number.isInteger(token.observed_positive_weeks) ||
+          token.observed_positive_weeks < 0 ||
+          token.observed_positive_weeks > 4) return null;
+      if (token.observed_positive_weeks === 0) continue;
+      positiveTokens++;
+      const stamp = token.quote_timestamp_utc;
+      if (typeof stamp !== "string" ||
+          !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$/i.test(stamp))
+        continue;
+      const milliseconds = Date.parse(stamp);
+      if (Number.isFinite(milliseconds)) valid.push(milliseconds);
+    }
+    valid.sort((a, b) => a - b);
+    return {
+      positiveTokens, timestamped: valid.length,
+      missingTimes: positiveTokens - valid.length,
+      earliestUtc: valid.length ? new Date(valid[0]).toISOString() : null,
+      latestUtc: valid.length ? new Date(valid[valid.length - 1]).toISOString() : null,
+    };
+  }
+  function matchesP74(p, filter) {
+    if (filter === "all") return true;
+    if (filter === "usd-missing") return p.usd_coverage_complete === false;
+    if (filter === "registry-truncated") return p.truncated_reward_registry === true;
+    const info = quoteProvenance(p);
+    if (!info) return false;
+    if (filter === "quote-time-gap")
+      return info.positiveTokens > 0 && info.missingTimes > 0;
+    if (filter === "timestamped")
+      return p.usd_coverage_complete === true &&
+        info.positiveTokens > 0 && info.missingTimes === 0;
+    return false;
+  }
+  function quoteProvenanceLabel(p) {
+    const info = quoteProvenance(p);
+    if (!info) return "Quote time evidence: Unknown";
+    if (info.positiveTokens === 0)
+      return "Quote time evidence: N/A (no positive reward tokens)";
+    return "Saved quote UTC times: " + info.timestamped + "/" +
+      info.positiveTokens + " positive-reward token entries" +
+      (p.truncated_reward_registry ? " · ⚠ registry truncated" : "");
+  }
+  function renderDataProvenance(p, root) {
+    const section = make("section", "p74-evidence");
+    section.append(make("h3", "", "P7.4 · Data provenance & limitations"));
+    section.append(make("p", "mini",
+      "Independent saved evidence fields, not a percentage confidence, " +
+      "safety rating, current payout or investment recommendation."));
+    const grid = make("div", "detail-grid p74-grid");
+    const fields = [
+      ["Historical reward cohort epoch", epochName(p.collection_epoch_utc) +
+        " · NOT the exact collection clock time"],
+      ["Saved research batch", Number.isInteger(p.batch_number) &&
+        p.batch_number > 0 ? "#" + p.batch_number : "Unknown"],
+      ["USD coverage", p.usd_coverage_complete === true ?
+        "Complete saved-price observations; quote times may still be missing" :
+        "Incomplete · some USD values Unknown, not $0"],
+      ["Positive-reward weeks", p.observed_any_reward_positive_weeks +
+        "/4 completed weeks · no future consistency claim"],
+      ["Reward registry", p.truncated_reward_registry === true ?
+        "⚠ Truncated / unsupported registry flag in saved audit" :
+        p.truncated_reward_registry === false ?
+        "No truncation flag in saved audit" : "Registry status Unknown"],
+      ["Older inventory snapshot block", Number.isInteger(p.inventory_snapshot_block) ?
+        String(p.inventory_snapshot_block) + " · NOT aligned with reward weeks" :
+        "Unknown · P4 voting observations remain separate"],
+      ["Saved research file generated (UTC)", doc.meta &&
+        typeof doc.meta.generated_at_utc === "string" ?
+        doc.meta.generated_at_utc : "Unknown · not a live refresh"],
+    ];
+    const info = quoteProvenance(p);
+    let times = "Unknown · no usable token timestamp evidence";
+    if (info) {
+      times = info.positiveTokens === 0 ?
+        "N/A · no positive-reward token records" :
+        info.timestamped + "/" + info.positiveTokens +
+          " positive-reward token records have a usable saved UTC timestamp";
+    }
+    fields.push(["Saved token quote timestamp coverage", times]);
+    if (info && info.earliestUtc)
+      fields.push(["Available quote UTC time range",
+        info.earliestUtc + " → " + info.latestUtc +
+        " · saved quote times, NOT reward-week timestamps"]);
+    fields.forEach(([label, value]) => sectionValue(grid, label, value));
+    section.append(grid);
+    if (!info || (info.positiveTokens > 0 && info.missingTimes > 0))
+      section.append(make("p", "warnline",
+        "⚠ Missing or invalid UTC quote timestamps are not proof of a missing " +
+        "USD price. Inspect saved token quotes below; no timestamp is invented."));
+    if (p.usd_coverage_complete !== true)
+      section.append(make("p", "warnline",
+        "⚠ Missing USD prices prevent fully priced FEES / BRIBES interpretation. " +
+        "Missing components, when recorded, appear below."));
+    section.append(make("p", "mini",
+      "P4: separately recorded voting weights, pinned Base block and block UTC " +
+      "time are shown in the P4 section below. They were NOT synchronized " +
+      "across pools or with historical FEES/BRIBES. No live vote eligibility, " +
+      "APR, tradability or veNFT earnings are established."));
+    root.append(section);
+  }
   function error(message) {
     $("error").hidden = !message;
     $("error").textContent = message || "";
@@ -413,6 +521,7 @@
       $("bribes-share").value = "all";
       $("concentration").value = "all";
       $("latest-move").value = "all";
+      $("provenance-filter").value = "all";
     }
     apply();
   }
@@ -430,6 +539,7 @@
     const shareFilter = $("bribes-share").value;
     const concentration = $("concentration").value;
     const latest = $("latest-move").value;
+    const provenanceFilter = $("provenance-filter").value;
     const sort = $("sort").value;
     const all = period === "both";
     [...$("sort").options].forEach(opt => {
@@ -441,6 +551,7 @@
       if (!searchMatch(p, query) || !evidenceMatch(p, evidence)) return false;
       if (!matchesP72(p, source, shareFilter)) return false;
       if (!matchesP73(p, concentration, latest)) return false;
+      if (!matchesP74(p, provenanceFilter)) return false;
       if (status === "positive" && p.observed_any_reward_positive_weeks === 0) return false;
       if (status === "zero" && p.observed_any_reward_positive_weeks !== 0) return false;
       if (status === "complete" && !p.usd_coverage_complete) return false;
@@ -504,6 +615,8 @@
           share.toFixed(1) + "% saved-price USD")));
       identity.append(make("div", "tiny research-only pattern-classification",
         patternSummary(p)));
+      identity.append(make("div", "tiny research-only p74-quote-label",
+        quoteProvenanceLabel(p)));
       cell(tr, epochName(p.collection_epoch_utc), "tiny");
       const activity = cell(tr);
       const active = p.observed_any_reward_positive_weeks;
@@ -798,6 +911,7 @@
     sectionValue(row, "Historical research priority",
       researchScore(p) === null ? "Unrated · incomplete USD" : researchScore(p) + " / 100");
     root.append(row);
+    renderDataProvenance(p, root);
     sizeCautions(p).forEach(message =>
       root.append(make("p", "warnline", "⚠ " + message + ". An old vote ratio is not a current yield.")));
     const identity = make("p", "mini");
@@ -1035,7 +1149,7 @@
     $("detail").hidden = true;
     $("search").focus();
   });
-  ["search", "epoch", "status", "sort", "evidence", "source", "bribes-share", "concentration", "latest-move"].forEach(id => {
+  ["search", "epoch", "status", "sort", "evidence", "source", "bribes-share", "concentration", "latest-move", "provenance-filter"].forEach(id => {
     $(id).addEventListener("input", apply);
     $(id).addEventListener("change", apply);
   });

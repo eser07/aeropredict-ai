@@ -782,6 +782,12 @@
   $("page-size").addEventListener("change", apply);
   $("view-beginner").addEventListener("click", () => setView("beginner"));
   $("view-researcher").addEventListener("click", () => setView("researcher"));
+  // P6.3: focus the existing search field; do not reset Researcher filters.
+  $("researcher-jump").addEventListener("click", () => {
+    const field = $("search");
+    field.scrollIntoView({behavior: "smooth", block: "center"});
+    field.focus({preventScroll: true});
+  });
   $("jump-to-search").addEventListener("click", () => {
     const field = $("search");
     field.scrollIntoView({behavior: "smooth", block: "center"});

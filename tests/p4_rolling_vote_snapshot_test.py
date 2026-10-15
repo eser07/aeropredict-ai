@@ -98,7 +98,7 @@ class RollingP4Tests(unittest.TestCase):
             calls.append(block)
             if block == hex(52648000) and len(calls) == 2:
                 from subprocess import CalledProcessError
-                raise CalledProcessError(22, "curl", stderr="curl: (22) HTTP 403")
+                raise CalledProcessError(22, "curl", stderr="curl: (22) The requested URL returned error: 403")
             return 200
         with patch.object(rolling, "new_block", side_effect=lambda: next(blocks)), \
              patch.object(rolling, "read_uint", side_effect=read_weight), \

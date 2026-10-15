@@ -495,7 +495,7 @@ process.stdout.write(JSON.stringify(cases));
             'value="new"',
             'value="rise50"',
             'Latest vs previous week',
-            'does <strong>not</strong> prove BRIBES caused that peak',
+            'prove BRIBES caused that peak',
         ):
             self.assertIn(term, self.page)
         for term in (

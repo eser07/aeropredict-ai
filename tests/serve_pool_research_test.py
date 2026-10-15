@@ -197,6 +197,12 @@ class TestResearchServer(unittest.TestCase):
         self.assertEqual(doc["trend"]["positive_priced_weeks"], 3)
         self.assertEqual(doc["trend"]["latest_change_state"], "decreased")
         self.assertEqual(doc["trend"]["latest_change_percent"], "-100.00")
+        self.assertEqual(len(doc["trend"]["evidence"]), 6)
+        self.assertEqual(
+            {item["kind"] for item in doc["trend"]["evidence"]},
+            {"BRIBES reliance", "Reward concentration", "FEES consistency",
+             "Weekly change", "USD quote coverage & timing", "Voting context"},
+        )
 
     def test_p5_weekly_trend_avoids_zero_denominators_and_missing_quotes(self):
         def weeks(fees, bribes):
@@ -247,6 +253,72 @@ class TestResearchServer(unittest.TestCase):
         series[1]["total_usd"] = "999"
         with self.assertRaisesRegex(ValueError, "mismatch"):
             m.weekly_trend_summary(series, True)
+
+    def test_p51_evidence_flags_heavy_bribes_low_baseline_and_fee_presence(self):
+        starts = ["2026-09-10", "2026-09-17", "2026-09-24", "2026-10-01"]
+        # Four positive total weeks, but FEES and BRIBES each appeared only twice.
+        fees = [10, 0, 5, 0]
+        bribes = [0, 500, 0, 100]
+        weeks = [
+            {"week_start_utc": date + "T00:00:00+00:00",
+             "fees_usd": str(a), "bribes_usd": str(b),
+             "total_usd": str(a + b)}
+            for date, a, b in zip(starts, fees, bribes)
+        ]
+        observed = m.weekly_trend_summary(weeks, True)
+        self.assertEqual(observed["positive_priced_weeks"], 4)
+        signals = {item["kind"]: item for item in observed["evidence"]}
+        self.assertEqual(len(signals), 6)
+        self.assertEqual(signals["BRIBES reliance"]["level"], "caution")
+        self.assertIn("97.56%", signals["BRIBES reliance"]["text"])
+        self.assertIn("2/4 weeks", signals["BRIBES reliance"]["text"])
+        self.assertEqual(signals["Reward concentration"]["level"], "caution")
+        self.assertIn("81.30%", signals["Reward concentration"]["text"])
+        self.assertIn("2/4 weeks", signals["FEES consistency"]["text"])
+        self.assertIn("BRIBES in 2/4", signals["FEES consistency"]["text"])
+        self.assertEqual(signals["Weekly change"]["level"], "caution")
+        self.assertIn("low baseline", signals["Weekly change"]["text"])
+        self.assertIn("NOT historical week prices",
+                      signals["USD quote coverage & timing"]["text"])
+        self.assertIn("other Base blocks", signals["Voting context"]["text"])
+        self.assertNotIn("APR", repr(signals))
+        self.assertNotIn("forecast return", repr(signals))
+
+    def test_p51_evidence_distinguishes_fees_only_zero_and_unknown(self):
+        dates = ["2026-09-10", "2026-09-17", "2026-09-24", "2026-10-01"]
+        def series(fees, bribes):
+            return [
+                {"week_start_utc": d + "T00:00:00+00:00",
+                 "fees_usd": str(a), "bribes_usd": str(b),
+                 "total_usd": str(a + b)}
+                for d, a, b in zip(dates, fees, bribes)
+            ]
+        steady = m.weekly_trend_summary(series([60] * 4, [0] * 4), True)
+        notes = {item["kind"]: item for item in steady["evidence"]}
+        self.assertEqual(notes["BRIBES reliance"]["level"], "context")
+        self.assertIn("0.00%", notes["BRIBES reliance"]["text"])
+        self.assertIn("4/4 weeks", notes["FEES consistency"]["text"])
+        self.assertEqual(notes["Reward concentration"]["level"], "context")
+        self.assertIn("25.00%", notes["Reward concentration"]["text"])
+
+        zero = m.weekly_trend_summary(series([0] * 4, [0] * 4), True)
+        empty = {item["kind"]: item for item in zero["evidence"]}
+        self.assertEqual(empty["BRIBES reliance"]["level"], "unknown")
+        self.assertEqual(empty["Reward concentration"]["level"], "unknown")
+        self.assertIn("undefined", empty["Reward concentration"]["text"])
+        self.assertEqual(zero["status"], "available")
+        self.assertIsNone(zero["fees_share_percent"])
+
+        from_zero = m.weekly_trend_summary(series([0, 0, 0, 5], [0] * 4), True)
+        change = {item["kind"]: item for item in from_zero["evidence"]}
+        self.assertIn("undefined", change["Weekly change"]["text"])
+        self.assertEqual(from_zero["latest_change_state"], "new_positive_from_zero")
+
+        missing = m.weekly_trend_summary(series([60] * 4, [0] * 4), False)
+        self.assertEqual(missing["status"], "unavailable_incomplete_usd")
+        self.assertEqual({n["kind"] for n in missing["evidence"]},
+                         {"USD quote coverage & timing", "Voting context"})
+        self.assertIn("Unknown is not $0", missing["evidence"][0]["text"])
 
     def test_weekly_breakdown_rejects_invalid_query_and_missing_source(self):
         for path, expected in (

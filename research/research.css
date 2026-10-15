@@ -124,3 +124,15 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .compare-reward-mix .compare-reward-metrics p{margin:0;color:var(--text);line-height:1.5}
 .compare-reward-mix .trend-mix-track{height:12px;margin-bottom:7px}
 .compare-reward-mix .mini{font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+
+/* P5.1 evidence notes: restrained treatment, no invented safety/confidence rating. */
+.evidence-notes{margin-top:15px;border-top:1px solid var(--line);padding-top:13px}
+.evidence-notes h4{font-size:14px;color:var(--text);margin:0 0 7px}
+.evidence-list{display:grid;gap:8px;margin-top:11px}
+.evidence-item{padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:8px;background:#101a30;overflow-wrap:anywhere}
+.evidence-item.evidence-caution{border-left-color:var(--amber)}
+.evidence-item.evidence-unknown{border-left-color:var(--muted)}
+.evidence-kind{font-size:12px;color:var(--text)}
+.evidence-item .mini{margin:5px 0 0;line-height:1.55;color:var(--muted)}
+.compare-reward-mix .evidence-notes{margin:13px 0}
+.compare-reward-mix .evidence-notes h4{color:var(--text)}

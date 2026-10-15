@@ -648,6 +648,18 @@ initial display preference, not the underlying inventory. The JS and CSS
 remain self-hosted on the same read-only service; no RPC, wallets or changes
 to the 8765 dashboard or hourly jobs.
 
+**P6.3 — Compact researcher mode on phones.** At viewports of 700px
+or narrower, the full top-of-page historical warning, three provenance
+cards, and detailed pair-label note are replaced visually by a short
+persistent caution and native expandable `<details>` panels. The detailed
+data-provenance text remains available on request; the underlying saved
+data, scoring, P4 vote observations and P5.1 computations are unchanged.
+A **Jump to pool filters** button focuses the existing search without
+resetting researcher filters or the selected epoch. The full researcher
+screening-methodology note and leaderboard formula now have accessible
+expandable explanations. The full top provenance remains visible at
+desktop sizes. No extra providers, requests, wallets, or scripts are needed.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

@@ -101,6 +101,28 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertIn('function researchScore(p)', self.javascript)
         self.assertIn('function renderRollingVotes(p, root)', self.javascript)
 
+    def test_p5_same_epoch_comparison_shows_reward_mix_without_vote_yield(self):
+        for snippet in (
+            'function renderComparisonRewardMix(p, card)',
+            'renderComparisonRewardMix(p, card);',
+            'fetch("/api/weekly?index="',
+            'data.collection_epoch_utc !== p.collection_epoch_utc',
+            'p.usd_coverage_complete',
+            'new_positive_from_zero',
+            'Saved four-week comparison unavailable',
+            'P4 voting weights are NOT synchronized',
+            'No positive priced rewards; split undefined',
+            'Historical rewards priced at each batch',
+        ):
+            self.assertIn(snippet, self.javascript)
+        self.assertIn('selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc)', self.javascript)
+        self.assertIn('Compare up to three pools from the SAME saved collection epoch', self.page)
+        self.assertIn('Saved USD quote times can differ by collection batch', self.page)
+        self.assertIn('.compare-reward-mix', self.css)
+        self.assertIn('.compare-reward-metrics', self.css)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('eval(', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

@@ -120,6 +120,24 @@ class P4VoteSnapshotTests(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "incomplete snapshot"):
                     p4._run(inventory(), "source_sha", 1, 1, 0, False, True)
 
+    def test_recover_publication_after_completed_checkpoint(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            done = sample_progress()
+            done["pools"] = [
+                {"index": item["index"], "pool_address": item["pool_address"],
+                 "weight_raw": "5"}
+                for item in inventory()["pools"]
+            ]
+            done["next_offset"] = 3
+            done["complete"] = True
+            checkpoint = root / "block_52630000" / "checkpoint.json"
+            p4.save_atomic(checkpoint, done)
+            with patch.object(p4, "DESTINATION", root), patch.object(p4, "verify_pinned"):
+                result = p4._run(inventory(), "source_sha", 2, 1, 0, False, False)
+                self.assertTrue(result["complete"])
+                self.assertTrue(checkpoint.with_name("snapshot.json").exists())
+
     def test_invalid_collection_options(self):
         with self.assertRaisesRegex(ValueError, "Invalid page"):
             p4.run(page_size=0)

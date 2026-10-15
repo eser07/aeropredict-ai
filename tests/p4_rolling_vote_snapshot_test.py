@@ -97,7 +97,8 @@ class RollingP4Tests(unittest.TestCase):
         def read_weight(signature, address, block):
             calls.append(block)
             if block == hex(52648000) and len(calls) == 2:
-                raise RuntimeError("HTTP 403: historical block unavailable")
+                from subprocess import CalledProcessError
+                raise CalledProcessError(22, "curl", stderr="curl: (22) HTTP 403")
             return 200
         with patch.object(rolling, "new_block", side_effect=lambda: next(blocks)), \
              patch.object(rolling, "read_uint", side_effect=read_weight), \

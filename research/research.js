@@ -173,6 +173,73 @@
     if (shareFilter === "atleast75") return share >= 75;
     return false;
   }
+  // P7.3: four saved TOTAL reward weeks only. Values use collection-time
+  // quotes (not prices on each week), with no BRIBES-specific week inference.
+  // A null result means USD coverage or the mean/week reconciliation failed.
+  function historicalPattern(p) {
+    if (p.usd_coverage_complete !== true ||
+        !Array.isArray(p.weekly_pool_usd_at_collection_quote) ||
+        p.weekly_pool_usd_at_collection_quote.length !== 4) return null;
+    const mean = numeric(p.avg_pool_usd_per_week_at_collection_quote);
+    if (mean === null) return null;
+    const weeks = p.weekly_pool_usd_at_collection_quote.map(value =>
+      (typeof value === "string" || typeof value === "number") ? numeric(value) : null);
+    if (weeks.some(value => value === null)) return null;
+    const total = weeks.reduce((sum, amount) => sum + amount, 0);
+    if (!Number.isFinite(total) ||
+        Math.abs(total - 4 * mean) > Math.max(1e-8, 4 * mean * 1e-6))
+      return null;
+    const previous = weeks[2], last = weeks[3];
+    const delta = last - previous;
+    let state = "same";
+    if (previous === 0 && last === 0) state = "both-zero";
+    else if (previous === 0) state = "new";
+    else if (delta > 0) state = "up";
+    else if (delta < 0) state = "down";
+    const percent = previous > 0 ? 100 * delta / previous : null;
+    const peakPercent = total > 0 ? 100 * Math.max(...weeks) / total : null;
+    return {weeks, total, peakPercent, previous, last, delta, percent, state};
+  }
+  function matchesP73(p, concentration, latest) {
+    const observation = historicalPattern(p);
+    if (concentration === "unknown") {
+      if (observation && observation.peakPercent !== null) return false;
+    } else if (concentration !== "all") {
+      if (!observation || observation.peakPercent === null) return false;
+      if (concentration === "peak50" && observation.peakPercent < 50) return false;
+      if (concentration === "peak75" && observation.peakPercent < 75) return false;
+      if (concentration === "bribes-peak" &&
+          (observation.peakPercent < 50 ||
+           pricedBribesShare(p) === null || pricedBribesShare(p) < 75)) return false;
+      if (!["peak50", "peak75", "bribes-peak"].includes(concentration)) return false;
+    }
+    if (latest === "all") return true;
+    if (latest === "unknown") return observation === null;
+    if (!observation) return false;
+    if (latest === "rise50")
+      return observation.state === "up" && observation.previous >= 10 &&
+        observation.percent !== null && observation.percent >= 50;
+    if (latest === "same") return observation.state === "same" ||
+      observation.state === "both-zero";
+    return observation.state === latest;
+  }
+  function patternSummary(p) {
+    const t = historicalPattern(p);
+    if (!t) return "P7.3 · Weekly USD pattern: Unknown (unpriced/inconsistent)";
+    const peak = t.peakPercent === null ? "Undefined ($0 four-week total)"
+      : t.peakPercent.toFixed(1) + "% of four-week total";
+    let latest = "Both recent weeks $0";
+    if (t.state === "new")
+      latest = "From $0 to " + money(t.last) + " · percentage undefined";
+    else if (t.state === "up" || t.state === "down")
+      latest = (t.delta > 0 ? "+" : "−") + money(Math.abs(t.delta)) +
+        " (" + (t.percent > 0 ? "+" : "") + t.percent.toFixed(1) + "%)";
+    else if (t.state === "same") latest = "Unchanged at " + money(t.last);
+    const baseline = t.previous > 0 && t.previous < 10 ?
+      " · ⚠ previous week below $10" : "";
+    return "P7.3 · Largest week: " + peak +
+      " · Latest vs previous: " + latest + baseline;
+  }
   function error(message) {
     $("error").hidden = !message;
     $("error").textContent = message || "";
@@ -344,6 +411,8 @@
       $("sort").value = "index";
       $("source").value = "all";
       $("bribes-share").value = "all";
+      $("concentration").value = "all";
+      $("latest-move").value = "all";
     }
     apply();
   }
@@ -359,6 +428,8 @@
     const evidence = $("evidence").value;
     const source = $("source").value;
     const shareFilter = $("bribes-share").value;
+    const concentration = $("concentration").value;
+    const latest = $("latest-move").value;
     const sort = $("sort").value;
     const all = period === "both";
     [...$("sort").options].forEach(opt => {
@@ -369,6 +440,7 @@
       if (!all && p.collection_epoch_utc !== period) return false;
       if (!searchMatch(p, query) || !evidenceMatch(p, evidence)) return false;
       if (!matchesP72(p, source, shareFilter)) return false;
+      if (!matchesP73(p, concentration, latest)) return false;
       if (status === "positive" && p.observed_any_reward_positive_weeks === 0) return false;
       if (status === "zero" && p.observed_any_reward_positive_weeks !== 0) return false;
       if (status === "complete" && !p.usd_coverage_complete) return false;
@@ -430,6 +502,8 @@
         "Observed source: " + categoryText[category] +
         " · BRIBES share: " + (share === null ? "Undefined" :
           share.toFixed(1) + "% saved-price USD")));
+      identity.append(make("div", "tiny research-only pattern-classification",
+        patternSummary(p)));
       cell(tr, epochName(p.collection_epoch_utc), "tiny");
       const activity = cell(tr);
       const active = p.observed_any_reward_positive_weeks;
@@ -961,7 +1035,7 @@
     $("detail").hidden = true;
     $("search").focus();
   });
-  ["search", "epoch", "status", "sort", "evidence", "source", "bribes-share"].forEach(id => {
+  ["search", "epoch", "status", "sort", "evidence", "source", "bribes-share", "concentration", "latest-move"].forEach(id => {
     $(id).addEventListener("input", apply);
     $(id).addEventListener("change", apply);
   });

@@ -283,6 +283,13 @@
       cmp.addEventListener("click", () => toggleCompare(p));
       actions.append(cmp);
       action.append(actions);
+      // P6.2 responsive pool cards: visible labels without another data copy.
+      const mobileLabels = ["Pool", "Collection epoch", "Rewards observed",
+        "USD coverage", "Mean USD / week", "Research score",
+        "USD / 1M old votes", "Explore / compare"];
+      [...tr.cells].forEach((td, i) => {
+        td.dataset.label = mobileLabels[i];
+      });
       frag.append(tr);
     });
     if (!visible.length) {
@@ -775,6 +782,11 @@
   $("page-size").addEventListener("change", apply);
   $("view-beginner").addEventListener("click", () => setView("beginner"));
   $("view-researcher").addEventListener("click", () => setView("researcher"));
+  $("jump-to-search").addEventListener("click", () => {
+    const field = $("search");
+    field.scrollIntoView({behavior: "smooth", block: "center"});
+    field.focus({preventScroll: true});
+  });
   $("try-example").addEventListener("click", () => {
     if (!doc.meta) {
       error("Wait for the saved research inventory to finish loading.");

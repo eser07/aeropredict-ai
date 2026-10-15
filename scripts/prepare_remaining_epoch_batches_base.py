@@ -148,7 +148,9 @@ def prepare(source, completed_through=15, now=None, dry_run=False):
             **original,
             "number": serial,
             "original_batch_number": orig_number,
-            "file": str((target / filename).relative_to(BATCH_ROOT.parent)),
+            "file": (str((target / filename).relative_to(Path(__file__).resolve().parents[1]))
+                     if (target / filename).is_relative_to(Path(__file__).resolve().parents[1])
+                     else str(target / filename)),
         })
         remaining_indexes.extend(original["pool_indexes"])
     if (set(remaining_indexes) & set(prior["previous_source_indices"]) or

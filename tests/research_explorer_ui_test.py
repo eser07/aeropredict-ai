@@ -40,6 +40,16 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertIn('sizeCautions(a).length > 0', self.javascript)
         self.assertIn('⚠ Fragile ratio', self.javascript)
 
+    def test_research_priority_scoring_and_epoch_guard(self):
+        for term in ('id="leaders-panel"', 'id="leaders-items"',
+                     'value="score"', 'Incomplete USD data is unrated',
+                     'No cross-epoch ranking'):
+            self.assertIn(term, self.page)
+        for term in ('function researchScore(p)', 'Math.min(39, raw)',
+                     'researchScore(p) === null', 'p.collection_epoch_utc === epoch',
+                     'drawLeaders()', 'direction === "score"'):
+            self.assertIn(term, self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

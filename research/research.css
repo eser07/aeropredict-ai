@@ -102,3 +102,17 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .vote-content{margin-top:12px}
 .vote-content .detail-grid{margin-bottom:10px}
 .vote-content .detail-box strong{font-variant-numeric:tabular-nums}
+
+/* P5: descriptive saved-price four-week reward observations; never projected yield. */
+.trend-overview{border:1px solid #3b526e;border-radius:13px;background:#101f38;padding:15px}
+.trend-overview h3{font-size:17px;margin:0 0 6px}
+.trend-overview .detail-grid{grid-template-columns:repeat(3,minmax(0,1fr));margin:16px 0}
+.trend-overview .detail-box strong{font-size:14px;overflow-wrap:anywhere}
+.trend-mix{border-top:1px solid var(--line);padding-top:13px;display:grid;gap:9px}
+.trend-mix strong{font-size:13px}
+.trend-mix-track{display:flex;background:#24344b;border-radius:8px;overflow:hidden;height:15px}
+.trend-mix-track span{display:block;height:100%}
+.trend-fees{background:var(--cyan)}
+.trend-bribes{background:var(--blue)}
+@media(max-width:800px){.trend-overview .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){.trend-overview .detail-grid{grid-template-columns:1fr}}

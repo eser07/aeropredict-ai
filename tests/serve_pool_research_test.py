@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import sys
+from decimal import Decimal
 import tempfile
 import threading
 import unittest
@@ -129,6 +130,116 @@ class TestResearchServer(unittest.TestCase):
                 message = error.exception.read().decode("utf-8")
                 self.assertIn("Saved trading pair metadata unavailable", message)
                 self.assertNotIn(str(self.root), message)
+
+    def test_weekly_breakdown_separates_fees_bribes_and_saved_quotes(self):
+        pool = fixture()["pools"][0]
+        pool.update({
+            "address": "0x" + "a" * 40,
+            "batch_number": 1,
+            "weekly_pool_usd_at_collection_quote": ["20", "10", "5", "0"],
+        })
+        # Four completed weeks before Oct 8, all with the SAME saved quote.
+        source = {
+            "chain_id": 8453, "current_epoch_utc": m.EPOCHS[0],
+            "prices": {
+                "0x" + "c" * 40: {"price_usd": "2"},
+                "0x" + "d" * 40: {"price_usd": "5"},
+            },
+            "pools": [{
+                "index": 1, "pool_address": pool["address"],
+                "fees": [{
+                    "token_address": "0x" + "c" * 40, "decimals": 0,
+                    "last_four_weeks": [
+                        {"epoch_start_utc": d, "raw": str(n)}
+                        for d, n in zip(
+                            ["2026-09-10T00:00:00+00:00", "2026-09-17T00:00:00+00:00",
+                             "2026-09-24T00:00:00+00:00", "2026-10-01T00:00:00+00:00"],
+                            [0, 0, 0, 0]
+                        )
+                    ],
+                }],
+                "bribes": [{
+                    "token_address": "0x" + "d" * 40, "decimals": 0,
+                    "last_four_weeks": [
+                        {"epoch_start_utc": d, "raw": str(n)}
+                        for d, n in zip(
+                            ["2026-09-10T00:00:00+00:00", "2026-09-17T00:00:00+00:00",
+                             "2026-09-24T00:00:00+00:00", "2026-10-01T00:00:00+00:00"],
+                            [4, 2, 1, 0]
+                        )
+                    ],
+                }],
+            }],
+        }
+        # Add a priced positive FEES week; keep the pool total consistent.
+        source["pools"][0]["fees"][0]["last_four_weeks"][2]["raw"] = "2"
+        pool["weekly_pool_usd_at_collection_quote"][2] = "9"
+        folder = self.root
+        (folder / "incentives_batch_001.json").write_text(
+            json.dumps(source), encoding="utf-8",
+        )
+        research = fixture()
+        research["pools"][0].update(pool)
+        self.data.write_text(json.dumps(research), encoding="utf-8")
+        code, headers, body = self.get("/api/weekly?index=1")
+        doc = json.loads(body)
+        self.assertEqual(code, 200)
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        self.assertEqual([x["week_start_utc"] for x in doc["weeks"]],
+                         ["2026-09-10T00:00:00+00:00", "2026-09-17T00:00:00+00:00",
+                          "2026-09-24T00:00:00+00:00", "2026-10-01T00:00:00+00:00"])
+        self.assertEqual([Decimal(x["fees_usd"]) for x in doc["weeks"]],
+                         [Decimal(0), Decimal(0), Decimal(4), Decimal(0)])
+        self.assertEqual([Decimal(x["bribes_usd"]) for x in doc["weeks"]],
+                         [Decimal(20), Decimal(10), Decimal(5), Decimal(0)])
+        self.assertEqual(doc["weeks"][2]["total_usd"], "9")
+
+    def test_weekly_breakdown_rejects_invalid_query_and_missing_source(self):
+        for path, expected in (
+            ("/api/weekly", 400), ("/api/weekly?index=abc", 400),
+            ("/api/weekly?index=1&index=2", 400),
+            ("/api/weekly?index=1&path=/etc/passwd", 400),
+            ("/api/weekly?index=9999", 404),
+            ("/api/weekly?index=1", 503),
+        ):
+            with self.subTest(path=path):
+                with self.assertRaises(urllib.error.HTTPError) as err:
+                    self.get(path)
+                self.assertEqual(err.exception.code, expected)
+                self.assertNotIn(str(self.root), err.exception.read().decode("utf-8"))
+
+    def test_weekly_missing_price_is_unknown_not_zero(self):
+        record = {
+            "index": 1, "address": "0x" + "a" * 40,
+            "collection_epoch_utc": m.EPOCHS[1],
+            "batch_number": 16, "usd_coverage_complete": False,
+        }
+        source = {
+            "chain_id": 8453, "current_epoch_utc": m.EPOCHS[1],
+            "prices": {},
+            "pools": [{
+                "index": 1, "pool_address": record["address"],
+                "fees": [{"token_address": "0x" + "c" * 40, "decimals": 18,
+                          "last_four_weeks": [
+                              {"epoch_start_utc": date, "raw": raw}
+                              for date, raw in zip(
+                                  ["2026-09-17T00:00:00+00:00",
+                                   "2026-09-24T00:00:00+00:00",
+                                   "2026-10-01T00:00:00+00:00",
+                                   "2026-10-08T00:00:00+00:00"],
+                                  ["0", "1000000000000000000", "0", "0"])
+                          ]}],
+                "bribes": [],
+            }],
+        }
+        folder = self.root / "epochs" / "2026-10-15"
+        folder.mkdir(parents=True)
+        (folder / "incentives_batch_016.json").write_text(json.dumps(source), encoding="utf-8")
+        result = m.weekly_breakdown(record, self.root)
+        self.assertEqual(result["weeks"][0]["fees_usd"], "0")
+        self.assertIsNone(result["weeks"][1]["fees_usd"])
+        self.assertIsNone(result["weeks"][1]["total_usd"])
+        self.assertEqual(result["weeks"][1]["bribes_usd"], "0")
 
     def test_only_explicit_frontend_routes(self):
         for path, mime in (

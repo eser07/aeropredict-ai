@@ -69,11 +69,30 @@ def validate_manifest(folder):
     return manifest
 
 
-def reference_epoch(folder):
-    """Anchor new batches to the already completed first P2 batch."""
+def reference_epoch(folder, manifest=None):
+    """Use a pinned collection epoch for a fresh isolated plan, or first batch.
+
+    Never bootstrap a new epoch in the legacy completed-batches folder.
+    """
+    manifest = manifest if manifest is not None else read_json(folder / "manifest.json")
+    pinned = manifest.get("collection_epoch_utc")
+    if pinned is not None:
+        if not isinstance(pinned, str):
+            raise ValueError("Collection epoch must be an ISO UTC timestamp")
+        timestamp = read_time(pinned, "planned collection epoch")
+        if timestamp.weekday() != 3 or (timestamp.hour, timestamp.minute,
+                                        timestamp.second, timestamp.microsecond) != (0, 0, 0, 0):
+            raise ValueError("Collection epoch must start Thursday 00:00 UTC")
+        if timestamp.isoformat() != pinned:
+            raise ValueError("Collection epoch requires canonical UTC timestamp")
     prior = paths_for(folder, 1)
-    if not all(prior[key].is_file() for key in ("fees", "incentives", "audit")):
-        raise RuntimeError("First batch FEES, BRIBES and audit must be present before continuation")
+    existing = [prior[key].is_file() for key in ("fees", "incentives", "audit")]
+    if not any(existing):
+        if pinned is None:
+            raise RuntimeError("First batch FEES, BRIBES and audit are required")
+        return pinned
+    if not all(existing):
+        raise RuntimeError("First batch is partially collected; refusing ambiguous epoch anchor")
     f = read_json(prior["fees"])
     inc = read_json(prior["incentives"])
     report = read_json(prior["audit"])
@@ -82,6 +101,8 @@ def reference_epoch(folder):
             epoch != report.get("source_epoch_utc") or report.get("pool_count", 0) < 1):
         raise ValueError("First batch epoch or audit data mismatch")
     read_time(epoch, "anchor epoch")
+    if pinned is not None and pinned != epoch:
+        raise RuntimeError("Completed batch 001 differs from planned collection epoch")
     return epoch
 
 
@@ -239,10 +260,11 @@ def run(folder, start=2, max_batches=1, cooldown=10, dry_run=False):
     if not folder.is_relative_to(BATCH_ROOT.resolve()):
         raise ValueError("Batch folder must be under data/pool_collection_batches_base")
     manifest = validate_manifest(folder)
-    anchor = reference_epoch(folder)
+    anchor = reference_epoch(folder, manifest)
     last = min(start + max_batches - 1, manifest["batch_count"])
-    if start < 2 or start > manifest["batch_count"]:
-        raise ValueError("Start batch must be 2 through the last batch")
+    lower = 1 if manifest.get("collection_epoch_utc") else 2
+    if start < lower or start > manifest["batch_count"]:
+        raise ValueError(f"Start batch must be {lower} through the last batch")
     if not 1 <= max_batches <= MAX_BATCHES_PER_CALL:
         raise ValueError("Run 1-5 batches per call (explicitly bounded)")
     if not 0 <= cooldown <= 120:
@@ -250,6 +272,11 @@ def run(folder, start=2, max_batches=1, cooldown=10, dry_run=False):
     print(
         f"P2 isolated batch pipeline | Base block {manifest['snapshot_block_number']} | "
         f"epoch {anchor} | batches {start}-{last} of {manifest['batch_count']}",
+        flush=True,
+    )
+    print(
+        "CAUTION: snapshot voting weights are from the original pinned block; "
+        "they are not synchronized with this collection epoch.",
         flush=True,
     )
     if dry_run:

@@ -66,6 +66,12 @@ def validate_manifest(folder):
         indexes.extend(ids)
     if len(indexes) != len(set(indexes)):
         raise ValueError("Duplicate pool index across separate batch inputs")
+    through = manifest.get("carry_forward_completed_through")
+    if through is not None:
+        if (type(through) is not int or not 1 <= through < len(batches) or
+                not manifest.get("collection_epoch_utc") or
+                manifest.get("new_epoch_collection_start_batch") != through + 1):
+            raise ValueError("New-epoch continuation metadata is inconsistent")
     return manifest
 
 
@@ -262,7 +268,8 @@ def run(folder, start=2, max_batches=1, cooldown=10, dry_run=False):
     manifest = validate_manifest(folder)
     anchor = reference_epoch(folder, manifest)
     last = min(start + max_batches - 1, manifest["batch_count"])
-    lower = 1 if manifest.get("collection_epoch_utc") else 2
+    lower = (manifest.get("carry_forward_completed_through", 0) + 1
+             if manifest.get("collection_epoch_utc") else 2)
     if start < lower or start > manifest["batch_count"]:
         raise ValueError(f"Start batch must be {lower} through the last batch")
     if not 1 <= max_batches <= MAX_BATCHES_PER_CALL:

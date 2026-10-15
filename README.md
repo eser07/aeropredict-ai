@@ -559,6 +559,45 @@ Offline regression tests:
 python -m unittest discover -s tests -p "build_full_pool_research_test.py" -v
 ```
 
+### P3 preview — Separate 928-pool research explorer (no dashboard replacement)
+
+After successfully building `research_all_928_two_epochs.json`, open the
+**independent** read-only local research browser:
+
+```bash
+python scripts/serve_pool_research.py
+```
+
+Open **http://localhost:8766/** in the Windows browser. The old 16-pool
+dashboard stays on **http://localhost:8765/**, with its existing refresh jobs
+untouched. The explorer has no scheduler, RPC fetch, price fetch, wallet,
+transactions, external JS/CDN, or directory-serving endpoints. It binds only
+to `127.0.0.1`. Press **Ctrl+C** in its terminal to stop this research UI.
+
+Search by exact/partial pool registry number, pool/gauge address, reward-token
+symbol, or reward-token address. Filter by 2026-10-08 vs 2026-10-15 collection
+period, observed rewards (0 of 4 vs positive weeks), complete vs incomplete
+saved-USD quotes, and paginate through matching pools. The default selected
+period is **2026-10-15**. Within one selected epoch, exploratory sorting by
+4-week mean reward USD / week or USD per million OLD pinned-block votes is
+available; sorting across BOTH periods is intentionally limited to registry
+index to prevent cross-epoch yield rankings.
+
+Pool details show separate FEES and BRIBES registered token amounts and saved
+USD quotes, number of weeks with rewards, the pool contract and collection
+provenance. Reward token symbols are **not trading-pair names**. Incomplete
+USD totals remain unknown (not zero), and no observed rewards over four weeks
+does not predict future zero rewards. This is **not a live APR or veNFT payout
+calculator**; neither historical reward observations nor unsynchronized old
+voting weights establish current voting profitability. The UI does not offer
+cross-epoch optimization until reliable synchronized data is available.
+
+Offline server regression tests:
+
+```bash
+python -m unittest discover -s tests -p "serve_pool_research_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

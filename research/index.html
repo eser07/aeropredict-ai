@@ -55,12 +55,19 @@
           <option value="incomplete">Incomplete USD coverage</option>
         </select>
       </label>
+      <label>Evidence / size filter
+        <select id="evidence">
+          <option value="all">All observations · show cautions</option>
+          <option value="regular">Rewards observed 4 of 4 weeks</option>
+          <option value="context">4/4 + ≥$10/week + ≥100 old votes*</option>
+        </select>
+      </label>
       <label>Sort within selected epoch
         <select id="sort">
           <option value="index">Registry pool index</option>
           <option value="frequency">Most active reward weeks</option>
           <option value="weekly">Pool USD / week (complete only)</option>
-          <option value="ratio">USD / million old snapshot votes</option>
+          <option value="ratio">Old vote ratio · fragile values last</option>
         </select>
       </label>
     </div>
@@ -77,7 +84,7 @@
           <th scope="col">Rewards observed</th><th scope="col">USD coverage</th>
           <th scope="col" class="right">Mean USD / week*</th>
           <th scope="col" class="right">USD / 1M old votes*</th>
-          <th scope="col">Explore</th>
+          <th scope="col">Explore / compare</th>
         </tr></thead>
         <tbody id="rows"></tbody>
       </table>
@@ -87,7 +94,13 @@
       <span id="page-count" aria-live="polite">—</span>
       <button id="next" type="button" disabled>Next →</button>
     </div>
-    <p class="footnote">*Historical reward quantities valued using token USD prices saved at that batch's collection. Vote ratios use unsynchronized older voting weights and can explode for tiny denominators. USD sorting is disabled when both epochs are selected.</p>
+    <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile and sorted last for ratio ranking. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
+  </section>
+  <section class="panel" id="compare-panel" hidden>
+    <div class="section-head"><div><h2>Side-by-side observation comparison</h2><p id="compare-note">Compare up to three pools from the SAME saved collection epoch. No APR or earning prediction.</p></div><button id="clear-compare" type="button">Clear comparison</button></div>
+    <p class="warnline" id="compare-error" aria-live="polite" hidden></p>
+    <div id="compare-items" class="compare-items"></div>
+    <p class="footnote">Comparison covers observed pool-level rewards and saved token quotes only. Does not verify live reward eligibility, token liquidity, slippage, synchronized voting power or veNFT income.</p>
   </section>
   <section class="panel detail" id="detail" aria-live="polite" hidden>
     <div class="section-head"><h2 id="detail-title">Pool detail</h2><button id="close-detail" type="button">Close</button></div>

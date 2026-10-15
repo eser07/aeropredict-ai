@@ -270,3 +270,12 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
   .p7-breakdown{margin-left:37px}
   .p7-row-count{font-size:10px}
 }
+
+/* P7.2: read-only FEES/BRIBES source filters and quote-validated share labels. */
+.p72-hint{font-size:11px;line-height:1.55;color:var(--muted);margin:11px 0 0}
+.p72-hint strong{color:var(--amber)}
+.source-classification{color:var(--cyan);font-size:11px;line-height:1.55;margin-top:7px;overflow-wrap:anywhere}
+@media(max-width:700px){
+  .wrap[data-view="researcher"] .p72-hint{font-size:11px;margin:10px 0 0}
+  .table-wrap .source-classification{margin-top:6px}
+}

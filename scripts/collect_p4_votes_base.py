@@ -171,6 +171,25 @@ def collect_page(progress, inventory, page_size, delay):
     return result
 
 
+def publish(checkpoint, progress):
+    """Publish once; recover safely if the last checkpoint was saved first."""
+    filename = checkpoint.with_name("snapshot.json")
+    if filename.exists():
+        raise RuntimeError("P4 complete snapshot already exists; refusing overwrite")
+    verify_pinned(progress)
+    published = {
+        **progress,
+        "published_at_utc": utc_now(),
+        "warning": (
+            "One-block Voter weights for an older 928-pool selection only. "
+            "Not synchronized with stored FEES/BRIBES, not all currently "
+            "active pools, not veAERO APR or wallet earnings."
+        ),
+    }
+    save_atomic(filename, published)
+    print(f"COMPLETE single-block P4 vote snapshot: {filename}", flush=True)
+
+
 def run(page_size=25, max_pages=1, delay=0.1, until_complete=False, new=False):
     if not 1 <= page_size <= 100 or not 1 <= max_pages <= 1000 or not 0 <= delay <= 5:
         raise ValueError("Invalid page size, page limit, or delay")
@@ -201,7 +220,9 @@ def _run(inventory, source_sha, page_size, max_pages, delay, until_complete, new
         verify_pinned(progress)
     else:
         if completed and not new:
-            newest = completed[-1][1]
+            previous_checkpoint, newest = completed[-1]
+            if not previous_checkpoint.with_name("snapshot.json").exists():
+                publish(previous_checkpoint, newest)
             print(f"Existing P4 snapshot complete at block {newest['snapshot_block_number']}. "
                   "Use --new only when intentionally starting a NEW snapshot.")
             return newest
@@ -229,21 +250,7 @@ def _run(inventory, source_sha, page_size, max_pages, delay, until_complete, new
             f"{progress['expected_pools']} at SAME pinned block", flush=True
         )
     if progress["complete"]:
-        verify_pinned(progress)
-        filename = checkpoint.with_name("snapshot.json")
-        if filename.exists():
-            raise RuntimeError("P4 complete snapshot already exists; refusing overwrite")
-        published = {
-            **progress,
-            "published_at_utc": utc_now(),
-            "warning": (
-                "One-block Voter weights for an older 928-pool selection only. "
-                "Not synchronized with stored FEES/BRIBES, not all currently "
-                "active pools, not veAERO APR or wallet earnings."
-            ),
-        }
-        save_atomic(filename, published)
-        print(f"COMPLETE single-block P4 vote snapshot: {filename}", flush=True)
+        publish(checkpoint, progress)
     else:
         print(
             f"PARTIAL: {progress['next_offset']}/{progress['expected_pools']}. "

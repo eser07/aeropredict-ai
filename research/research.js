@@ -121,6 +121,123 @@
     $("error").hidden = !message;
     $("error").textContent = message || "";
   }
+  // P7.1 is a read-only inventory distribution, not a profitability signal.
+  // Group by the SAVED collection epoch, never current search/filters.
+  // Return null on inconsistent metadata rather than show misleading counts.
+  function computeDistribution(pools, epoch, meta) {
+    if (!Array.isArray(pools) || !meta ||
+        !Number.isInteger(meta.audited_pools) || meta.audited_pools < 0)
+      return null;
+    const rows = pools.filter(p => p.collection_epoch_utc === epoch);
+    if (rows.length !== meta.audited_pools) return null;
+    const buckets = Array.from({length: 5}, (_, i) => ({
+      weeks: i, pools: 0, complete: 0, incomplete: 0,
+    }));
+    let complete = 0, incomplete = 0, noRewards = 0;
+    let feesObservedPools = 0, bribesObservedPools = 0;
+    for (const p of rows) {
+      const weeks = p.observed_any_reward_positive_weeks;
+      const fees = p.observed_fees_positive_weeks;
+      const bribes = p.observed_bribes_positive_weeks;
+      if (!Number.isInteger(weeks) || weeks < 0 || weeks > 4 ||
+          !Number.isInteger(fees) || fees < 0 || fees > weeks ||
+          !Number.isInteger(bribes) || bribes < 0 || bribes > weeks ||
+          typeof p.usd_coverage_complete !== "boolean" ||
+          typeof p.no_observed_rewards !== "boolean" ||
+          p.no_observed_rewards !== (weeks === 0) ||
+          (weeks > 0 && fees === 0 && bribes === 0)) return null;
+      const b = buckets[weeks];
+      b.pools++;
+      if (p.usd_coverage_complete) { b.complete++; complete++; }
+      else { b.incomplete++; incomplete++; }
+      if (weeks === 0) noRewards++;
+      if (fees > 0) feesObservedPools++;
+      if (bribes > 0) bribesObservedPools++;
+    }
+    if (complete + incomplete !== rows.length ||
+        buckets.reduce((n, b) => n + b.pools, 0) !== rows.length ||
+        complete !== meta.complete_usd_pools ||
+        incomplete !== meta.incomplete_usd_pools ||
+        noRewards !== meta.no_observed_rewards_pools ||
+        rows.length - noRewards !== meta.positive_reward_pools) return null;
+    return {
+      epoch, total: rows.length, complete, incomplete, noRewards,
+      fourWeeks: buckets[4].pools, feesObservedPools, bribesObservedPools,
+      buckets,
+    };
+  }
+  function drawP7Coverage() {
+    const target = $("p7-distribution");
+    target.replaceChildren();
+    const meta = doc.meta;
+    if (!meta || !meta.by_collection_epoch) {
+      target.append(make("p", "warnline", "Saved cohort metadata unavailable."));
+      return;
+    }
+    const cohorts = [EPOCH8, EPOCH15].map(epoch =>
+      computeDistribution(doc.pools, epoch, meta.by_collection_epoch[epoch]));
+    if (cohorts.some(c => c === null) ||
+        cohorts.reduce((n, c) => n + c.total, 0) !== meta.audited_pool_count ||
+        cohorts.reduce((n, c) => n + c.complete, 0) !== meta.audited_usd_complete_pool_count ||
+        cohorts.reduce((n, c) => n + c.incomplete, 0) !== meta.audited_usd_incomplete_pool_count) {
+      target.append(make("p", "warnline",
+        "Distribution unavailable: saved cohort counts do not reconcile. " +
+        "No zero or completeness values have been inferred."));
+      return;
+    }
+    for (const c of cohorts) {
+      const card = make("article", "p7-cohort");
+      card.append(make("h3", "", epochName(c.epoch)));
+      card.append(make("p", "p7-subtitle",
+        c.total.toLocaleString("en-US") + " separately collected pools · " +
+        c.fourWeeks + " with observed rewards in 4/4 weeks"));
+      const totals = make("div", "p7-totals");
+      const items = [
+        ["0/4 reward weeks", c.noRewards],
+        ["Complete USD quote coverage", c.complete],
+        ["Incomplete USD quote coverage", c.incomplete],
+        ["Any FEES observed", c.feesObservedPools],
+        ["Any BRIBES observed", c.bribesObservedPools],
+      ];
+      items.forEach(([label, count]) => {
+        const line = make("div", "p7-total");
+        line.append(make("span", "", label));
+        line.append(make("strong", "", count.toLocaleString("en-US")));
+        totals.append(line);
+      });
+      card.append(totals);
+      card.append(make("h4", "", "Observed nonzero reward weeks · 0 to 4"));
+      const legend = make("p", "p7-legend");
+      legend.append(make("span", "p7-key p7-key-complete", "Complete USD"));
+      legend.append(make("span", "p7-key p7-key-incomplete", "Incomplete USD"));
+      card.append(legend);
+      const bars = make("div", "p7-rows");
+      for (const b of c.buckets) {
+        const row = make("div", "p7-row");
+        row.append(make("span", "p7-week-label", b.weeks + "/4"));
+        const track = make("div", "p7-track");
+        track.setAttribute("role", "img");
+        track.setAttribute("aria-label",
+          b.pools + " pools with " + b.weeks + "/4 reward weeks: " +
+          b.complete + " complete USD, " + b.incomplete + " incomplete USD");
+        const green = make("span", "p7-segment p7-complete");
+        const amber = make("span", "p7-segment p7-incomplete");
+        green.style.width = (c.total ? 100 * b.complete / c.total : 0).toFixed(3) + "%";
+        amber.style.width = (c.total ? 100 * b.incomplete / c.total : 0).toFixed(3) + "%";
+        track.append(green, amber);
+        row.append(track);
+        row.append(make("span", "p7-row-count",
+          b.pools + " (" + (c.total ? (100 * b.pools / c.total).toFixed(1) : "0.0") +
+          "%)"));
+        bars.append(row);
+        const breakdown = make("p", "p7-breakdown",
+          b.complete + " complete · " + b.incomplete + " incomplete USD");
+        bars.append(breakdown);
+      }
+      card.append(bars);
+      target.append(card);
+    }
+  }
   function drawStats() {
     const m = doc.meta;
     $("stat-pools").textContent = m.audited_pool_count.toLocaleString("en-US");
@@ -844,6 +961,7 @@
         console.warn("Trading pair metadata not loaded:", err.message);
       }
       drawStats();
+      drawP7Coverage();
       render();
     })
     .catch(e => {

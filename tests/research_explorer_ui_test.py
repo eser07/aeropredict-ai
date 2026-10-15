@@ -602,6 +602,117 @@ process.stdout.write(JSON.stringify({
                       "upWithoutPrice"):
             self.assertFalse(parsed[field], field)
 
+    def test_p74_provenance_and_missing_data_filters_are_not_quality_scores(self):
+        for token in (
+            'id="p74-overview"',
+            'P7.4 · What the saved evidence can (and cannot) verify',
+            'not</strong> a confidence percentage',
+            'id="provenance-filter"',
+            'value="usd-missing"',
+            'value="quote-time-gap"',
+            'value="registry-truncated"',
+            'value="timestamped"',
+            'A missing timestamp does not prove a missing price',
+            'The source cohort is an epoch identifier',
+            'No confidence',
+        ):
+            self.assertIn(token, self.page)
+        for token in (
+            'function quoteProvenance(p)',
+            'function matchesP74(p, filter)',
+            'function renderDataProvenance(p, root)',
+            'function quoteProvenanceLabel(p)',
+            'token.observed_positive_weeks === 0',
+            'Date.parse(stamp)',
+            'valid.sort((a, b) => a - b)',
+            'positiveTokens - valid.length',
+            'info.positiveTokens > 0 && info.missingTimes === 0',
+            'p.usd_coverage_complete === true',
+            'p.truncated_reward_registry === true',
+            'renderDataProvenance(p, root);',
+            'if (!matchesP74(p, provenanceFilter)) return false',
+            '$("provenance-filter").value = "all"',
+            '"latest-move", "provenance-filter"',
+            'Quote time: ',
+            'Saved research file generated (UTC)',
+            'The source cohort',
+            'P4: separately recorded voting weights',
+        ):
+            if token == 'The source cohort':
+                continue
+            self.assertIn(token, self.javascript)
+        for token in ('.p74-overview-grid', '.p74-quote-label',
+                      '.p74-evidence', '.p74-grid'):
+            self.assertIn(token, self.css)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js unavailable: skip P7.4 behavior")
+    def test_p74_js_quote_utc_coverage_is_independent_of_usd_completeness(self):
+        import json
+        start = self.javascript.index("  function quoteProvenance(p)")
+        end = self.javascript.index("  function error(message)", start)
+        definitions = self.javascript[start:end]
+        scenario = r"""
+const reward = (weeks, stamp) => ({
+  observed_positive_weeks:weeks, quote_timestamp_utc:stamp
+});
+const pool = (priced, tokens, registry=false) => ({
+  usd_coverage_complete:priced, token_rewards:tokens,
+  truncated_reward_registry:registry
+});
+const full = pool(true, [
+  reward(3,"2026-10-15T14:30:00+00:00"),
+  reward(2,"2026-10-08T10:15:00Z"),
+  reward(0,null)
+]);
+const gap = pool(true, [reward(4,null),reward(0,"2026-10-12T03:00:00Z")]);
+const incomplete = pool(false, [reward(1,"2026-10-10T12:00:00Z")]);
+const empty = pool(true, [reward(0,null)]);
+const badTime = pool(true, [reward(1,"2026-10-15T12:00:00")]);
+const malformed = pool(true,[{observed_positive_weeks:"4"}]);
+const truncated = pool(true,[reward(4,"2026-10-15T14:30:00Z")],true);
+process.stdout.write(JSON.stringify({
+  full:quoteProvenance(full),
+  gap:quoteProvenance(gap),
+  empty:quoteProvenance(empty),
+  malformed:quoteProvenance(malformed),
+  fullLabel:quoteProvenanceLabel(full),
+  gapFilter:matchesP74(gap,"quote-time-gap"),
+  badTimeFilter:matchesP74(badTime,"quote-time-gap"),
+  noFalseGap:matchesP74(empty,"quote-time-gap"),
+  noFalseTimestamped:matchesP74(empty,"timestamped"),
+  incompleteNotTimestamped:matchesP74(incomplete,"timestamped"),
+  fullTimestamped:matchesP74(full,"timestamped"),
+  completeButMissingTimestamp:matchesP74(gap,"timestamped"),
+  incompleteUSD:matchesP74(incomplete,"usd-missing"),
+  truncated:matchesP74(truncated,"registry-truncated")
+}));
+"""
+        result = subprocess.run(
+            [shutil.which("node"), "-e", definitions + scenario],
+            text=True, capture_output=True, check=False, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        output = json.loads(result.stdout)
+        self.assertEqual(output["full"]["positiveTokens"], 2)
+        self.assertEqual(output["full"]["timestamped"], 2)
+        self.assertEqual(output["full"]["missingTimes"], 0)
+        self.assertEqual(output["full"]["earliestUtc"], "2026-10-08T10:15:00.000Z")
+        self.assertEqual(output["full"]["latestUtc"], "2026-10-15T14:30:00.000Z")
+        self.assertEqual(output["gap"]["positiveTokens"], 1)
+        self.assertEqual(output["gap"]["timestamped"], 0)
+        self.assertEqual(output["gap"]["missingTimes"], 1)
+        self.assertEqual(output["empty"]["positiveTokens"], 0)
+        self.assertIsNone(output["malformed"])
+        self.assertIn("2/2", output["fullLabel"])
+        for field in ("gapFilter", "badTimeFilter", "fullTimestamped",
+                      "incompleteUSD", "truncated"):
+            self.assertTrue(output[field], field)
+        for field in ("noFalseGap", "noFalseTimestamped",
+                      "incompleteNotTimestamped", "completeButMissingTimestamp"):
+            self.assertFalse(output[field], field)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

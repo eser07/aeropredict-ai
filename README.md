@@ -634,6 +634,20 @@ Both views keep pool Details, P5.1 evidence and three-pool same-epoch
 comparison available. Responsive layout supports narrow displays; the
 remaining table scrolls horizontally as needed.
 
+**P6.2 — Beginner and narrow-screen usability.** The beginner presentation
+now keeps the original detailed collection limitations available under
+expandable provenance notes, a short glossary and an explanatory data note.
+A **Search a pool** button jumps directly to the search field. The beginner
+directory uses concise introductory text and starts at ten pools per page.
+At viewports up to 700px wide, pool rows render as individually labeled
+cards instead of forcing a 640–1030px table to scroll sideways; the
+**Details** and **Compare** touch targets are at least 44px high.
+Researcher mode retains its full advanced metadata, calculations and filters
+inside these same narrow-screen cards. The only page-size change is the
+initial display preference, not the underlying inventory. The JS and CSS
+remain self-hosted on the same read-only service; no RPC, wallets or changes
+to the 8765 dashboard or hourly jobs.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

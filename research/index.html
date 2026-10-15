@@ -65,6 +65,7 @@
       <label>Sort within selected epoch
         <select id="sort">
           <option value="index">Registry pool index</option>
+          <option value="score">Historical research priority · highest first</option>
           <option value="frequency">Most active reward weeks</option>
           <option value="weekly">Pool USD / week (complete only)</option>
           <option value="ratio">Old vote ratio · fragile values last</option>
@@ -83,6 +84,7 @@
           <th scope="col">Pool</th><th scope="col">Collection epoch</th>
           <th scope="col">Rewards observed</th><th scope="col">USD coverage</th>
           <th scope="col" class="right">Mean USD / week*</th>
+          <th scope="col" class="right">Research score*</th>
           <th scope="col" class="right">USD / 1M old votes*</th>
           <th scope="col">Explore / compare</th>
         </tr></thead>
@@ -95,6 +97,14 @@
       <button id="next" type="button" disabled>Next →</button>
     </div>
     <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile and sorted last for ratio ranking. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
+  </section>
+  <section class="panel" id="leaders-panel">
+    <div class="section-head">
+      <div><h2>Top Research Pools</h2>
+      <p>Five highest historical research-priority scores within the selected collection epoch. Not an investment ranking.</p></div>
+    </div>
+    <div id="leaders-items" class="leaders-items"></div>
+    <p class="footnote">0–100 research score: 30 points for observed reward weeks (4 weeks), up to 25 for saved-quote weekly USD (logarithmic $10–$1,000), 25 for complete USD coverage, and up to 20 for old vote context (logarithmic 100–10,000 veAERO). Fragile ratios (less than 100 old votes, unknown votes or less than $10 weekly USD) are capped at 39. Incomplete USD data is unrated, not zero. Scores do not predict APR, veNFT earnings, market liquidity, risk or future rewards. No cross-epoch ranking.</p>
   </section>
   <section class="panel" id="compare-panel" hidden>
     <div class="section-head"><div><h2>Side-by-side observation comparison</h2><p id="compare-note">Compare up to three pools from the SAME saved collection epoch. No APR or earning prediction.</p></div><button id="clear-compare" type="button">Clear comparison</button></div>

@@ -402,6 +402,59 @@ Offline tests:
 python -m unittest discover -s tests -p "run_pool_batch_pipeline_test.py" -v
 ```
 
+### P2 — Continue across a Thursday epoch rollover without mixing data
+
+**Do not** rerun an old batch under a new Aerodrome epoch or write over old
+reward datasets. When the 2026-10-08 collection has completed the first
+15/38 batches (375 pool records; 365 fully USD-priced), create a separate
+2026-10-15 plan offline:
+
+```bash
+python scripts/prepare_next_epoch_collection.py --through-batch 15 --next-epoch 2026-10-15
+```
+
+The script first verifies the already published batch-001 results and
+completed batch-002 through batch-015 status/files, including their
+matching epoch and counts. It safely creates
+`data/pool_collection_batches_base/block_52595092/votes_25/epochs/2026-10-15/`
+with an independent, validated manifest and 38 *pool-selection-only*
+batch input files, and pins the new `collection_epoch_utc` in the
+manifest. It **does not copy any prior FEES/BRIBES/USD results**. Batch
+inputs keep the original pinned-block voting-weight snapshot as a
+coverage heuristic; **those are not refreshed 2026-10-15 voting weights**.
+It does not call Base RPC or fetch prices or touch the 16-pool dashboard.
+It is safe to rerun on an already prepared, matching plan; conflicting
+files or mismatched old status markers halt without overwrite.
+
+To inspect before live collection:
+
+```bash
+python scripts/run_pool_batch_pipeline.py --folder data/pool_collection_batches_base/block_52595092/votes_25/epochs/2026-10-15 --start-batch 16 --max-batches 1 --dry-run
+```
+
+Then collect one new-epoch batch, explicitly opting into Base RPC:
+
+```bash
+BASE_RPC_URL=https://mainnet.base.org python scripts/run_pool_batch_pipeline.py --folder data/pool_collection_batches_base/block_52595092/votes_25/epochs/2026-10-15 --start-batch 16 --max-batches 1
+```
+
+The pinned epoch is compared against the epoch actually reported by
+the FEES and BRIBES collectors. If the collection is attempted outside
+that epoch, it pauses safely without publishing mixed-epoch output.
+New collection begins only at batch 16 or later; batches 1-15 remain
+readable **only in the old folder** and are not skipped or faked as
+2026-10-15 observations. Do not rank 2026-10-08 USD/weight ratios
+directly against 2026-10-15 ratios as if they were a synchronized
+point-in-time sample, and never claim the combined coverage reflects
+928 simultaneous live pools. Ten older pool quotes were not fully
+priced; next-week data does not repair those old observations.
+
+Run the offline preparation regression tests with:
+
+```bash
+python -m unittest discover -s tests -p "prepare_next_epoch_collection_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

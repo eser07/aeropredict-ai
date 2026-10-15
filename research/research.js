@@ -117,6 +117,62 @@
       numeric(p.inventory_snapshot_votes) !== null &&
       numeric(p.inventory_snapshot_votes) >= MIN_OLD_SNAPSHOT_VOTES;
   }
+  // P7.2: distinct historical source categories use positive token amounts,
+  // not USD token prices, old voting weights, or predicted earnings.
+  function rewardSource(p) {
+    const fees = p.observed_fees_positive_weeks;
+    const bribes = p.observed_bribes_positive_weeks;
+    if (!Number.isInteger(fees) || !Number.isInteger(bribes) ||
+        fees < 0 || fees > 4 || bribes < 0 || bribes > 4)
+      return "unknown";
+    if (fees > 0 && bribes > 0) return "both";
+    if (fees > 0) return "fees";
+    if (bribes > 0) return "bribes";
+    return "none";
+  }
+  // Calculate the same four-week share as P5, from each reward token's
+  // saved-quote WEEKLY mean (4-week means have the same fraction as sums).
+  // Any unpriced positive token, non-positive total or failed reconciliation
+  // makes the share undefined, never 0 by assumption.
+  function pricedBribesShare(p) {
+    if (p.usd_coverage_complete !== true) return null;
+    const poolMean = numeric(p.avg_pool_usd_per_week_at_collection_quote);
+    if (poolMean === null || poolMean <= 0 || !Array.isArray(p.token_rewards))
+      return null;
+    let fees = 0, bribes = 0;
+    for (const token of p.token_rewards) {
+      if (!token || (token.type !== "FEES" && token.type !== "BRIBES") ||
+          !Number.isInteger(token.observed_positive_weeks) ||
+          token.observed_positive_weeks < 0 || token.observed_positive_weeks > 4)
+        return null;
+      let value = numeric(token.mean_usd_at_collection_quote);
+      // A token that received no raw reward cannot contribute USD; a token
+      // with a positive reward and no price MUST remain unknown.
+      if (value === null) {
+        if (token.observed_positive_weeks !== 0) return null;
+        value = 0;
+      }
+      if (token.type === "FEES") fees += value;
+      else bribes += value;
+    }
+    const total = fees + bribes;
+    if (!Number.isFinite(total) || total <= 0 ||
+        Math.abs(total - poolMean) > Math.max(1e-8, poolMean * 1e-6))
+      return null;
+    return Math.max(0, Math.min(100, 100 * bribes / total));
+  }
+  function matchesP72(p, source, shareFilter) {
+    const category = rewardSource(p);
+    if (source !== "all" && category !== source) return false;
+    if (shareFilter === "all") return true;
+    const share = pricedBribesShare(p);
+    if (shareFilter === "unknown") return share === null;
+    if (share === null) return false;
+    if (shareFilter === "atleast25") return share >= 25;
+    if (shareFilter === "atleast50") return share >= 50;
+    if (shareFilter === "atleast75") return share >= 75;
+    return false;
+  }
   function error(message) {
     $("error").hidden = !message;
     $("error").textContent = message || "";
@@ -286,6 +342,8 @@
       $("status").value = "all";
       $("evidence").value = "all";
       $("sort").value = "index";
+      $("source").value = "all";
+      $("bribes-share").value = "all";
     }
     apply();
   }
@@ -299,6 +357,8 @@
     const period = $("epoch").value;
     const status = $("status").value;
     const evidence = $("evidence").value;
+    const source = $("source").value;
+    const shareFilter = $("bribes-share").value;
     const sort = $("sort").value;
     const all = period === "both";
     [...$("sort").options].forEach(opt => {
@@ -308,6 +368,7 @@
     doc.filtered = doc.pools.filter(p => {
       if (!all && p.collection_epoch_utc !== period) return false;
       if (!searchMatch(p, query) || !evidenceMatch(p, evidence)) return false;
+      if (!matchesP72(p, source, shareFilter)) return false;
       if (status === "positive" && p.observed_any_reward_positive_weeks === 0) return false;
       if (status === "zero" && p.observed_any_reward_positive_weeks !== 0) return false;
       if (status === "complete" && !p.usd_coverage_complete) return false;
@@ -361,6 +422,14 @@
       identity.append(make("div", "tiny", "Pool #" + p.index));
       const addr = make("div", "address", shortAddr(p.address));
       identity.append(addr);
+      const category = rewardSource(p);
+      const categoryText = {fees:"FEES only", bribes:"BRIBES only",
+        both:"FEES + BRIBES", none:"No observed rewards", unknown:"Source unknown"};
+      const share = pricedBribesShare(p);
+      identity.append(make("div", "tiny research-only source-classification",
+        "Observed source: " + categoryText[category] +
+        " · BRIBES share: " + (share === null ? "Undefined" :
+          share.toFixed(1) + "% saved-price USD")));
       cell(tr, epochName(p.collection_epoch_utc), "tiny");
       const activity = cell(tr);
       const active = p.observed_any_reward_positive_weeks;
@@ -892,7 +961,7 @@
     $("detail").hidden = true;
     $("search").focus();
   });
-  ["search", "epoch", "status", "sort", "evidence"].forEach(id => {
+  ["search", "epoch", "status", "sort", "evidence", "source", "bribes-share"].forEach(id => {
     $(id).addEventListener("input", apply);
     $(id).addEventListener("change", apply);
   });

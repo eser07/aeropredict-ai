@@ -12,7 +12,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from audit_pool_rewards_base import audit, read_time
@@ -289,6 +289,14 @@ def run(folder, start=2, max_batches=1, cooldown=10, dry_run=False):
     if dry_run:
         print("DRY RUN only: no RPC or file mutations", flush=True)
         return
+    now = datetime.now(timezone.utc)
+    collection_start = read_time(anchor, "planned collection epoch")
+    if not collection_start <= now < collection_start + timedelta(days=7):
+        raise RuntimeError(
+            f"Current UTC time is outside collection epoch {anchor}; "
+            "refusing live collection from an expired pinned plan. "
+            "Prepare a separate new-epoch plan without overwriting older data."
+        )
     with (folder / ".batch_pipeline.lock").open("a+") as handle:
         try:
             fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)

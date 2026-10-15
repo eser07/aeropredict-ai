@@ -272,6 +272,97 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertNotIn('innerHTML', self.javascript)
         self.assertNotIn('localStorage', self.javascript)
 
+    def test_p71_histogram_is_epoch_scoped_and_price_unknown_stays_separate(self):
+        for term in (
+            'id="p7-coverage"',
+            'id="p7-distribution"',
+            'class="panel research-only" id="p7-coverage"',
+            'different pool',
+            '0/4–4/4 row',
+            'never live blockchain reads',
+        ):
+            self.assertIn(term, self.page)
+        for term in (
+            'function computeDistribution(pools, epoch, meta)',
+            'function drawP7Coverage()',
+            'doc.pools.filter(p => p.collection_epoch_utc === epoch)',
+            'const buckets = Array.from({length: 5}',
+            'typeof p.usd_coverage_complete !== "boolean"',
+            'complete !== meta.complete_usd_pools',
+            'incomplete !== meta.incomplete_usd_pools',
+            'noRewards !== meta.no_observed_rewards_pools',
+            'rows.length - noRewards !== meta.positive_reward_pools',
+            'cohorts.reduce((n, c) => n + c.total, 0)',
+            'cohorts.reduce((n, c) => n + c.complete, 0)',
+            'cohorts.reduce((n, c) => n + c.incomplete, 0)',
+            'No zero or completeness values have been inferred',
+            'c.fourWeeks + " with observed rewards in 4/4 weeks"',
+            'drawP7Coverage();',
+        ):
+            self.assertIn(term, self.javascript)
+        for term in (
+            '.p7-distribution{display:grid',
+            '.p7-complete{background:var(--cyan)}',
+            '.p7-incomplete{background:var(--amber)}',
+            '.p7-row-count',
+            '@media(max-width:480px)',
+        ):
+            self.assertIn(term, self.css)
+        self.assertIn('selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc)',
+                      self.javascript)
+        self.assertNotIn('innerHTML', self.javascript)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js unavailable: skip P7.1 JS behavior")
+    def test_p71_js_distribution_handles_missing_usd_and_bad_metadata(self):
+        import json
+        start = self.javascript.index("  function computeDistribution(")
+        end = self.javascript.index("  function drawP7Coverage()", start)
+        function = self.javascript[start:end]
+        scenario = r"""
+const epoch8 = "2026-10-08T00:00:00+00:00";
+const epoch15 = "2026-10-15T00:00:00+00:00";
+const pool = (epoch, weeks, fees, bribes, priced) => ({
+  collection_epoch_utc:epoch, observed_any_reward_positive_weeks:weeks,
+  observed_fees_positive_weeks:fees, observed_bribes_positive_weeks:bribes,
+  usd_coverage_complete:priced, no_observed_rewards:weeks===0
+});
+const cohort = [pool(epoch8,0,0,0,true),pool(epoch8,4,4,0,true),
+                pool(epoch8,2,0,2,false),pool(epoch15,4,0,4,false)];
+const meta = {audited_pools:3,complete_usd_pools:2,incomplete_usd_pools:1,
+              no_observed_rewards_pools:1,positive_reward_pools:2};
+const result = computeDistribution(cohort,epoch8,meta);
+const bad = computeDistribution(cohort,epoch8,{...meta,complete_usd_pools:3});
+const inconsistent = [...cohort];
+inconsistent[2] = pool(epoch8,2,0,0,false);
+const badWeeks = computeDistribution(inconsistent,epoch8,meta);
+const other = computeDistribution(cohort,epoch15,{
+  audited_pools:1,complete_usd_pools:0,incomplete_usd_pools:1,
+  no_observed_rewards_pools:0,positive_reward_pools:1
+});
+process.stdout.write(JSON.stringify({result,bad,badWeeks,other}));
+"""
+        result = subprocess.run(
+            [shutil.which("node"), "-e", function + scenario],
+            text=True, capture_output=True, check=False, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        out = json.loads(result.stdout)
+        self.assertIsNone(out["bad"])
+        self.assertIsNone(out["badWeeks"])
+        cohort = out["result"]
+        self.assertEqual(cohort["total"], 3)
+        self.assertEqual(cohort["complete"], 2)
+        self.assertEqual(cohort["incomplete"], 1)
+        self.assertEqual(cohort["noRewards"], 1)
+        self.assertEqual(cohort["fourWeeks"], 1)
+        self.assertEqual(cohort["feesObservedPools"], 1)
+        self.assertEqual(cohort["bribesObservedPools"], 1)
+        self.assertEqual([b["pools"] for b in cohort["buckets"]], [1, 0, 1, 0, 1])
+        self.assertEqual(cohort["buckets"][2]["incomplete"], 1)
+        self.assertEqual(out["other"]["complete"], 0)
+        self.assertEqual(out["other"]["incomplete"], 1)
+        self.assertEqual(out["other"]["fourWeeks"], 1)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

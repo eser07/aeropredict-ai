@@ -116,3 +116,11 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .trend-bribes{background:var(--blue)}
 @media(max-width:800px){.trend-overview .detail-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.trend-overview .detail-grid{grid-template-columns:1fr}}
+
+/* P5: independent reward composition for each selected same-epoch pool. */
+.compare-reward-mix{margin:14px 0;border-top:1px solid var(--line);padding-top:12px}
+.compare-reward-mix h4{font-size:13px;margin:0 0 9px;color:var(--cyan)}
+.compare-reward-metrics{display:grid;gap:5px;margin-bottom:10px}
+.compare-reward-mix .compare-reward-metrics p{margin:0;color:var(--text);line-height:1.5}
+.compare-reward-mix .trend-mix-track{height:12px;margin-bottom:7px}
+.compare-reward-mix .mini{font-size:11px;line-height:1.5;overflow-wrap:anywhere}

@@ -368,7 +368,7 @@
         if (doc.detailRequest !== p.index || !section.isConnected) return;
         if (v.index !== p.index || v.address.toLowerCase() !== p.address.toLowerCase() ||
             v.synchronized_with_reward_epochs !== false ||
-            !Number.isInteger(v.block_number) || !/^\\d+$/.test(v.vote_weight_raw))
+            !Number.isInteger(v.block_number) || !/^[0-9]+$/.test(v.vote_weight_raw))
           throw new Error("P4 vote observation does not match this pool");
         content.replaceChildren();
         const grid = make("div", "detail-grid");

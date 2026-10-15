@@ -144,6 +144,51 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertNotIn('innerHTML', self.javascript)
         self.assertNotIn('eval(', self.javascript)
 
+    def test_p61_beginner_researcher_views_keep_saved_data_and_evidence_visible(self):
+        for term in (
+            'data-view="beginner"',
+            'id="view-beginner"',
+            'id="view-researcher"',
+            'aria-pressed="true"',
+            'id="try-example"',
+            'class="beginner-guide"',
+            'class="provenance-strip"',
+            'P2 · Historical rewards',
+            'P4 · Observed votes',
+            'USD · Saved batch quotes',
+            'id="pool-table"',
+            'class="research-only">Evidence / size filter',
+            'class="research-only">Sort within selected epoch',
+        ):
+            self.assertIn(term, self.page)
+        for term in (
+            'function setView(mode)',
+            'document.querySelector(".wrap").dataset.view = mode',
+            '$(id).setAttribute("aria-pressed", String(active))',
+            '$("status").value = "all"',
+            '$("evidence").value = "all"',
+            '$("sort").value = "index"',
+            '$("view-beginner").addEventListener("click"',
+            '$("view-researcher").addEventListener("click"',
+            '$("try-example").addEventListener("click"',
+            'showDetails(example)',
+            'p.index === 1930 && p.collection_epoch_utc === EPOCH15',
+        ):
+            self.assertIn(term, self.javascript)
+        for term in (
+            '.wrap[data-view="beginner"] .research-only',
+            '.wrap[data-view="researcher"] .beginner-guide',
+            '.provenance-strip',
+            '.mode-button.active',
+            '@media(max-width:700px)',
+        ):
+            self.assertIn(term, self.css)
+        self.assertIn('selected.some(t => t.collection_epoch_utc !== p.collection_epoch_utc)',
+                      self.javascript)
+        self.assertIn('Unknown value ≠ $0', self.page)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

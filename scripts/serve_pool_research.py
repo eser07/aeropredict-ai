@@ -10,6 +10,7 @@ import json
 import sys
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation, localcontext
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
@@ -17,6 +18,7 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "research" / "index.html"
 PAIRS = ROOT / "data" / "pool_pairs_928_base.json"
+VOTES = ROOT / "data" / "p4_rolling_votes_base" / "snapshot.json"
 DATA = (ROOT / "data" / "pool_collection_batches_base" /
         "block_52595092" / "votes_25" / "research_all_928_two_epochs.json")
 EPOCHS = ("2026-10-08T00:00:00+00:00", "2026-10-15T00:00:00+00:00")
@@ -149,6 +151,83 @@ def weekly_breakdown(pool, batch_root):
     }
 
 
+def rolling_vote_detail(votes, research, idx):
+    """Validate the complete independent rolling cohort before serving one pool.
+
+    Every pool weight is paired ONLY with the Voter totalWeight of its own
+    observation block. Neither cross-page sums nor yield estimates are made.
+    """
+    if (not isinstance(votes, dict) or votes.get("chain_id") != 8453 or
+            str(votes.get("voter", "")).lower() != "0x16613524e02ad97edfef371bc883f2f5d6c480a5" or
+            votes.get("expected_pools") != 928 or
+            votes.get("next_offset") != 928 or votes.get("complete") is not True):
+        raise ValueError("Rolling vote dataset is incomplete or on wrong chain")
+    pages = votes.get("pages")
+    if not isinstance(pages, list) or not pages:
+        raise ValueError("Missing rolling vote observation pages")
+    known = {p["index"]: p["address"].lower() for p in research["pools"]}
+    if len(known) != 928:
+        raise ValueError("Research inventory identities missing")
+    first = 0
+    found = None
+    seen = set()
+    with localcontext() as ctx:
+        ctx.prec = 80
+        for page in pages:
+            if not isinstance(page, dict):
+                raise ValueError("Invalid observation page")
+            end = page.get("end_offset")
+            number = page.get("block_number")
+            rows = page.get("pools")
+            hash_value = page.get("block_hash")
+            stamp = page.get("block_timestamp_utc")
+            total = page.get("total_voting_weight_raw")
+            if (type(end) is not int or end <= first or end > 928 or
+                    page.get("start_offset") != first or
+                    type(number) is not int or number <= 0 or
+                    not isinstance(hash_value, str) or
+                    re.fullmatch(r"0x[0-9a-fA-F]{64}", hash_value) is None or
+                    not isinstance(stamp, str) or
+                    not isinstance(rows, list) or len(rows) != end - first or
+                    not isinstance(total, str) or not total.isdecimal()):
+                raise ValueError("Invalid rolling vote page identity or range")
+            datetime.fromisoformat(stamp)
+            total_raw = Decimal(total)
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise ValueError("Invalid pool vote observation")
+                index = row.get("index")
+                address = row.get("pool_address")
+                raw = row.get("weight_raw")
+                if (type(index) is not int or
+                        not isinstance(address, str) or
+                        not isinstance(raw, str) or not raw.isdecimal() or
+                        known.get(index) != address.lower() or index in seen):
+                    raise ValueError("Rolling vote pool does not match research inventory")
+                seen.add(index)
+                first += 1
+                if index == idx:
+                    weight = Decimal(raw)
+                    found = {
+                        "index": index, "address": address.lower(),
+                        "block_number": number, "block_timestamp_utc": stamp,
+                        "collection_type": page.get("source", "rolling"),
+                        "vote_weight_raw": raw,
+                        "vote_weight_veaero": format(weight / Decimal(10) ** 18, "f"),
+                        "voter_total_weight_raw": total,
+                        "voter_total_weight_veaero": format(total_raw / Decimal(10) ** 18, "f"),
+                        "voter_share_percent_at_block":
+                            format(weight * 100 / total_raw, ".8f") if total_raw else None,
+                        "provenance": "rolling per-page pinned block",
+                        "synchronized_with_reward_epochs": False,
+                    }
+            if first != end:
+                raise ValueError("Invalid contiguous observation pages")
+    if first != 928 or len(seen) != 928 or found is None:
+        raise ValueError("Rolling snapshot does not cover all research pools")
+    return found
+
+
 class ResearchHandler(BaseHTTPRequestHandler):
     server_version = "AeroPredictResearch/0.1"
 
@@ -220,6 +299,36 @@ class ResearchHandler(BaseHTTPRequestHandler):
                 self.error_json(503, "Saved trading pair metadata unavailable")
                 return
             self.reply(200, "application/json; charset=utf-8", body)
+        elif path == "/api/votes":
+            try:
+                query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
+                if set(query) != {"index"} or len(query["index"]) != 1:
+                    raise ValueError("Invalid query")
+                token = query["index"][0]
+                if not token.isdecimal() or len(token) > 4:
+                    raise ValueError("Invalid index")
+                idx = int(token)
+            except (ValueError, KeyError):
+                self.error_json(400, "Expected one numeric pool index")
+                return
+            try:
+                research = validate_research(
+                    json.loads(self.server.data_path.read_text(encoding="utf-8"))
+                )
+            except (OSError, ValueError, TypeError, KeyError):
+                self.error_json(503, "Saved research data unavailable")
+                return
+            if not any(p["index"] == idx for p in research["pools"]):
+                self.error_json(404, "Pool not present in saved research")
+                return
+            try:
+                doc = json.loads(self.server.votes_path.read_text(encoding="utf-8"))
+                payload = rolling_vote_detail(doc, research, idx)
+            except (OSError, ValueError, TypeError, KeyError, AttributeError, InvalidOperation):
+                self.error_json(503, "Validated rolling vote observations unavailable")
+                return
+            self.reply(200, "application/json; charset=utf-8",
+                       json.dumps(payload).encode("utf-8"))
         elif path == "/api/weekly":
             try:
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
@@ -273,6 +382,7 @@ def make_server(port=8766, data_path=DATA, html_path=HTML):
     server.data_path = Path(data_path)
     server.batch_root = server.data_path.parent
     server.pair_path = PAIRS
+    server.votes_path = VOTES
     server.html_path = Path(html_path)
     server.js_path = server.html_path.parent / "research.js"
     server.css_path = server.html_path.parent / "research.css"

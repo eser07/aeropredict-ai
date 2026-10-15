@@ -285,7 +285,7 @@ class TestResearchExplorerUI(unittest.TestCase):
         for term in (
             'function computeDistribution(pools, epoch, meta)',
             'function drawP7Coverage()',
-            'doc.pools.filter(p => p.collection_epoch_utc === epoch)',
+            'const rows = pools.filter(p => p.collection_epoch_utc === epoch)',
             'const buckets = Array.from({length: 5}',
             'typeof p.usd_coverage_complete !== "boolean"',
             'complete !== meta.complete_usd_pools',

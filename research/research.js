@@ -283,6 +283,34 @@
     block.append(make("strong", "", value));
     parent.append(block);
   }
+  // P5.1: explanatory evidence, not a confidence score or yield estimate.
+  // Only saved fully priced P5 observations may produce numeric interpretations.
+  function renderEvidenceNotes(trend, parent) {
+    const section = make("section", "evidence-notes");
+    section.append(make("h4", "", "P5.1 · Evidence & interpretation"));
+    section.append(make("p", "mini",
+      "Descriptive flags for four completed weeks. Not predictions, probability " +
+      "scores, investment safety ratings or personal veAERO returns."));
+    const observations = trend && Array.isArray(trend.evidence) ? trend.evidence : [];
+    if (!observations.length) {
+      section.append(make("p", "warnline",
+        "Evidence explanations unavailable; update the local research server."));
+    } else {
+      const list = make("div", "evidence-list");
+      const allowed = new Set(["caution", "context", "unknown"]);
+      observations.forEach(note => {
+        if (!note || typeof note.kind !== "string" ||
+            typeof note.text !== "string") return;
+        const level = allowed.has(note.level) ? note.level : "unknown";
+        const item = make("article", "evidence-item evidence-" + level);
+        item.append(make("strong", "evidence-kind", note.kind));
+        item.append(make("p", "mini", note.text));
+        list.append(item);
+      });
+      section.append(list);
+    }
+    parent.append(section);
+  }
   // P5: four saved weeks of POOL rewards only. No vote denominators, live
   // pricing, earnings projection or forecast. Incomplete quotes => no metrics.
   function renderTrendSummary(data, parent) {
@@ -296,6 +324,7 @@
       section.append(make("p", "warnline",
         "Four-week USD analysis unavailable: incomplete saved USD quotes or an older server response. " +
         "Missing prices are not $0."));
+      renderEvidenceNotes(t, section);
       parent.append(section);
       return;
     }
@@ -347,6 +376,7 @@
         t.largest_week_start_utc.slice(0, 10) : "None") +
       ". The P4 votes below/above come from DIFFERENT blocks and are never " +
       "used in this reward calculation."));
+    renderEvidenceNotes(t, section);
     parent.append(section);
   }
   function renderWeeklyBreakdown(p, root) {
@@ -571,6 +601,7 @@
         if (!t || t.status !== "available" || !p.usd_coverage_complete) {
           panel.append(make("p", "warnline",
             "Unknown: incomplete saved USD prices. Missing values are NOT $0."));
+          renderEvidenceNotes(t, panel);
           return;
         }
         const fees = numeric(t.fees_share_percent);
@@ -610,6 +641,7 @@
         } else {
           panel.append(make("p", "mini", "No positive priced rewards; split undefined."));
         }
+        renderEvidenceNotes(t, panel);
         panel.append(make("p", "mini",
           "Historical rewards priced at each batch's saved quote; quote times may " +
           "differ even within the same collection epoch. " +

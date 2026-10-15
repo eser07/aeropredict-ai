@@ -193,6 +193,60 @@ class TestResearchServer(unittest.TestCase):
         self.assertEqual([Decimal(x["bribes_usd"]) for x in doc["weeks"]],
                          [Decimal(20), Decimal(10), Decimal(5), Decimal(0)])
         self.assertEqual(doc["weeks"][2]["total_usd"], "9")
+        self.assertEqual(doc["trend"]["status"], "available")
+        self.assertEqual(doc["trend"]["positive_priced_weeks"], 3)
+        self.assertEqual(doc["trend"]["latest_change_state"], "decreased")
+        self.assertEqual(doc["trend"]["latest_change_percent"], "-100.00")
+
+    def test_p5_weekly_trend_avoids_zero_denominators_and_missing_quotes(self):
+        def weeks(fees, bribes):
+            return [
+                {
+                    "week_start_utc": "2026-09-" + str(10 + i * 7).zfill(2) + "T00:00:00+00:00",
+                    "fees_usd": str(a), "bribes_usd": str(b),
+                    "total_usd": str(Decimal(a) + Decimal(b)),
+                }
+                for i, (a, b) in enumerate(zip(fees, bribes))
+            ]
+
+        series = weeks([10, 20, 0, 30], [10, 0, 0, 30])
+        result = m.weekly_trend_summary(series, True)
+        self.assertEqual(result["status"], "available")
+        self.assertEqual(result["positive_priced_weeks"], 3)
+        self.assertEqual(result["fees_four_week_usd"], "60")
+        self.assertEqual(result["bribes_four_week_usd"], "40")
+        self.assertEqual(result["total_four_week_usd"], "100")
+        self.assertEqual(result["fees_share_percent"], "60.00")
+        self.assertEqual(result["bribes_share_percent"], "40.00")
+        self.assertEqual(result["largest_week_share_percent"], "60.00")
+        self.assertEqual(result["latest_change_state"], "new_positive_from_zero")
+        self.assertIsNone(result["latest_change_percent"])
+
+        falling = m.weekly_trend_summary(weeks([0, 0, 20, 10], [0, 0, 0, 0]), True)
+        self.assertEqual(falling["latest_change_state"], "decreased")
+        self.assertEqual(falling["latest_change_percent"], "-50.00")
+        self.assertEqual(falling["latest_week_delta_usd"], "-10")
+
+        zeros = m.weekly_trend_summary(weeks([0] * 4, [0] * 4), True)
+        self.assertEqual(zeros["latest_change_state"], "both_zero")
+        self.assertEqual(zeros["positive_priced_weeks"], 0)
+        self.assertIsNone(zeros["fees_share_percent"])
+        self.assertIsNone(zeros["largest_week_share_percent"])
+        self.assertIsNone(zeros["latest_change_percent"])
+
+        self.assertEqual(
+            m.weekly_trend_summary(series, False)["status"],
+            "unavailable_incomplete_usd",
+        )
+        series[1]["fees_usd"] = None
+        self.assertEqual(
+            m.weekly_trend_summary(series, True)["status"],
+            "unavailable_incomplete_usd",
+        )
+        series[1]["fees_usd"] = "20"
+        series[1]["total_usd"] = "999"
+        with self.assertRaisesRegex(ValueError, "mismatch"):
+            m.weekly_trend_summary(series, True)
 
     def test_weekly_breakdown_rejects_invalid_query_and_missing_source(self):
         for path, expected in (

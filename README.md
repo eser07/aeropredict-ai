@@ -716,6 +716,39 @@ a wide mobile table column. No extra network calls, new blockchain
 collection, wallets, user returns, 8765 dashboard changes or hourly-job
 changes are involved.
 
+**P7.3 — Historical four-week reward patterns (Researcher view).**
+The saved P2 research dataset already carries four **total pool USD** reward
+weeks (priced with each batch's saved collection-time quotes). Without
+new RPC calls or changes to the P2 files, Researcher View now offers
+**largest-week concentration** (≥50%, ≥75%), recent total-USD **increase**,
+**decrease**, **unchanged**, a **new positive week after zero**, and an
+illustrative **rise of ≥50%** screen requiring ≥$10 in the previous week.
+Each visible Researcher pool card reports the largest-week share and
+last-versus-previous total-USD change with a small-baseline warning.
+
+All numeric screening requires fully priced four-week USD records and
+reconciles the sum of the four saved weekly totals against four times the
+saved mean. Missing prices and inconsistent rows are **Unknown**, never
+zero; a zero four-week total has an **undefined concentration share**.
+A previous week of $0 yields an explicit new-positive/no-percentage
+state, not an infinite growth claim. Ratios against previous totals
+below $10 are labeled fragile, rather than interpreted as a compelling
+return signal.
+
+**BRIBES ≥75% overall + peak ≥50%** combines two *distinct* saved
+observations: the entire four-week BRIBES reward proportion (P7.2),
+and the largest individual week of *total* FEES+BRIBES rewards (P7.3).
+It **does not establish that BRIBES caused the peak**. The precise
+weekly FEES-vs-BRIBES decomposition remains available in each pool's
+P5 Details via its read-only saved-weekly API; without an independently
+validated per-pool, per-week source rollup, directory-wide attribution
+cannot be claimed. These are non-predictive, retrospective indicators.
+Returning to Beginner View resets P7.3's hidden advanced filters.
+
+No scripts access live blockchain data, no new endpoints are required,
+and the 8765 dashboard, hourly Windows task, underlying JSON collections,
+P4 observations and P5.1 explanations are unchanged.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

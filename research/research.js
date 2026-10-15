@@ -283,9 +283,70 @@
     block.append(make("strong", "", value));
     parent.append(block);
   }
+  function renderWeeklyBreakdown(p, root) {
+    const section = make("section", "weekly-analysis");
+    section.append(make("h3", "", "Four completed weeks · FEES vs BRIBES"));
+    section.append(make("p", "mini",
+      "USD is based on token prices SAVED at collection, not prices from each historical week. " +
+      "Unknown quotes are never treated as $0; this is not current income."));
+    const content = make("div", "weekly-content", "Loading saved weekly breakdown…");
+    section.append(content);
+    root.append(section);
+    fetch("/api/weekly?index=" + encodeURIComponent(p.index), {cache: "no-store"})
+      .then(async response => {
+        if (!response.ok) {
+          const problem = await response.json().catch(() => ({}));
+          throw new Error(problem.error || "HTTP " + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (doc.detailRequest !== p.index || !section.isConnected) return;
+        if (data.index !== p.index ||
+            data.address.toLowerCase() !== p.address.toLowerCase() ||
+            data.collection_epoch_utc !== p.collection_epoch_utc ||
+            !Array.isArray(data.weeks) || data.weeks.length !== 4)
+          throw new Error("Saved weekly breakdown does not match this pool");
+        content.replaceChildren();
+        const maximum = Math.max(1, ...data.weeks.map(w =>
+          numeric(w.total_usd) ?? Math.max(numeric(w.fees_usd) ?? 0, numeric(w.bribes_usd) ?? 0)));
+        data.weeks.forEach(w => {
+          const item = make("article", "weekly-item");
+          const header = make("div", "weekly-heading");
+          header.append(make("strong", "", w.week_start_utc.slice(0, 10)));
+          header.append(make("strong", "weekly-total", "Total " + money(w.total_usd)));
+          item.append(header);
+          const bars = make("div", "weekly-bars");
+          [["fees_usd", "FEES", "fee-bar"], ["bribes_usd", "BRIBES", "bribe-bar"]]
+            .forEach(([key, label, style]) => {
+              const value = numeric(w[key]);
+              const line = make("div", "weekly-bar-line");
+              line.append(make("span", "weekly-kind", label));
+              const track = make("div", "weekly-track");
+              const fill = make("div", "weekly-fill " + style);
+              fill.style.width = value === null ? "0%" :
+                (100 * Math.min(maximum, value) / maximum).toFixed(2) + "%";
+              track.append(fill);
+              line.append(track);
+              line.append(make("span", "weekly-value", money(w[key])));
+              bars.append(line);
+            });
+          item.append(bars);
+          content.append(item);
+        });
+        if (!p.usd_coverage_complete) content.append(make("p", "warnline",
+          "Incomplete USD coverage: totals marked Unknown may contain unpriced rewards."));
+      })
+      .catch(err => {
+        if (doc.detailRequest !== p.index || !section.isConnected) return;
+        content.replaceChildren(make("p", "warnline",
+          "Saved weekly breakdown unavailable: " + err.message));
+      });
+  }
   function showDetails(p) {
     const target = $("detail");
     target.hidden = false;
+    doc.detailRequest = p.index;
     $("detail-title").textContent = poolName(p) + " · Reward breakdown";
     $("detail-intro").textContent = epochName(p.collection_epoch_utc) +
       " · Older Base block " + p.inventory_snapshot_block +
@@ -364,6 +425,7 @@
       tokens.append(make("p", "mini", "No registered reward tokens were read for this pool."));
     }
     root.append(tokens);
+    renderWeeklyBreakdown(p, root);
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }
   function drawComparison() {

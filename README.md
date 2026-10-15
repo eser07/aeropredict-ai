@@ -517,6 +517,48 @@ python -m unittest discover -s tests -p "prepare_remaining_epoch_batches_test.py
 python -m unittest discover -s tests -p "run_pool_batch_pipeline_test.py" -v
 ```
 
+### P2 — Finish the complete 928-pool, two-epoch research inventory (offline)
+
+After original batches 001–015 (2026-10-08) and separate next-epoch batches
+016–038 (2026-10-15) have all completed, build ONE **read-only research
+inventory** from their saved audits, with exact provenance per pool:
+
+```bash
+python scripts/build_full_pool_research_base.py
+```
+
+Expected source plan: 38 groups, 928 pinned-inventory gauge entries at Base
+block 52595092. The original files for 375 entries are in
+`data/pool_collection_batches_base/block_52595092/votes_25/`. The
+remaining 553 were collected under the separate
+`epochs/2026-10-15/` folder. The output is an independent, atomic JSON at
+`data/pool_collection_batches_base/block_52595092/votes_25/research_all_928_two_epochs.json`.
+It is **not** an input to the existing 16-pool dashboard or refresh job.
+
+The builder validates the original and next-epoch manifests, checks unique
+registry pool identities and both source epochs, confirms each completed
+batch and per-pool audit coverage, checks positive-week counts against
+actual FEES/BRIBES token reward records and suppresses incomplete token
+USD values. It reports **USD coverage by epoch**, price-missing pool IDs,
+and `no_observed_rewards` separately from `not_audited_at_collection`
+(a pool may have become inactive). It preserves token addresses, symbols,
+weekly mean token amounts, saved token quotes, reward frequency and
+collection epoch per pool for a later searchable research UI. It does not
+assume missing token quotes are $0, and does not rank pools across weeks
+or present the ratios as a payout forecast.
+
+This offline step reads saved per-batch audit classifications at the time of
+collection; an old quote timestamp is retained as provenance rather than
+being treated as a *new* quote today. Historical four-week reward quantities
+remain valued at each batch's then-current token prices. Pool voting weights
+are from the original pinned block, not synchronized to either reward epoch.
+
+Offline regression tests:
+
+```bash
+python -m unittest discover -s tests -p "build_full_pool_research_test.py" -v
+```
+
 ### Read token amounts and approximate USD equivalents
 
 The expanded dashboard displays token quantity **and** an approximate USD

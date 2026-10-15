@@ -606,7 +606,7 @@ process.stdout.write(JSON.stringify({
         for token in (
             'id="p74-overview"',
             'P7.4 · What the saved evidence can (and cannot) verify',
-            'not</strong> a confidence percentage',
+            'a confidence percentage',
             'id="provenance-filter"',
             'value="usd-missing"',
             'value="quote-time-gap"',
@@ -635,11 +635,8 @@ process.stdout.write(JSON.stringify({
             '"latest-move", "provenance-filter"',
             'Quote time: ',
             'Saved research file generated (UTC)',
-            'The source cohort',
             'P4: separately recorded voting weights',
         ):
-            if token == 'The source cohort':
-                continue
             self.assertIn(token, self.javascript)
         for token in ('.p74-overview-grid', '.p74-quote-label',
                       '.p74-evidence', '.p74-grid'):

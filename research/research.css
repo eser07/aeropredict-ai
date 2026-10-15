@@ -279,3 +279,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
   .wrap[data-view="researcher"] .p72-hint{font-size:11px;margin:10px 0 0}
   .table-wrap .source-classification{margin-top:6px}
 }
+
+/* P7.3: readable historical total-reward pattern without expanding mobile cards. */
+.pattern-classification{color:var(--muted);font-size:11px;line-height:1.55;margin-top:5px;overflow-wrap:anywhere}
+@media(max-width:700px){
+  .table-wrap .pattern-classification{margin-top:5px;line-height:1.55}
+}

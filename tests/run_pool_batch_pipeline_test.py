@@ -4,6 +4,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -85,6 +86,40 @@ class TestBatchPipeline(unittest.TestCase):
                 p.run(self.folder, start=2, max_batches=1, dry_run=True)
                 process.assert_not_called()
         self.assertFalse((self.folder / ".batch_pipeline.lock").exists())
+
+    def test_fresh_epoch_bootstraps_batch_one_without_old_data(self):
+        for filename in (
+            "fee_histories_batch_001.json",
+            "incentives_batch_001.json",
+            "audit_batch_001.json",
+        ):
+            (self.folder / filename).unlink()
+        manifest = json.loads(self.reference.read_text())
+        manifest["collection_epoch_utc"] = "2026-10-15T00:00:00+00:00"
+        self.put("manifest.json", manifest)
+        with patch.object(p, "BATCH_ROOT", self.root):
+            with patch.object(p, "process_one") as process:
+                p.run(self.folder, start=1, max_batches=1, dry_run=True)
+                process.assert_not_called()
+        self.assertEqual(p.reference_epoch(self.folder), "2026-10-15T00:00:00+00:00")
+
+    def test_expired_weekly_plan_refuses_live_queries(self):
+        for filename in (
+            "fee_histories_batch_001.json",
+            "incentives_batch_001.json",
+            "audit_batch_001.json",
+        ):
+            (self.folder / filename).unlink()
+        manifest = json.loads(self.reference.read_text())
+        manifest["collection_epoch_utc"] = "2026-10-15T00:00:00+00:00"
+        self.put("manifest.json", manifest)
+        with patch.object(p, "BATCH_ROOT", self.root):
+            with patch.object(p, "datetime") as clock:
+                clock.now.return_value = datetime(2026, 10, 22, 3, tzinfo=timezone.utc)
+                with patch.object(p, "process_one") as process:
+                    with self.assertRaisesRegex(RuntimeError, "outside collection epoch"):
+                        p.run(self.folder, start=1, max_batches=1)
+                    process.assert_not_called()
 
     def test_batch_success_is_skipped_without_rpcs(self):
         files = p.paths_for(self.folder, 2)

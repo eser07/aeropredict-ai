@@ -82,6 +82,25 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertIn('not</strong> synchronized', self.page)
         self.assertIn('.vote-analysis', self.css)
 
+    def test_p5_four_week_analysis_is_descriptive_and_guarded(self):
+        for term in (
+            'function renderTrendSummary(data, parent)',
+            'renderTrendSummary(data, content);',
+            't.status !== "available"',
+            'Latest vs previous completed week',
+            'Four-week FEES · saved-price USD',
+            'Four-week BRIBES · saved-price USD',
+            't.latest_change_state === "new_positive_from_zero"',
+            'percentage undefined',
+            'not a trend forecast',
+        ):
+            self.assertIn(term, self.javascript)
+        self.assertIn('P5 adds descriptive four-week reward breakdowns', self.page)
+        self.assertIn('.trend-mix-track', self.css)
+        # Research score and vote provenance calculations remain untouched.
+        self.assertIn('function researchScore(p)', self.javascript)
+        self.assertIn('function renderRollingVotes(p, root)', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

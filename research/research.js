@@ -544,6 +544,86 @@
     renderWeeklyBreakdown(p, root);
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }
+  // P5 comparison is descriptive. All pools must belong to one saved
+  // collection epoch. Saved quotes may still have different timestamps.
+  function renderComparisonRewardMix(p, card) {
+    const panel = make("section", "compare-reward-mix");
+    panel.append(make("h4", "", "P5 · Four-week reward composition"));
+    const status = make("p", "mini", "Loading saved FEES / BRIBES breakdown…");
+    panel.append(status);
+    card.append(panel);
+    fetch("/api/weekly?index=" + encodeURIComponent(p.index), {cache: "no-store"})
+      .then(async response => {
+        if (!response.ok) {
+          const problem = await response.json().catch(() => ({}));
+          throw new Error(problem.error || "HTTP " + response.status);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!card.isConnected || !doc.compared.includes(p.index)) return;
+        if (data.index !== p.index || data.address.toLowerCase() !== p.address.toLowerCase() ||
+            data.collection_epoch_utc !== p.collection_epoch_utc ||
+            !Array.isArray(data.weeks) || data.weeks.length !== 4)
+          throw new Error("Saved reward history does not match selected pool");
+        panel.replaceChildren(make("h4", "", "P5 · Four-week reward composition"));
+        const t = data.trend;
+        if (!t || t.status !== "available" || !p.usd_coverage_complete) {
+          panel.append(make("p", "warnline",
+            "Unknown: incomplete saved USD prices. Missing values are NOT $0."));
+          return;
+        }
+        const fees = numeric(t.fees_share_percent);
+        const bribes = numeric(t.bribes_share_percent);
+        const line = make("div", "compare-reward-metrics");
+        line.append(make("p", "", "Four-week total: " + money(t.total_four_week_usd)));
+        line.append(make("p", "", "FEES: " + money(t.fees_four_week_usd) +
+          " · BRIBES: " + money(t.bribes_four_week_usd)));
+        line.append(make("p", "", "Positive priced weeks: " +
+          t.positive_priced_weeks + " / 4"));
+        line.append(make("p", "", "Largest week: " +
+          (t.largest_week_share_percent === null ? "Undefined ($0 total)" :
+            plain(t.largest_week_share_percent) + "% of observed total")));
+        let change = "Undefined";
+        if (t.latest_change_state === "both_zero") {
+          change = "Both weeks $0";
+        } else if (t.latest_change_state === "new_positive_from_zero") {
+          change = "New positive week after $0 · % undefined";
+        } else if (t.latest_change_percent !== null) {
+          // Signed percentage changes are allowed here; decreases are negative.
+          const signed = Number(t.latest_change_percent);
+          change = Number.isFinite(signed) ? (signed > 0 ? "+" : "") +
+            plain(signed) + "% vs preceding week" : "Undefined";
+        }
+        line.append(make("p", "", "Latest weekly change: " + change));
+        panel.append(line);
+        if (fees !== null && bribes !== null && fees + bribes <= 100.1) {
+          const track = make("div", "trend-mix-track");
+          const f = make("span", "trend-fees");
+          const b = make("span", "trend-bribes");
+          f.style.width = Math.min(100, fees).toFixed(2) + "%";
+          b.style.width = Math.min(100, bribes).toFixed(2) + "%";
+          track.append(f, b);
+          panel.append(track);
+          panel.append(make("p", "mini", "FEES " + plain(t.fees_share_percent) +
+            "% · BRIBES " + plain(t.bribes_share_percent) + "%"));
+        } else {
+          panel.append(make("p", "mini", "No positive priced rewards; split undefined."));
+        }
+        panel.append(make("p", "mini",
+          "Historical rewards priced at each batch's saved quote; quote times may " +
+          "differ even within the same collection epoch. " +
+          "P4 voting weights are NOT synchronized and are not used to compute a payout."));
+      })
+      .catch(err => {
+        if (!card.isConnected || !doc.compared.includes(p.index)) return;
+        status.textContent = "Saved four-week comparison unavailable: " + err.message;
+        if (status.parentNode !== panel) {
+          panel.replaceChildren(make("h4", "", "P5 · Four-week reward composition"), status);
+        }
+        status.className = "warnline";
+      });
+  }
   function drawComparison() {
     const section = $("compare-panel");
     section.hidden = doc.compared.length === 0 && !doc.compareError;
@@ -587,6 +667,7 @@
         metrics.append(line);
       });
       card.append(metrics);
+      renderComparisonRewardMix(p, card);
       sizeCautions(p).forEach(message => card.append(make("p", "warnline", "⚠ " + message)));
       if (!p.usd_coverage_complete)
         card.append(make("p", "warnline", "⚠ Missing USD quotes; not a $0 reward total."));

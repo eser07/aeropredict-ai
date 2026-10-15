@@ -482,6 +482,126 @@ process.stdout.write(JSON.stringify(cases));
                     "zeroNotUnknown"):
             self.assertFalse(out[key], key)
 
+    def test_p73_historical_pattern_filters_require_complete_reconciled_weekly_usd(self):
+        for term in (
+            'id="concentration"',
+            'value="peak50"',
+            'value="peak75"',
+            'value="bribes-peak"',
+            'id="latest-move"',
+            'value="up"',
+            'value="down"',
+            'value="same"',
+            'value="new"',
+            'value="rise50"',
+            'Latest vs previous week',
+            'does <strong>not</strong> prove BRIBES caused that peak',
+        ):
+            self.assertIn(term, self.page)
+        for term in (
+            'function historicalPattern(p)',
+            'function matchesP73(p, concentration, latest)',
+            'function patternSummary(p)',
+            'p.usd_coverage_complete !== true',
+            'p.weekly_pool_usd_at_collection_quote.length !== 4',
+            'Math.abs(total - 4 * mean)',
+            'const previous = weeks[2], last = weeks[3]',
+            'const percent = previous > 0 ? 100 * delta / previous : null',
+            'total > 0 ? 100 * Math.max(...weeks) / total : null',
+            'observation.previous >= 10',
+            'pricedBribesShare(p) < 75',
+            'if (!matchesP73(p, concentration, latest)) return false',
+            'patternSummary(p)',
+            '$("concentration").value = "all"',
+            '$("latest-move").value = "all"',
+            '"concentration", "latest-move"',
+        ):
+            self.assertIn(term, self.javascript)
+        self.assertIn('.pattern-classification', self.css)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('localStorage', self.javascript)
+
+    @unittest.skipUnless(shutil.which("node"), "Node.js unavailable: skip P7.3 behavior")
+    def test_p73_js_concentration_and_week_changes(self):
+        import json
+        start_numeric = self.javascript.index("  const numeric = value => {")
+        end_numeric = self.javascript.index("  // Display-only", start_numeric)
+        start_helpers = self.javascript.index("  function rewardSource(p)")
+        end_helpers = self.javascript.index("  function error(message)", start_helpers)
+        source = (self.javascript[start_numeric:end_numeric] +
+                  self.javascript[start_helpers:end_helpers])
+        cases = r"""
+const token = (type, mean) => ({
+  type, mean_usd_at_collection_quote:String(mean),
+  observed_positive_weeks:4
+});
+const pool = (weeks, tokens) => ({
+  usd_coverage_complete:true,
+  weekly_pool_usd_at_collection_quote:weeks.map(String),
+  avg_pool_usd_per_week_at_collection_quote:String(
+    weeks.reduce((a,b)=>a+b,0)/4),
+  token_rewards:tokens
+});
+const peak = pool([10,10,10,70],[token("FEES",6.25),token("BRIBES",18.75)]);
+const lowBribes = pool([10,10,10,70],[token("FEES",20),token("BRIBES",5)]);
+const appeared = pool([0,0,0,10],[token("BRIBES",2.5)]);
+const bothZero = pool([0,0,0,0],[]);
+const falling = pool([10,10,10,5],[token("FEES",8.75)]);
+const smallBase = pool([0,0,4,10],[token("FEES",3.5)]);
+const unchanged = pool([1,2,5,5],[token("FEES",3.25)]);
+const incomplete = {...peak,usd_coverage_complete:false};
+const mismatch = {...peak,avg_pool_usd_per_week_at_collection_quote:"20"};
+const missing = {...peak,weekly_pool_usd_at_collection_quote:[10,null,10,70]};
+const empty = {...peak,weekly_pool_usd_at_collection_quote:[]};
+const p = historicalPattern(peak);
+const a = historicalPattern(appeared);
+const z = historicalPattern(bothZero);
+const d = historicalPattern(falling);
+process.stdout.write(JSON.stringify({
+  p,a,z,d,
+  incomplete:historicalPattern(incomplete),
+  mismatch:historicalPattern(mismatch),
+  missing:historicalPattern(missing),
+  empty:historicalPattern(empty),
+  peak50:matchesP73(peak,"peak50","all"),
+  peak75:matchesP73(peak,"peak75","all"),
+  bribesPeak:matchesP73(peak,"bribes-peak","rise50"),
+  lowBribesPeak:matchesP73(lowBribes,"bribes-peak","all"),
+  increase:matchesP73(peak,"all","up"),
+  decrease:matchesP73(falling,"all","down"),
+  new:matchesP73(appeared,"all","new"),
+  same:matchesP73(unchanged,"all","same"),
+  bothZeroSame:matchesP73(bothZero,"all","same"),
+  unknownZero:matchesP73(bothZero,"unknown","all"),
+  unknownPrice:matchesP73(incomplete,"unknown","unknown"),
+  unsafeSmallBase:matchesP73(smallBase,"all","rise50"),
+  upWithoutPrice:matchesP73(incomplete,"all","up")
+}));
+"""
+        result = subprocess.run(
+            [shutil.which("node"), "-e", source + cases],
+            text=True, capture_output=True, check=False, timeout=10,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        parsed = json.loads(result.stdout)
+        self.assertAlmostEqual(parsed["p"]["peakPercent"], 70.0)
+        self.assertAlmostEqual(parsed["p"]["percent"], 600.0)
+        self.assertEqual(parsed["p"]["state"], "up")
+        self.assertEqual(parsed["a"]["state"], "new")
+        self.assertIsNone(parsed["a"]["percent"])
+        self.assertEqual(parsed["z"]["state"], "both-zero")
+        self.assertIsNone(parsed["z"]["peakPercent"])
+        self.assertEqual(parsed["d"]["state"], "down")
+        self.assertAlmostEqual(parsed["d"]["percent"], -50.0)
+        for field in ("incomplete", "mismatch", "missing", "empty"):
+            self.assertIsNone(parsed[field], field)
+        for field in ("peak50", "bribesPeak", "increase", "decrease",
+                      "new", "same", "bothZeroSame", "unknownZero", "unknownPrice"):
+            self.assertTrue(parsed[field], field)
+        for field in ("peak75", "lowBribesPeak", "unsafeSmallBase",
+                      "upWithoutPrice"):
+            self.assertFalse(parsed[field], field)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

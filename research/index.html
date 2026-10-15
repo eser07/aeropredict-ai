@@ -157,6 +157,26 @@
           <option value="unknown">Undefined / incomplete priced total</option>
         </select>
       </label>
+      <label class="research-only">P7.3 · Peak-week concentration
+        <select id="concentration">
+          <option value="all">All concentration patterns</option>
+          <option value="peak50">Largest week ≥ 50% of four-week USD</option>
+          <option value="peak75">Largest week ≥ 75% of four-week USD</option>
+          <option value="bribes-peak">BRIBES ≥ 75% overall + peak ≥ 50%*</option>
+          <option value="unknown">Unknown / zero priced total</option>
+        </select>
+      </label>
+      <label class="research-only">P7.3 · Latest vs previous week
+        <select id="latest-move">
+          <option value="all">All historical week-to-week changes</option>
+          <option value="up">Total USD increased</option>
+          <option value="down">Total USD decreased</option>
+          <option value="same">Total USD unchanged</option>
+          <option value="new">New positive total after $0 · % undefined</option>
+          <option value="rise50">Rise ≥ 50% · previous week ≥ $10*</option>
+          <option value="unknown">Unavailable · incomplete saved prices</option>
+        </select>
+      </label>
       <label class="research-only">Evidence / size filter
         <select id="evidence">
           <option value="all">All observations · show cautions</option>
@@ -178,6 +198,14 @@
       observations. BRIBES share = proportion of the reconciled, saved-price
       four-week USD total. Missing prices or a $0 priced total are
       <strong>Undefined</strong>, not zero; no APR or payout is inferred.</p>
+    <p class="research-only p72-hint"><strong>P7.3:</strong> Peak week uses
+      a pool's largest saved-price TOTAL reward week divided by its positive
+      four-week total. Latest change compares the two most recent completed
+      weeks, not a forecast; a $0 previous week has <strong>no percentage
+      change</strong>. “BRIBES ≥ 75% overall + peak ≥ 50%” combines overall
+      composition with concentration of <em>total</em> rewards, and does
+      <strong>not</strong> prove BRIBES caused that peak. Missing USD stays
+      Unknown, and previous-week totals below $10 can exaggerate percentages.</p>
     <div class="toolbar">
       <p id="count" aria-live="polite">Loading saved research data…</p>
       <div class="pagesize"><label for="page-size">Rows</label>
@@ -212,6 +240,16 @@
     </details>
     <details class="researcher-methodology research-only">
       <summary>Full screening and old-vote-ratio methodology</summary>
+      <p class="footnote"><strong>P7.3 historical patterns:</strong> Only
+      complete saved-price four-week TOTAL USD records support concentration
+      and recent-week changes. The previous week must be positive before
+      dividing for a percentage; a zero baseline reports “new positive”
+      without an artificial infinite increase. The ≥50% rise shortcut also
+      requires at least $10 in the previous week (an illustrative screening
+      threshold, not a confidence measure). A BRIBES-dominant concentrated
+      total flags two separate retrospective facts, not weekly BRIBES
+      attribution. Individual weekly FEES / BRIBES evidence remains
+      available in Details; no earnings prediction follows.</p>
       <p class="footnote"><strong>P7.2 FEES / BRIBES:</strong> Reward-source filters use
       observed nonzero token allocations (not token count or fee profitability).
       BRIBES share is computed only from complete saved USD quotes for pools with

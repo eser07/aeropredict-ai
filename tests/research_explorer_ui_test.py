@@ -123,6 +123,27 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertNotIn('innerHTML', self.javascript)
         self.assertNotIn('eval(', self.javascript)
 
+    def test_p51_evidence_is_rendered_in_detail_and_comparison_without_scores(self):
+        for term in (
+            'function renderEvidenceNotes(trend, parent)',
+            'P5.1 · Evidence & interpretation',
+            'renderEvidenceNotes(t, section);',
+            'renderEvidenceNotes(t, panel);',
+            'Array.isArray(trend.evidence)',
+            'new Set(["caution", "context", "unknown"])',
+            'item.append(make("p", "mini", note.text))',
+            'Evidence explanations unavailable',
+            'Not predictions, probability',
+        ):
+            self.assertIn(term, self.javascript)
+        self.assertIn("P5.1 displays saved four-week evidence notes", self.page)
+        self.assertIn("P5.1 adds explainable retrospective flags", self.page)
+        for term in ('.evidence-notes', '.evidence-item.evidence-caution',
+                     '.evidence-item.evidence-unknown'):
+            self.assertIn(term, self.css)
+        self.assertNotIn('innerHTML', self.javascript)
+        self.assertNotIn('eval(', self.javascript)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

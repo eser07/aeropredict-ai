@@ -139,6 +139,24 @@
           <option value="incomplete">Incomplete USD coverage</option>
         </select>
       </label>
+      <label class="research-only">Observed reward source
+        <select id="source">
+          <option value="all">All sources · including no rewards</option>
+          <option value="fees">FEES only · observed token amounts</option>
+          <option value="bribes">BRIBES only · observed token amounts</option>
+          <option value="both">FEES + BRIBES · both observed</option>
+          <option value="none">Neither observed · 0/4</option>
+        </select>
+      </label>
+      <label class="research-only">BRIBES share · saved-price USD
+        <select id="bribes-share">
+          <option value="all">All · including undefined share</option>
+          <option value="atleast25">BRIBES ≥ 25% of priced total</option>
+          <option value="atleast50">BRIBES ≥ 50% of priced total</option>
+          <option value="atleast75">BRIBES ≥ 75% of priced total</option>
+          <option value="unknown">Undefined / incomplete priced total</option>
+        </select>
+      </label>
       <label class="research-only">Evidence / size filter
         <select id="evidence">
           <option value="all">All observations · show cautions</option>
@@ -190,6 +208,13 @@
     </details>
     <details class="researcher-methodology research-only">
       <summary>Full screening and old-vote-ratio methodology</summary>
+      <p class="footnote"><strong>P7.2 FEES / BRIBES:</strong> Reward-source filters use
+      observed nonzero token allocations (not token count or fee profitability).
+      BRIBES share is computed only from complete saved USD quotes for pools with
+      a positive four-week priced total; incomplete prices and zero totals are
+      <strong>Undefined</strong>, never silently 0%. Shares use saved batch-time
+      quotes, not historical week prices. Matching source observations and USD
+      share are different tests; BRIBES-heavy observations are not projected earnings.</p>
       <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
     </details>
   </section>

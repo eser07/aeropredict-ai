@@ -622,6 +622,23 @@ all-zero observed weeks have undefined reward-mix and concentration shares.
 Only four historical weeks exist. No APR, payout, probability, or stability
 claim follows from these observations.
 
+**P6.1 — Guided beginner and researcher views.** The research browser starts
+in **Beginner view**, with a short three-step guide, explicit historical
+reward/vote/quote provenance, searchable pool directory, and a one-click
+example (#1930). **Researcher view** exposes the existing advanced
+evidence/size and sorting controls, previous research-priority leader list,
+and fragile historical vote ratios. Returning to Beginner view clears the
+hidden advanced filters so that they cannot invisibly restrict search
+results; it does not change saved data, research scores or reward summaries.
+Both views keep pool Details, P5.1 evidence and three-pool same-epoch
+comparison available. Responsive layout supports narrow displays; the
+remaining table scrolls horizontally as needed.
+
+This is a presentation-only, English-language local prototype. Research
+data remain the historical October 8 / October 15 saved collections.
+The separately hosted 16-pool dashboard on 8765 and its Windows hourly
+refresh task are not changed. GenLayer is a separate later phase.
+
 Offline server regression tests:
 
 ```bash

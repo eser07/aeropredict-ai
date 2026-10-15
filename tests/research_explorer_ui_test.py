@@ -45,7 +45,7 @@ class TestResearchExplorerUI(unittest.TestCase):
                      'value="score"', 'Incomplete USD data is unrated',
                      'No cross-epoch ranking'):
             self.assertIn(term, self.page)
-        for term in ('function researchScore(p)', 'Math.min(39, raw)',
+        for term in ('function researchScore(p)', 'Math.min(39, Math.round(raw * evidenceFactor))',
                      'researchScore(p) === null', 'p.collection_epoch_utc === epoch',
                      'drawLeaders()', 'direction === "score"'):
             self.assertIn(term, self.javascript)

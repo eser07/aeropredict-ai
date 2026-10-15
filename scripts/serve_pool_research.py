@@ -65,6 +65,77 @@ def saved_decimal(value):
     return number
 
 
+def weekly_trend_summary(weeks, usd_coverage_complete):
+    """Descriptive P5 history; never infer APR, forecast or vote-based yield.
+
+    No percentage metrics if ANY reward quote is incomplete. Percent changes
+    from a zero baseline are undefined rather than infinite.
+    """
+    unavailable = {
+        "status": "unavailable_incomplete_usd",
+        "reason": "Incomplete saved USD quotes prevent a reliable four-week total",
+    }
+    if not usd_coverage_complete:
+        return unavailable
+    if not isinstance(weeks, list) or len(weeks) != 4:
+        raise ValueError("Expected four saved reward weeks")
+    with localcontext() as ctx:
+        ctx.prec = 80
+        values = []
+        for w in weeks:
+            if not isinstance(w, dict) or any(
+                w.get(name) is None for name in ("fees_usd", "bribes_usd", "total_usd")
+            ):
+                return unavailable
+            fees = saved_decimal(w["fees_usd"])
+            bribes = saved_decimal(w["bribes_usd"])
+            total = saved_decimal(w["total_usd"])
+            if fees + bribes != total:
+                raise ValueError("Saved FEES / BRIBES weekly total mismatch")
+            values.append((fees, bribes, total))
+        fees_sum = sum((w[0] for w in values), Decimal(0))
+        bribes_sum = sum((w[1] for w in values), Decimal(0))
+        total_sum = fees_sum + bribes_sum
+
+        def percent(num, denominator):
+            if not denominator:
+                return None
+            return format((100 * num / denominator).quantize(Decimal("0.01")), "f")
+
+        last = values[-1][2]
+        previous = values[-2][2]
+        delta = last - previous
+        if previous == 0 and last == 0:
+            state = "both_zero"
+        elif previous == 0:
+            state = "new_positive_from_zero"
+        elif delta > 0:
+            state = "increased"
+        elif delta < 0:
+            state = "decreased"
+        else:
+            state = "unchanged"
+        peak = max(range(4), key=lambda i: values[i][2])
+        return {
+            "status": "available",
+            "positive_priced_weeks": sum(w[2] > 0 for w in values),
+            "fees_four_week_usd": str(fees_sum),
+            "bribes_four_week_usd": str(bribes_sum),
+            "total_four_week_usd": str(total_sum),
+            "fees_share_percent": percent(fees_sum, total_sum),
+            "bribes_share_percent": percent(bribes_sum, total_sum),
+            "largest_week_share_percent": percent(values[peak][2], total_sum),
+            "largest_week_start_utc": weeks[peak]["week_start_utc"] if total_sum else None,
+            "previous_week_usd": str(previous),
+            "latest_week_usd": str(last),
+            "latest_week_delta_usd": str(delta),
+            "latest_change_percent": percent(delta, previous),
+            "latest_change_state": state,
+            "denominator_policy": "Percent change unavailable if previous week was $0",
+            "interpretation": "Past observations priced at the collection-time quote; not yield or forecast",
+        }
+
+
 def weekly_breakdown(pool, batch_root):
     """Reprice four saved reward weeks at their batch's SAVED quote, never live."""
     epoch = pool["collection_epoch_utc"]
@@ -148,6 +219,7 @@ def weekly_breakdown(pool, batch_root):
         "usd_coverage_complete": pool["usd_coverage_complete"],
         "quote_policy": "Batch-saved token USD prices, not historical week prices",
         "weeks": weeks,
+        "trend": weekly_trend_summary(weeks, pool["usd_coverage_complete"]),
     }
 
 

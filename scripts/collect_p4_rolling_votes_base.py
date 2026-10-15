@@ -13,7 +13,6 @@ import re
 import sys
 import time
 from datetime import datetime, timezone
-from decimal import Decimal
 from pathlib import Path
 
 from discover_active_pools_base import rpc_checked, save_atomic
@@ -36,10 +35,6 @@ def load_inventory():
     data = validate_complete_inventory(json.loads(INVENTORY.read_text(encoding="utf-8")))
     return data, fingerprint(data)
 
-
-def valid_address(text):
-    return (isinstance(text, str) and re.fullmatch(r"0x[0-9a-fA-F]{40}", text)
-            is not None)
 
 
 def validate_checkpoint(doc, inventory, source_sha):
@@ -82,8 +77,8 @@ def validate_checkpoint(doc, inventory, source_sha):
     return doc
 
 
-def import_pinned(inventory, source_sha, source=PINNED_CHECKPOINT):
-    original = json.loads(Path(source).read_text(encoding="utf-8"))
+def import_pinned(inventory, source_sha, source=None):
+    original = json.loads(Path(source or PINNED_CHECKPOINT).read_text(encoding="utf-8"))
     count = original.get("next_offset")
     old_rows = original.get("pools")
     if (original.get("chain_id") != CHAIN_ID

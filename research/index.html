@@ -93,6 +93,27 @@
     <article class="stat"><span>Incomplete USD coverage</span><b id="stat-missing">—</b><small>Unknown value ≠ $0</small></article>
     <article class="stat"><span>No observed rewards</span><b id="stat-zero">—</b><small>in four completed weeks</small></article>
   </section>
+  <section class="panel research-only" id="p7-coverage" aria-labelledby="p7-title">
+    <div class="section-head">
+      <div>
+        <h2 id="p7-title">P7.1 · Reward observation coverage</h2>
+        <p>How often were nonzero FEES or BRIBES observed in each pool's four
+        completed weeks? View the two separately collected cohorts without
+        treating them as one synchronized market snapshot.</p>
+      </div>
+    </div>
+    <div id="p7-distribution" class="p7-distribution" aria-live="polite">
+      <p class="mini">Reading saved pool observations…</p>
+    </div>
+    <p class="footnote">Counts are based on historical nonzero token amounts,
+    <strong>not</strong> USD price completeness, claimable income or positive net returns.
+    Each 0/4–4/4 row shows pools with complete versus incomplete saved-quote
+    coverage. 4/4 means an observed reward in all four saved weeks, not
+    reliable future earnings. Oct 8 and Oct 15 are <strong>different pool
+    cohorts</strong>; comparisons are descriptive, not a time-series change.
+    This panel uses only saved local P2 records, never live blockchain reads,
+    old P4 vote ratios, or prospective yields.</p>
+  </section>
   <section class="panel" id="pool-directory">
     <div class="section-head">
       <div><h2>Pool directory</h2><p class="beginner-directory-intro">Search a pool, then open Details to see its observed rewards and evidence cautions. Saved historical data only.</p><p class="directory-tech-note">P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p><details class="researcher-mobile-directory researcher-only"><summary>How pair labels and P5.1 evidence are sourced</summary><p>P5.1 uses saved four-week evidence notes and incomplete-price cautions without modifying historical research scores. Pool pairs come from saved token0/token1 metadata (927 of 928 identified), not reward-token symbols.</p></details></div>

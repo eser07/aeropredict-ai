@@ -685,6 +685,37 @@ This is a read-only client-side distribution in **Researcher view**.
 It does not change the historical research score, P4 rolling block votes,
 P5.1 reward summaries, the 8765 app, scheduled Windows tasks, or data files.
 
+**P7.2 — Historical FEES / BRIBES composition filters.** Researcher
+View can now filter the read-only 928-pool directory by independently
+observed reward source: **FEES only**, **BRIBES only**, **both**, **neither**,
+or all. Source presence means a **nonzero raw token allocation** in at
+least one of four completed weeks, not that the pool is profitable or
+that FEES and BRIBES occurred in the same individual week.
+
+A separate **BRIBES share · saved-price USD** filter provides 25%, 50%
+and 75% minimum thresholds, plus **Undefined / incomplete**. For
+complete-USD pools with positive recorded rewards, the interface sums
+the *per-token four-week mean USD values at saved collection-time
+quotes* by source and cross-checks the sum against the saved pool
+weekly mean. Percentages are withheld when the saved pricing is
+incomplete, the four-week priced total is zero, a positive-reward
+token has an absent USD quote, or totals cannot be reconciled.
+No missing price or zero-total denominator is silently represented
+as 0% BRIBES. A known 0% applies only where validated positive
+saved-quote USD derives wholly from FEES. This screening is separate
+from the previously implemented P5 weekly-detail API and does not
+replace it; individual Details remain the primary evidence view.
+
+The controls combine with existing search, observation epoch, status,
+evidence, and sorting filters. The browser still prohibits meaningful
+cross-epoch USD/ratio ranking. Returning to Beginner View resets these
+new hidden filters alongside the existing advanced options, avoiding
+invisible restrictions on beginner searches. Results show the historical
+reward-source classification and saved-price BRIBES share without adding
+a wide mobile table column. No extra network calls, new blockchain
+collection, wallets, user returns, 8765 dashboard changes or hourly-job
+changes are involved.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

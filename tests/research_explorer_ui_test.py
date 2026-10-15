@@ -50,6 +50,15 @@ class TestResearchExplorerUI(unittest.TestCase):
                      'drawLeaders()', 'direction === "score"'):
             self.assertIn(term, self.javascript)
 
+    def test_fragile_ratios_not_advertised_as_large_dollar_returns(self):
+        self.assertIn('fragileRatio && p.illustrative_usd_per_million_inventory_votes', self.javascript)
+        self.assertIn('"Unreliable"', self.javascript)
+        self.assertIn('if (qa && qb) return a.index - b.index;', self.javascript)
+        self.assertIn('const evidenceFactor = 0.25 + 0.75', self.javascript)
+        self.assertIn('Math.min(39, Math.round(raw * evidenceFactor))', self.javascript)
+        self.assertIn('Unreliable in the table', self.page)
+        self.assertIn('graded evidence discounts', self.page)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

@@ -116,6 +116,14 @@ class TestNewEpochPlan(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "missing completed status"):
                 p.prepare(self.source, completed_through=2, now=NEW_TIME)
 
+    def test_rejects_accidentally_recollecting_original_batch(self):
+        self.write(self.source / "fee_histories_batch_003.json", {
+            "current_epoch_start_utc": OLD_EPOCH,
+        })
+        with patch.object(p, "BATCH_ROOT", self.root):
+            with self.assertRaisesRegex(RuntimeError, "already has collected"):
+                p.prepare(self.source, completed_through=2, now=NEW_TIME)
+
     def test_rejects_mixed_epoch_and_no_new_epoch(self):
         with patch.object(p, "BATCH_ROOT", self.root):
             old_date = datetime(2026, 10, 14, 23, tzinfo=timezone.utc)

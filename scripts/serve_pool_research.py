@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "research" / "index.html"
+PAIRS = ROOT / "data" / "pool_pairs_928_base.json"
 DATA = (ROOT / "data" / "pool_collection_batches_base" /
         "block_52595092" / "votes_25" / "research_all_928_two_epochs.json")
 EPOCHS = ("2026-10-08T00:00:00+00:00", "2026-10-15T00:00:00+00:00")
@@ -96,6 +97,31 @@ class ResearchHandler(BaseHTTPRequestHandler):
                 self.error_json(500, "Research stylesheet unavailable")
                 return
             self.reply(200, "text/css; charset=utf-8", body)
+        elif path == "/api/pairs":
+            try:
+                pair_doc = json.loads(self.server.pair_path.read_text(encoding="utf-8"))
+                records = pair_doc.get("pools")
+                if pair_doc.get("chain_id") != 8453 or not isinstance(records, list):
+                    raise ValueError("Invalid Base pair dataset")
+                unique = set()
+                for record in records:
+                    address = record.get("pool_address")
+                    index = record.get("index")
+                    if (type(index) is not int or
+                            not isinstance(address, str) or
+                            len(address) != 42 or
+                            not address.startswith("0x")):
+                        raise ValueError("Invalid pair record")
+                    int(address[2:], 16)
+                    if (index, address.lower()) in unique:
+                        raise ValueError("Duplicate pair record")
+                    unique.add((index, address.lower()))
+                body = json.dumps({"chain_id": 8453, "pools": records},
+                                  ensure_ascii=False).encode("utf-8")
+            except (OSError, ValueError, TypeError, AttributeError, KeyError):
+                self.error_json(503, "Saved trading pair metadata unavailable")
+                return
+            self.reply(200, "application/json; charset=utf-8", body)
         elif path == "/api/research":
             try:
                 body = self.server.data_path.read_bytes()
@@ -118,6 +144,7 @@ class ResearchHandler(BaseHTTPRequestHandler):
 def make_server(port=8766, data_path=DATA, html_path=HTML):
     server = ThreadingHTTPServer(("127.0.0.1", port), ResearchHandler)
     server.data_path = Path(data_path)
+    server.pair_path = PAIRS
     server.html_path = Path(html_path)
     server.js_path = server.html_path.parent / "research.js"
     server.css_path = server.html_path.parent / "research.css"

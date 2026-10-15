@@ -241,6 +241,86 @@ class TestResearchServer(unittest.TestCase):
         self.assertIsNone(result["weeks"][1]["total_usd"])
         self.assertEqual(result["weeks"][1]["bribes_usd"], "0")
 
+    def rolling_votes_fixture(self):
+        research = fixture()
+        for p in research["pools"]:
+            p["address"] = "0x" + format(p["index"], "040x")
+        self.data.write_text(json.dumps(research), encoding="utf-8")
+        pages = []
+        for start, end, block in [(0, 180, 52646576), (180, 928, 52647814)]:
+            pages.append({
+                "start_offset": start, "end_offset": end,
+                "block_number": block, "block_hash": "0x" + "a" * 64,
+                "block_timestamp_utc": "2026-10-15T12:00:00+00:00",
+                "total_voting_weight_raw": "1000000000000000000000",
+                "source": "preserved_pinned_checkpoint" if start == 0 else "rolling",
+                "pools": [
+                    {"index": p["index"], "pool_address": p["address"],
+                     "weight_raw": "2000000000000000000"}
+                    for p in research["pools"][start:end]
+                ],
+            })
+        doc = {
+            "chain_id": 8453, "voter": "0x16613524e02ad97eDfeF371bC883F2F5d6C480A5",
+            "expected_pools": 928, "next_offset": 928,
+            "complete": True, "pages": pages,
+        }
+        self.server.votes_path = self.root / "votes.json"
+        self.server.votes_path.write_text(json.dumps(doc), encoding="utf-8")
+        return doc
+
+    def test_votes_api_returns_block_specific_weights_not_reward_yield(self):
+        self.rolling_votes_fixture()
+        status, headers, body = self.get("/api/votes?index=1")
+        first = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(first["block_number"], 52646576)
+        self.assertEqual(first["vote_weight_veaero"], "2")
+        self.assertEqual(first["voter_share_percent_at_block"], "0.20000000")
+        self.assertEqual(first["collection_type"], "preserved_pinned_checkpoint")
+        self.assertIs(first["synchronized_with_reward_epochs"], False)
+        self.assertNotIn("apr", json.dumps(first).lower())
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        status, _, body = self.get("/api/votes?index=928")
+        last = json.loads(body)
+        self.assertEqual(last["block_number"], 52647814)
+        self.assertEqual(last["vote_weight_veaero"], "2")
+
+    def test_votes_api_rejects_missing_invalid_and_corrupted_sources(self):
+        self.rolling_votes_fixture()
+        for path, expected in (
+            ("/api/votes", 400), ("/api/votes?index=abc", 400),
+            ("/api/votes?index=1&index=2", 400),
+            ("/api/votes?index=1&path=x", 400),
+            ("/api/votes?index=9999", 404),
+        ):
+            with self.subTest(path=path):
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    self.get(path)
+                self.assertEqual(error.exception.code, expected)
+        original = json.loads(self.server.votes_path.read_text())
+        examples = [
+            dict(original, chain_id=1),
+            dict(original, complete=False),
+            dict(original, next_offset=927),
+            {**original, "pages": [dict(original["pages"][0], end_offset=179),
+                                   original["pages"][1]]},
+        ]
+        invalid_address = json.loads(json.dumps(original))
+        invalid_address["pages"][1]["pools"][0]["pool_address"] = "0x" + "f" * 40
+        examples.append(invalid_address)
+        for wrong in examples:
+            with self.subTest(invalid=wrong.get("chain_id"), pages=len(wrong["pages"])):
+                self.server.votes_path.write_text(json.dumps(wrong))
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    self.get("/api/votes?index=1")
+                self.assertEqual(error.exception.code, 503)
+                self.assertNotIn(str(self.root), error.exception.read().decode())
+        self.server.votes_path.unlink()
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.get("/api/votes?index=1")
+        self.assertEqual(error.exception.code, 503)
+
     def test_only_explicit_frontend_routes(self):
         for path, mime in (
             ("/", "text/html"), ("/index.html", "text/html"),

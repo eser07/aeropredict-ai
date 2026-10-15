@@ -72,3 +72,9 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .compare-metrics span{color:var(--muted)}.compare-metrics strong{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
 .compare-card .warnline{color:var(--amber);margin-top:9px}
 @media(max-width:900px){.compare-items{grid-template-columns:1fr}}
+
+/* Historical pool research-priority leaderboard */
+.leaders-items{display:grid;gap:8px}
+.leader-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 15px;border:1px solid var(--line);border-radius:10px;background:#10203a}
+.leader-row strong{font-size:13px}.leader-row .tiny{margin-top:4px}
+.score-number{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--cyan)}

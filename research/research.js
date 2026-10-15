@@ -1,7 +1,7 @@
 "use strict";
 (() => {
   const $ = id => document.getElementById(id);
-  const doc = { pools: [], meta: null, filtered: [], page: 0, compared: [], compareError: "" };
+  const doc = { pools: [], meta: null, filtered: [], page: 0, compared: [], compareError: "", pairs: new Map() };
   const EPOCH8 = "2026-10-08T00:00:00+00:00";
   const EPOCH15 = "2026-10-15T00:00:00+00:00";
   const make = (tag, cls, val) => {
@@ -82,12 +82,20 @@
       String(m.generated_at_utc || "unknown").slice(0, 19).replace("T", " ") +
       " UTC · No live updates";
   }
+  function pairName(p) {
+    const pair = doc.pairs.get(p.address.toLowerCase());
+    return pair && pair.index === p.index && pair.pair_label
+      ? pair.pair_label : null;
+  }
+  function poolName(p) {
+    return pairName(p) || "Pool #" + p.index + " · Pair unavailable";
+  }
   function searchMatch(p, query) {
     if (!query) return true;
     const tokens = (p.token_rewards || []).flatMap(t => [t.symbol || "", t.address || ""]);
     return [
       String(p.index), "#" + p.index, p.address || "",
-      p.gauge_address || "", ...tokens,
+      p.gauge_address || "", pairName(p) || "", ...tokens,
     ].some(s => String(s).toLowerCase().includes(query));
   }
   function apply() {
@@ -151,7 +159,8 @@
     visible.forEach(p => {
       const tr = make("tr");
       const identity = cell(tr);
-      identity.append(make("div", "pool-name", "Pool #" + p.index));
+      identity.append(make("div", "pool-name", poolName(p)));
+      identity.append(make("div", "tiny", "Pool #" + p.index));
       const addr = make("div", "address", shortAddr(p.address));
       identity.append(addr);
       cell(tr, epochName(p.collection_epoch_utc), "tiny");
@@ -216,7 +225,7 @@
   function showDetails(p) {
     const target = $("detail");
     target.hidden = false;
-    $("detail-title").textContent = "Pool #" + p.index + " · Reward breakdown";
+    $("detail-title").textContent = poolName(p) + " · Reward breakdown";
     $("detail-intro").textContent = epochName(p.collection_epoch_utc) +
       " · Older Base block " + p.inventory_snapshot_block +
       " · No current pool status or live price verified";
@@ -309,7 +318,8 @@
       : "Compare up to three pools from the SAME saved collection epoch.";
     selected.forEach(p => {
       const card = make("article", "compare-card");
-      card.append(make("h3", "", "Pool #" + p.index));
+      card.append(make("h3", "", poolName(p)));
+      card.append(make("p", "mini", "Pool #" + p.index));
       card.append(make("p", "", shortAddr(p.address) +
         " · " + epochName(p.collection_epoch_utc)));
       const metrics = make("div", "compare-metrics");
@@ -390,13 +400,31 @@
       }
       return response.json();
     })
-    .then(data => {
+    .then(async data => {
       if (data.chain_id !== 8453 || !Array.isArray(data.pools) ||
           data.audited_pool_count !== data.pools.length) {
         throw new Error("Unexpected research data format");
       }
       doc.meta = data;
       doc.pools = data.pools;
+      try {
+        const response = await fetch("/api/pairs", {cache:"no-store"});
+        if (!response.ok) throw new Error("Pair metadata HTTP " + response.status);
+        const saved = await response.json();
+        if (saved.chain_id !== 8453 || !Array.isArray(saved.pools))
+          throw new Error("Invalid pair metadata");
+        for (const pair of saved.pools) {
+          if (typeof pair.pool_address === "string" &&
+              /^0x[0-9a-f]{40}$/i.test(pair.pool_address) &&
+              Number.isInteger(pair.index) &&
+              typeof pair.pair_label === "string" &&
+              pair.pair_label.length <= 140) {
+            doc.pairs.set(pair.pool_address.toLowerCase(), pair);
+          }
+        }
+      } catch (err) {
+        console.warn("Trading pair metadata not loaded:", err.message);
+      }
       drawStats();
       render();
     })

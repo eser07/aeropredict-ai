@@ -870,6 +870,54 @@ Offline P8.2 tests:
 python -m unittest discover -s tests -p "p8_preview_cohort_plan_test.py" -v
 ```
 
+**P8.3 — Opt-in Base Voter live registry pilot (not a full scan).**
+P8.2 confirmed the historical cohort can be planned in isolated
+groups, but **does not establish which gauges remain active now**.
+P8.3 uses the existing Voter contract and a **single newly pinned Base
+block** to query a **small selection of old saved pool identities**
+for registry address continuity, gauge address, `isAlive`, and raw
+voting weight when alive. It is not a FEES/BRIBES read or voting return
+estimate.
+
+Start in offline preview mode:
+
+```bash
+python scripts/p8_probe_live_registry.py
+```
+
+By default, this simply reads the existing local research JSON and
+lists three saved registry indexes (`1930,1774,1414`), then exits.
+No network request occurs. After reviewing that output and with explicit
+opt-in, **only then** request a limited Base RPC observation:
+
+```bash
+python scripts/p8_probe_live_registry.py --live
+```
+
+The latter checks `eth_chainId` (must be 8453), obtains a **new**
+Base block number and executes every contract `eth_call` at that exact
+block tag, rather than using `latest` for each read. It can report
+`ACTIVE_SAME_GAUGE`, `ACTIVE_GAUGE_CHANGED`,
+`CURRENT_GAUGE_INACTIVE`, `NO_CURRENT_GAUGE`,
+`POOL_ADDRESS_CHANGED` or `INDEX_OUT_OF_RANGE`.
+Unmatched identities are **not** silently treated as the same pool.
+The script does **not** infer all-928 active counts from this limited
+sample and does not report APR, expected rewards or liquidity.
+
+The `--indexes` option accepts **1–5 comma-separated archived
+registry indexes**; invalid/duplicate/outside-the-archive indexes are
+rejected before any RPC. One live run is bounded to this explicit
+sample and uses modest retry limits. Do not log RPC credentials, replace
+old discovery results, run an all-928 job, or merge into 8766 without a
+separate tested collection pipeline. This script **writes no files**
+and changes neither the 8765 hourly task nor the 8766 server.
+
+Offline mock-based tests (no real Base RPC):
+
+```bash
+python -m unittest discover -s tests -p "p8_probe_live_registry_test.py" -v
+```
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

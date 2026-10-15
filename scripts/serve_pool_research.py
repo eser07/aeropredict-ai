@@ -3,14 +3,16 @@
 
 Runs on a SEPARATE loopback port (8766), never changes the existing 8765
 dashboard, data, scheduled refresh tasks, or any on-chain state.
-Exactly three GET routes; no directory serving and no public binding.
+Only explicit read-only GET routes; no directory serving and no public binding.
 """
 import argparse
 import json
 import sys
+from datetime import datetime, timedelta
+from decimal import Decimal, InvalidOperation, localcontext
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 HTML = ROOT / "research" / "index.html"
@@ -49,6 +51,101 @@ def validate_research(doc):
                 periods[epoch]["audited_pools"]):
             raise ValueError("Research dataset pool epoch mismatch")
     return doc
+
+def saved_decimal(value):
+    """Parse nonnegative, finite quantities without float rounding."""
+    try:
+        number = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:
+        raise ValueError("Invalid saved token amount or quote") from exc
+    if not number.is_finite() or number < 0:
+        raise ValueError("Invalid saved token amount or quote")
+    return number
+
+
+def weekly_breakdown(pool, batch_root):
+    """Reprice four saved reward weeks at their batch's SAVED quote, never live."""
+    epoch = pool["collection_epoch_utc"]
+    batch = pool.get("batch_number")
+    if epoch not in EPOCHS or type(batch) is not int or not 1 <= batch <= 38:
+        raise ValueError("Invalid batch identity")
+    folder = Path(batch_root)
+    if epoch == EPOCHS[1]:
+        folder = folder / "epochs" / "2026-10-15"
+    source = folder / f"incentives_batch_{batch:03d}.json"
+    doc = json.loads(source.read_text(encoding="utf-8"))
+    if doc.get("chain_id") != 8453 or doc.get("current_epoch_utc") != epoch:
+        raise ValueError("Saved incentives do not match collection epoch")
+    rows = doc.get("pools")
+    if not isinstance(rows, list):
+        raise ValueError("Saved incentives missing pool records")
+    matching = [x for x in rows if x.get("index") == pool["index"]]
+    if len(matching) != 1 or (
+        matching[0].get("pool_address", "").lower() != pool["address"].lower()
+    ):
+        raise ValueError("Saved pool identity differs from research dataset")
+    row = matching[0]
+    prices = doc.get("prices")
+    if not isinstance(prices, dict):
+        raise ValueError("Saved token prices unavailable")
+    start = datetime.fromisoformat(epoch)
+    expected_weeks = [
+        (start - timedelta(days=7 * (4 - i))).isoformat() for i in range(4)
+    ]
+    weeks = [{"week_start_utc": w, "fees_usd": None,
+              "bribes_usd": None, "total_usd": None} for w in expected_weeks]
+    with localcontext() as context:
+        context.prec = 80
+        amounts = {}
+        for kind in ("fees", "bribes"):
+            tokens = row.get(kind)
+            if not isinstance(tokens, list):
+                raise ValueError("Saved reward category unavailable")
+            values = [Decimal(0) for _ in range(4)]
+            unknown = [False] * 4
+            for token in tokens:
+                address = token.get("token_address")
+                decimals = token.get("decimals")
+                history = token.get("last_four_weeks")
+                if (not isinstance(address, str) or
+                    type(decimals) is not int or not 0 <= decimals <= 36 or
+                    not isinstance(history, list) or len(history) != 4):
+                    raise ValueError("Malformed saved token history")
+                quote = prices.get(address.lower())
+                price = None
+                if isinstance(quote, dict) and quote.get("price_usd") is not None:
+                    price = saved_decimal(quote["price_usd"])
+                for i, entry in enumerate(history):
+                    if entry.get("epoch_start_utc") != expected_weeks[i]:
+                        raise ValueError("Saved reward week mismatch")
+                    raw = saved_decimal(entry.get("raw"))
+                    if raw and price is None:
+                        unknown[i] = True
+                    elif price is not None:
+                        values[i] += raw / (Decimal(10) ** decimals) * price
+            amounts[kind] = [None if unknown[i] else values[i] for i in range(4)]
+        for i, week in enumerate(weeks):
+            fees = amounts["fees"][i]
+            bribes = amounts["bribes"][i]
+            total = fees + bribes if fees is not None and bribes is not None else None
+            week.update({
+                "fees_usd": str(fees) if fees is not None else None,
+                "bribes_usd": str(bribes) if bribes is not None else None,
+                "total_usd": str(total) if total is not None else None,
+            })
+            if pool["usd_coverage_complete"]:
+                saved = pool.get("weekly_pool_usd_at_collection_quote")
+                if (not isinstance(saved, list) or len(saved) != 4 or
+                    total is None or abs(total - saved_decimal(saved[i])) > Decimal("0.00000001")):
+                    raise ValueError("Weekly split does not reconcile with audited pool total")
+    return {
+        "index": pool["index"],
+        "address": pool["address"],
+        "collection_epoch_utc": epoch,
+        "usd_coverage_complete": pool["usd_coverage_complete"],
+        "quote_policy": "Batch-saved token USD prices, not historical week prices",
+        "weeks": weeks,
+    }
 
 
 class ResearchHandler(BaseHTTPRequestHandler):
@@ -122,6 +219,35 @@ class ResearchHandler(BaseHTTPRequestHandler):
                 self.error_json(503, "Saved trading pair metadata unavailable")
                 return
             self.reply(200, "application/json; charset=utf-8", body)
+        elif path == "/api/weekly":
+            try:
+                query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
+                if set(query) != {"index"} or len(query["index"]) != 1:
+                    raise ValueError("Invalid query")
+                token = query["index"][0]
+                if not token.isdecimal() or len(token) > 4:
+                    raise ValueError("Invalid index")
+                idx = int(token)
+            except (ValueError, KeyError):
+                self.error_json(400, "Expected one numeric pool index")
+                return
+            try:
+                source = json.loads(self.server.data_path.read_text(encoding="utf-8"))
+                validate_research(source)
+            except (OSError, ValueError, TypeError, KeyError):
+                self.error_json(503, "Saved research data unavailable")
+                return
+            matched = [p for p in source["pools"] if p["index"] == idx]
+            if len(matched) != 1:
+                self.error_json(404, "Pool not present in saved research")
+                return
+            try:
+                payload = weekly_breakdown(matched[0], self.server.batch_root)
+            except (OSError, ValueError, TypeError, KeyError, AttributeError):
+                self.error_json(503, "Saved weekly reward breakdown unavailable")
+                return
+            self.reply(200, "application/json; charset=utf-8",
+                       json.dumps(payload).encode("utf-8"))
         elif path == "/api/research":
             try:
                 body = self.server.data_path.read_bytes()
@@ -144,6 +270,7 @@ class ResearchHandler(BaseHTTPRequestHandler):
 def make_server(port=8766, data_path=DATA, html_path=HTML):
     server = ThreadingHTTPServer(("127.0.0.1", port), ResearchHandler)
     server.data_path = Path(data_path)
+    server.batch_root = server.data_path.parent
     server.pair_path = PAIRS
     server.html_path = Path(html_path)
     server.js_path = server.html_path.parent / "research.js"

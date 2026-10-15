@@ -785,7 +785,54 @@ There are no new RPC calls, backend routes, on-chain actions, live
 updates, modified data collections, wallet operations, 8765 dashboard
 edits or scheduled-task changes.
 
-This is a presentation-only, English-language local prototype. Research
+**P8.1 — Safe refresh architecture assessment, before any new collection.**
+The historical 928-pool research browser remains the two distinct
+2026-10-08 / 2026-10-15 archived cohorts. The 38 input batches were
+originally prepared from Base block 52,595,092 and successfully audited
+in two different Thursday collection periods. The historical pool and
+gauge inventory is **not proof of current pool status**.
+
+Before planning a fresh period, run this **read-only** offline check:
+
+```bash
+python scripts/p8_collection_preflight.py
+```
+
+The check validates the old/new P2 manifests and chain/block identity,
+source cohort epochs and per-batch file presence/status, reconciles all
+928 saved research pool identities to the appropriate batches and ensures
+that the existing research JSON is internally consistent. It prints the
+number of published batches and USD-coverage totals plus a future Thursday
+UTC boundary **for planning only**. It performs **no** RPC or token-price
+requests, writes **no** files and does not trigger any collection tasks.
+
+The previous `prepare_remaining_epoch_batches_base.py` workflow was
+designed for **uncollected** portions of the old fixed 38-batch inventory.
+It is not an all-928 continuous refresh or a mechanism to update a
+fully completed cohort. The old runner correctly refuses to collect
+under an expired epoch. **Never override these guards or reuse old
+folders.** First design an entirely new versioned input plan and decide
+whether to re-discover present Voter registrations/gauges or track the
+frozen historical cohort separately. Define new epoch isolation,
+storage budgets, throttle/rate-limit policy, sequential resumable
+publication and validation before any live RPC work.
+
+Before new results appear in 8766, build a separately versioned
+multi-cohort research JSON/API, retaining source block/epoch/quote times
+per observation. No mixing USD totals or voting weights across cohorts;
+no claims of current fees, claimable veAERO revenue or annualized APR
+from pinned historical rows. At P8.1 there is **no new collection
+enabled**, no new data API, and no effect on 8765 or its independent
+Windows hourly refresh. Collecting every pool every hour is neither
+implemented nor assumed reasonable.
+
+Offline P8.1 checks:
+
+```bash
+python -m unittest discover -s tests -p 'p8_collection_preflight_test.py' -v
+```
+
+ This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly
 refresh task are not changed. GenLayer is a separate later phase.

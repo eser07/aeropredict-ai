@@ -343,6 +343,54 @@
           "Saved weekly breakdown unavailable: " + err.message));
       });
   }
+  // P4 weights are separate per-page pinned observations, NOT aligned with
+  // FEES/BRIBES and NOT a simultaneous 928-pool voting snapshot.
+  function renderRollingVotes(p, root) {
+    const section = make("section", "vote-analysis");
+    section.append(make("h3", "", "P4 · Observed voting weight"));
+    section.append(make("p", "mini",
+      "Each collection page uses its own pinned Base block. These 928 observations " +
+      "were NOT collected in one block or aligned with FEES/BRIBES weeks. " +
+      "Vote share is measured against Voter totalWeight at THIS pool's block. " +
+      "Not live voting power, future APR or a veNFT income estimate."));
+    const content = make("div", "vote-content", "Loading saved vote observation…");
+    section.append(content);
+    root.append(section);
+    fetch("/api/votes?index=" + encodeURIComponent(p.index), {cache:"no-store"})
+      .then(async response => {
+        if (!response.ok) {
+          const problem = await response.json().catch(() => ({}));
+          throw new Error(problem.error || "HTTP " + response.status);
+        }
+        return response.json();
+      })
+      .then(v => {
+        if (doc.detailRequest !== p.index || !section.isConnected) return;
+        if (v.index !== p.index || v.address.toLowerCase() !== p.address.toLowerCase() ||
+            v.synchronized_with_reward_epochs !== false ||
+            !Number.isInteger(v.block_number) || !/^\\d+$/.test(v.vote_weight_raw))
+          throw new Error("P4 vote observation does not match this pool");
+        content.replaceChildren();
+        const grid = make("div", "detail-grid");
+        sectionValue(grid, "Observed pool weight · veAERO", plain(v.vote_weight_veaero));
+        sectionValue(grid, "Share of Voter total at observed block",
+          v.voter_share_percent_at_block === null ?
+          "Unknown (zero total)" : plain(v.voter_share_percent_at_block) + "%");
+        sectionValue(grid, "Observation Base block", String(v.block_number));
+        content.append(grid);
+        content.append(make("p", "mini",
+          "Base block time (UTC): " + v.block_timestamp_utc +
+          " · Source: " + (v.collection_type === "preserved_pinned_checkpoint" ?
+            "preserved first 180 observations" : "rolling observation page") +
+          " · Voter total at SAME block: " + plain(v.voter_total_weight_veaero) +
+          " veAERO."));
+      })
+      .catch(err => {
+        if (doc.detailRequest !== p.index || !section.isConnected) return;
+        content.replaceChildren(make("p", "warnline",
+          "Saved P4 voting observation unavailable: " + err.message));
+      });
+  }
   function showDetails(p) {
     const target = $("detail");
     target.hidden = false;
@@ -425,6 +473,7 @@
       tokens.append(make("p", "mini", "No registered reward tokens were read for this pool."));
     }
     root.append(tokens);
+    renderRollingVotes(p, root);
     renderWeeklyBreakdown(p, root);
     target.scrollIntoView({behavior:"smooth",block:"start"});
   }

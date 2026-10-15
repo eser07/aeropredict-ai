@@ -52,6 +52,8 @@ class TestResearchServer(unittest.TestCase):
         (self.root / "research.js").write_text("// test js", encoding="utf-8")
         (self.root / "research.css").write_text("body{}", encoding="utf-8")
         self.server = m.make_server(port=0, data_path=self.data, html_path=self.html)
+        self.pairs = self.root / "pairs.json"
+        self.server.pair_path = self.pairs  # Never read user-owned production data.
         self.host = "http://127.0.0.1:" + str(self.server.server_port)
         self.thread = threading.Thread(
             target=self.server.serve_forever, kwargs={"poll_interval": 0.05},
@@ -77,6 +79,56 @@ class TestResearchServer(unittest.TestCase):
         self.assertEqual(headers["Cache-Control"], "no-store")
         self.assertIn("default-src 'none'", headers["Content-Security-Policy"])
         self.assertEqual(self.server.server_address[0], "127.0.0.1")
+
+    def test_pairs_api_serves_saved_contract_labels_and_missing_pair(self):
+        records = [
+            {
+                "index": 1, "pool_address": "0x" + "a" * 40,
+                "pair_label": "tBTC / WETH",
+            },
+            {
+                "index": 1130, "pool_address": "0x" + "b" * 40,
+                "pair_label": None, "error": "execution reverted",
+            },
+        ]
+        self.pairs.write_text(
+            json.dumps({"chain_id": 8453, "pools": records}), encoding="utf-8",
+        )
+        status, headers, body = self.get("/api/pairs")
+        payload = json.loads(body)
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["chain_id"], 8453)
+        self.assertEqual(payload["pools"], records)
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        self.assertIn("application/json", headers["Content-Type"])
+
+    def test_pairs_api_rejects_missing_and_invalid_metadata(self):
+        # All these cases must fail closed; none may leak local paths.
+        valid = {"index": 1, "pool_address": "0x" + "a" * 40,
+                 "pair_label": "tBTC / WETH"}
+        examples = [
+            None,  # metadata file missing
+            {"chain_id": 1, "pools": [valid]},
+            {"chain_id": 8453, "pools": "wrong type"},
+            {"chain_id": 8453, "pools": [
+                valid, dict(valid)]},  # duplicate index + address
+            {"chain_id": 8453, "pools": [
+                dict(valid, pool_address="not-an-address")]},
+            {"chain_id": 8453, "pools": [
+                dict(valid, index="1")]},
+        ]
+        for example in examples:
+            with self.subTest(example=example):
+                if example is None:
+                    self.pairs.unlink(missing_ok=True)
+                else:
+                    self.pairs.write_text(json.dumps(example), encoding="utf-8")
+                with self.assertRaises(urllib.error.HTTPError) as error:
+                    self.get("/api/pairs")
+                self.assertEqual(error.exception.code, 503)
+                message = error.exception.read().decode("utf-8")
+                self.assertIn("Saved trading pair metadata unavailable", message)
+                self.assertNotIn(str(self.root), message)
 
     def test_only_explicit_frontend_routes(self):
         for path, mime in (

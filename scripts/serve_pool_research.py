@@ -108,7 +108,8 @@ def weekly_breakdown(pool, batch_root):
                 decimals = token.get("decimals")
                 history = token.get("last_four_weeks")
                 if (not isinstance(address, str) or
-                    type(decimals) is not int or not 0 <= decimals <= 36 or
+                    (decimals is not None and
+                     (type(decimals) is not int or not 0 <= decimals <= 36)) or
                     not isinstance(history, list) or len(history) != 4):
                     raise ValueError("Malformed saved token history")
                 quote = prices.get(address.lower())
@@ -119,9 +120,9 @@ def weekly_breakdown(pool, batch_root):
                     if entry.get("epoch_start_utc") != expected_weeks[i]:
                         raise ValueError("Saved reward week mismatch")
                     raw = saved_decimal(entry.get("raw"))
-                    if raw and price is None:
+                    if raw and (price is None or decimals is None):
                         unknown[i] = True
-                    elif price is not None:
+                    elif price is not None and decimals is not None:
                         values[i] += raw / (Decimal(10) ** decimals) * price
             amounts[kind] = [None if unknown[i] else values[i] for i in range(4)]
         for i, week in enumerate(weeks):

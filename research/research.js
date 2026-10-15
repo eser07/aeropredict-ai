@@ -283,6 +283,72 @@
     block.append(make("strong", "", value));
     parent.append(block);
   }
+  // P5: four saved weeks of POOL rewards only. No vote denominators, live
+  // pricing, earnings projection or forecast. Incomplete quotes => no metrics.
+  function renderTrendSummary(data, parent) {
+    const section = make("section", "trend-overview");
+    section.append(make("h3", "", "P5 · Four-week reward pattern"));
+    section.append(make("p", "mini",
+      "Descriptive observations, not a trend forecast. Four weeks are too few to " +
+      "establish statistical stability. USD reflects saved collection-time quotes."));
+    const t = data.trend;
+    if (!t || t.status !== "available") {
+      section.append(make("p", "warnline",
+        "Four-week USD analysis unavailable: incomplete saved USD quotes or an older server response. " +
+        "Missing prices are not $0."));
+      parent.append(section);
+      return;
+    }
+    const split = numeric(t.fees_share_percent);
+    const bribe = numeric(t.bribes_share_percent);
+    const grid = make("div", "detail-grid");
+    sectionValue(grid, "Four-week FEES · saved-price USD", money(t.fees_four_week_usd));
+    sectionValue(grid, "Four-week BRIBES · saved-price USD", money(t.bribes_four_week_usd));
+    sectionValue(grid, "Four-week POOL total · saved-price USD", money(t.total_four_week_usd));
+    sectionValue(grid, "Positive priced weeks", String(t.positive_priced_weeks) + " / 4");
+    sectionValue(grid, "Largest week concentration",
+      t.largest_week_share_percent === null ? "No positive priced rewards" :
+        plain(t.largest_week_share_percent) + "% of four-week total");
+    let comparison = "Unavailable";
+    if (t.latest_change_state === "both_zero")
+      comparison = "Both weeks $0";
+    else if (t.latest_change_state === "new_positive_from_zero")
+      comparison = "From $0 to " + money(t.latest_week_usd) + " (percentage undefined)";
+    else if (t.latest_change_state === "unchanged")
+      comparison = "Unchanged at " + money(t.latest_week_usd);
+    else if ((t.latest_change_state === "increased" || t.latest_change_state === "decreased") &&
+             t.latest_change_percent !== null) {
+      const amount = Number(t.latest_week_delta_usd);
+      comparison = (amount > 0 ? "+" : "−") + money(Math.abs(amount)) +
+        " (" + (amount > 0 ? "+" : "") + plain(t.latest_change_percent) +
+        "%) vs prior week";
+    }
+    sectionValue(grid, "Latest vs previous completed week", comparison);
+    section.append(grid);
+    const mix = make("div", "trend-mix");
+    mix.append(make("strong", "", "Four-week priced reward mix"));
+    if (split === null || bribe === null || split + bribe > 100.1) {
+      mix.append(make("p", "mini", "No positive priced reward total; composition undefined."));
+    } else {
+      const track = make("div", "trend-mix-track");
+      const feesBar = make("span", "trend-fees");
+      const bribesBar = make("span", "trend-bribes");
+      feesBar.style.width = Math.min(100, split).toFixed(2) + "%";
+      bribesBar.style.width = Math.min(100, bribe).toFixed(2) + "%";
+      track.append(feesBar, bribesBar);
+      mix.append(track);
+      mix.append(make("p", "mini", "FEES: " + plain(t.fees_share_percent) +
+        "% · BRIBES: " + plain(t.bribes_share_percent) +
+        "% of the saved-price four-week total."));
+    }
+    section.append(mix);
+    section.append(make("p", "mini",
+      "Largest observed week: " + (t.largest_week_start_utc ?
+        t.largest_week_start_utc.slice(0, 10) : "None") +
+      ". The P4 votes below/above come from DIFFERENT blocks and are never " +
+      "used in this reward calculation."));
+    parent.append(section);
+  }
   function renderWeeklyBreakdown(p, root) {
     const section = make("section", "weekly-analysis");
     section.append(make("h3", "", "Four completed weeks · FEES vs BRIBES"));
@@ -308,6 +374,7 @@
             !Array.isArray(data.weeks) || data.weeks.length !== 4)
           throw new Error("Saved weekly breakdown does not match this pool");
         content.replaceChildren();
+        renderTrendSummary(data, content);
         const maximum = Math.max(1, ...data.weeks.map(w =>
           numeric(w.total_usd) ?? Math.max(numeric(w.fees_usd) ?? 0, numeric(w.bribes_usd) ?? 0)));
         data.weeks.forEach(w => {

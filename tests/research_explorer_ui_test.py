@@ -71,6 +71,17 @@ class TestResearchExplorerUI(unittest.TestCase):
         self.assertIn('.fee-bar', self.css)
         self.assertIn('.bribe-bar', self.css)
 
+    def test_p4_votes_are_separate_from_weekly_rewards_and_scoring(self):
+        self.assertIn('function renderRollingVotes(p, root)', self.javascript)
+        self.assertIn('fetch("/api/votes?index="', self.javascript)
+        self.assertIn('renderRollingVotes(p, root);', self.javascript)
+        self.assertIn('v.synchronized_with_reward_epochs !== false', self.javascript)
+        self.assertIn('Vote share is measured against Voter totalWeight', self.javascript)
+        self.assertIn('Not live voting power, future APR or a veNFT income estimate', self.javascript)
+        self.assertIn('32 distinct Base blocks', self.page)
+        self.assertIn('not</strong> synchronized', self.page)
+        self.assertIn('.vote-analysis', self.css)
+
     def test_no_unsafe_browser_or_network_features(self):
         self.assertIn('fetch("/api/research"', self.javascript)
         self.assertNotIn('innerHTML', self.javascript)

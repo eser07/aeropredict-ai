@@ -59,3 +59,16 @@ td{font-size:13px;vertical-align:middle}
 footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 @media(max-width:1050px){.filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.wrap{padding:18px 13px 38px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.stat{padding:14px}.stat b{font-size:25px}.panel{padding:15px}.filters{grid-template-columns:1fr}.token-list{grid-template-columns:1fr}.detail-grid{grid-template-columns:1fr}.brand{align-items:flex-start}.mark{font-size:20px}}
+
+/* Research-comparison controls and conspicuous ratio caveats. */
+.ratio-caution{display:block;color:var(--amber);font-size:10px;font-weight:650;white-space:nowrap;margin-top:3px}
+.compare-actions{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.compare-button{padding:7px 11px;border-color:#375f6e;color:#cdf6ee}
+.compare-button.selected{background:#244940;border-color:#5dc8ae;color:#d4fff1}
+.compare-items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.compare-card{border:1px solid #355273;border-radius:13px;background:#11213e;padding:16px;min-width:0}
+.compare-card h3{margin:0 0 6px;font-size:18px}.compare-card p{color:var(--muted);font-size:12px;margin:5px 0;overflow-wrap:anywhere}
+.compare-metrics{display:grid;gap:7px;margin:14px 0}.compare-metrics div{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:1px solid var(--line);padding-bottom:5px;font-size:12px}
+.compare-metrics span{color:var(--muted)}.compare-metrics strong{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.compare-card .warnline{color:var(--amber);margin-top:9px}
+@media(max-width:900px){.compare-items{grid-template-columns:1fr}}

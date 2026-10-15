@@ -214,3 +214,27 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
   .pager{justify-content:space-between}
   .pager button{min-height:44px}
 }
+
+/* P6.3: researcher provenance stays accessible instead of occupying a mobile screen. */
+.wrap[data-view="beginner"] .researcher-only{display:none!important}
+.researcher-mobile-summary,.researcher-mobile-directory,#researcher-jump{display:none}
+.researcher-methodology{border:1px solid var(--line);border-radius:10px;padding:10px 13px;margin:12px 0 0;background:#10203a}
+.researcher-methodology summary{color:var(--cyan);font-size:12px;font-weight:650;cursor:pointer;line-height:1.5}
+.researcher-methodology p{margin:9px 0 0;line-height:1.65}
+@media(max-width:700px){
+  .wrap[data-view="researcher"] .notice,
+  .wrap[data-view="researcher"] .provenance-strip,
+  .wrap[data-view="researcher"] .directory-tech-note{display:none}
+  .wrap[data-view="researcher"] .researcher-mobile-summary{display:block;margin:7px 0 17px}
+  .wrap[data-view="researcher"] .researcher-mobile-directory{display:block}
+  .wrap[data-view="researcher"] #researcher-jump{display:block;width:100%;min-height:44px;background:#1b5a51;border-color:#54bfa5;color:#f1fff9}
+  .wrap[data-view="researcher"] .view-control{gap:9px;margin:14px 0 10px}
+  .wrap[data-view="researcher"] .lead{font-size:14px;margin-bottom:12px}
+  .researcher-alert{margin:0 0 10px;padding:10px 12px;border-radius:10px;border:1px solid #6e6147;background:#2b281d;color:#f5ddb0;font-size:12px;line-height:1.6}
+  .researcher-alert strong{color:#ffe9c1}
+  .researcher-mobile-provenance,.researcher-mobile-directory{border:1px solid var(--line);border-radius:10px;background:#10203a;padding:10px 13px}
+  .researcher-mobile-provenance summary,.researcher-mobile-directory summary{color:var(--cyan);font-size:12px;font-weight:650;cursor:pointer;line-height:1.55}
+  .researcher-mobile-provenance p,.researcher-mobile-directory p{color:var(--muted);font-size:12px;line-height:1.6;margin:10px 0 0}
+  .wrap[data-view="researcher"] #pool-directory .section-head{margin-bottom:13px}
+  .wrap[data-view="researcher"] #pool-directory .section-head h2{margin-bottom:7px}
+}

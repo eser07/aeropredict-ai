@@ -56,6 +56,49 @@
       warnings.push("Small saved-price reward total (< $10/week)");
     return warnings;
   }
+  // Historical RESEARCH-PRIORITY heuristic, not a yield, safety or ROI forecast.
+  // Missing USD quotes never receive a numeric score; old votes are unsynchronized.
+  function researchScore(p) {
+    if (!p.usd_coverage_complete ||
+        numeric(p.avg_pool_usd_per_week_at_collection_quote) === null)
+      return null;
+    const usd = numeric(p.avg_pool_usd_per_week_at_collection_quote);
+    const votes = numeric(p.inventory_snapshot_votes);
+    const weeks = Math.max(0, Math.min(4, Number(p.observed_any_reward_positive_weeks) || 0));
+    const regularity = 30 * weeks / 4;
+    const size = 25 * Math.max(0, Math.min(1, Math.log10(Math.max(usd, 10) / 10) / 2));
+    const coverage = 25;
+    const voteContext = votes === null ? 0 :
+      20 * Math.max(0, Math.min(1, Math.log10(Math.max(votes, 100) / 100) / 2));
+    const raw = Math.round(regularity + size + coverage + voteContext);
+    // Fragile research denominators / tiny reward totals cannot enter high ranks.
+    return sizeCautions(p).length ? Math.min(39, raw) : raw;
+  }
+  function drawLeaders() {
+    const epoch = $("epoch").value;
+    const panel = $("leaders-panel");
+    panel.hidden = epoch === "both";
+    if (panel.hidden) return;
+    const leaders = doc.pools.filter(p =>
+      p.collection_epoch_utc === epoch && researchScore(p) !== null)
+      .sort((a, b) => researchScore(b) - researchScore(a) ||
+        Number(b.avg_pool_usd_per_week_at_collection_quote) -
+        Number(a.avg_pool_usd_per_week_at_collection_quote) || a.index - b.index)
+      .slice(0, 5);
+    const target = $("leaders-items");
+    target.replaceChildren();
+    leaders.forEach((p, i) => {
+      const row = make("div", "leader-row");
+      const name = make("div");
+      name.append(make("strong", "", (i + 1) + ". " + poolName(p)));
+      name.append(make("div", "tiny", "Pool #" + p.index + " · " +
+        p.observed_any_reward_positive_weeks + "/4 reward weeks · " +
+        money(p.avg_pool_usd_per_week_at_collection_quote) + "/week"));
+      row.append(name);
+      row.append(make("strong", "score-number", researchScore(p) + "/100"));
+      target.append(row);
+    });
+  }
   function evidenceMatch(p, setting) {
     if (setting === "all") return true;
     if (p.observed_any_reward_positive_weeks !== 4) return false;
@@ -125,6 +168,10 @@
     });
     const direction = $("sort").value;
     doc.filtered.sort((a, b) => {
+      if (direction === "score") {
+        const sa = researchScore(a), sb = researchScore(b);
+        return (sb === null ? -1 : sb) - (sa === null ? -1 : sa) || a.index - b.index;
+      }
       if (direction === "index") return a.index - b.index;
       if (direction === "frequency") {
         return b.observed_any_reward_positive_weeks -
@@ -145,6 +192,7 @@
       return y - x || a.index - b.index;
     });
     drawPage();
+    drawLeaders();
   }
   function drawPage() {
     const rows = $("rows");
@@ -174,6 +222,7 @@
       cell(tr, p.usd_coverage_complete
         ? money(p.avg_pool_usd_per_week_at_collection_quote)
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
+      cell(tr, researchScore(p) === null ? "Unrated" : researchScore(p) + "/100", "right num");
       const ratio = cell(tr, p.usd_coverage_complete
         ? money(p.illustrative_usd_per_million_inventory_votes)
         : "Unknown", "right " + (p.usd_coverage_complete ? "num" : "no-data"));
@@ -204,7 +253,7 @@
     if (!visible.length) {
       const row = make("tr");
       const empty = cell(row, "No pools match these filters.");
-      empty.colSpan = 7;
+      empty.colSpan = 8;
       frag.append(row);
     }
     rows.append(frag);
@@ -238,6 +287,8 @@
       " / 4 (" + p.observed_fees_positive_weeks + " FEES, " +
       p.observed_bribes_positive_weeks + " BRIBES)");
     sectionValue(row, "Old snapshot voting power", plain(p.inventory_snapshot_votes) + " veAERO");
+    sectionValue(row, "Historical research priority",
+      researchScore(p) === null ? "Unrated · incomplete USD" : researchScore(p) + " / 100");
     root.append(row);
     sizeCautions(p).forEach(message =>
       root.append(make("p", "warnline", "⚠ " + message + ". An old vote ratio is not a current yield.")));
@@ -324,6 +375,7 @@
         " · " + epochName(p.collection_epoch_utc)));
       const metrics = make("div", "compare-metrics");
       const pairs = [
+        ["Research priority (historical)", researchScore(p) === null ? "Unrated" : researchScore(p) + "/100"],
         ["Mean weekly pool rewards", p.usd_coverage_complete
           ? money(p.avg_pool_usd_per_week_at_collection_quote) : "Unknown"],
         ["Positive reward weeks", p.observed_any_reward_positive_weeks + " / 4"],

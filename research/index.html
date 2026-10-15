@@ -39,6 +39,23 @@
       <button type="button" id="view-researcher" class="mode-button" aria-pressed="false">Researcher view</button>
     </div>
     <p id="view-intro" class="mini" aria-live="polite">Begin with a pool search and its observed reward history. Switch to Researcher view for scoring, filters and old-vote ratios.</p>
+    <button type="button" id="researcher-jump" class="researcher-only">Jump to pool filters ↓</button>
+  </section>
+  <section class="researcher-mobile-summary researcher-only" aria-label="Research data limitations">
+    <p class="researcher-alert"><strong>Historical observations only.</strong> Reward weeks,
+    saved USD prices and voting weights were not recorded at one synchronized time.
+    Not live APR, expected payouts, or financial advice.</p>
+    <details class="researcher-mobile-provenance">
+      <summary>Read complete data provenance and limitations</summary>
+      <p>375 pools were collected on October 8, 2026 and 553 on October 15, 2026.
+      FEES and BRIBES describe four completed weeks per pool, priced at the saved
+      collection-time quotes rather than historical week prices. Missing USD stays
+      unknown, never zero.</p>
+      <p>An older inventory block is 52,595,092. P4 separately observed 928 pool
+      voting weights over 32 pinned Base blocks (52,646,576–52,647,814).
+      Those weights are not synchronized across pools or with reward weeks,
+      and do not determine personal veAERO income or claimable rewards.</p>
+    </details>
   </section>
   <details class="beginner-data-notes">
     <summary>About this historical data and its limitations</summary>
@@ -78,7 +95,7 @@
   </section>
   <section class="panel" id="pool-directory">
     <div class="section-head">
-      <div><h2>Pool directory</h2><p class="beginner-directory-intro">Search a pool, then open Details to see its observed rewards and evidence cautions. Saved historical data only.</p><p class="directory-tech-note">P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p></div>
+      <div><h2>Pool directory</h2><p class="beginner-directory-intro">Search a pool, then open Details to see its observed rewards and evidence cautions. Saved historical data only.</p><p class="directory-tech-note">P5.1 displays saved four-week evidence notes and missing-price cautions without changing the historical research score. Pool trading pairs are read separately from saved contract token0/token1 metadata (927 of 928 identified). Reward token symbols are <strong>not</strong> substitutes for pool trading pairs.</p><details class="researcher-mobile-directory researcher-only"><summary>How pair labels and P5.1 evidence are sourced</summary><p>P5.1 uses saved four-week evidence notes and incomplete-price cautions without modifying historical research scores. Pool pairs come from saved token0/token1 metadata (927 of 928 identified), not reward-token symbols.</p></details></div>
       <p class="mini" id="data-generated">Locally saved, not live</p>
     </div>
     <div class="filters">
@@ -150,7 +167,10 @@
       Old voting observations are not synchronized with these reward weeks.
       The four-week figures do not predict future rewards or claimable veAERO income.</p>
     </details>
-    <p class="footnote research-only">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
+    <details class="researcher-methodology research-only">
+      <summary>Full screening and old-vote-ratio methodology</summary>
+      <p class="footnote">*Historical reward quantities valued using token USD prices saved at each batch's collection, not live prices. The optional evidence/size filter uses a <strong>UI-only heuristic</strong>: 4 of 4 reward weeks, at least $10 saved-price pool rewards per week, and at least 100 veAERO votes in the old block snapshot. It is not a safety, liquidity, or earning guarantee. A ratio based on less than 100 old votes or less than $10 weekly total is labeled fragile, shown as Unreliable in the table, and sorted last for ratio ranking. The underlying historical arithmetic remains visible inside pool details with a warning. Voting weights are not synchronized to the rewards; cross-epoch USD and ratio sorting is disabled.</p>
+    </details>
   </section>
   <section class="panel research-only" id="leaders-panel">
     <div class="section-head">
@@ -158,7 +178,10 @@
       <p>Five highest historical research-priority scores within the selected collection epoch. Not an investment ranking.</p></div>
     </div>
     <div id="leaders-items" class="leaders-items"></div>
-    <p class="footnote">0–100 research score: 30 points for observed reward weeks (4 weeks), up to 25 for saved-quote weekly USD (logarithmic $10–$1,000), 25 for complete USD coverage, and up to 20 for old vote context (logarithmic 100–10,000 veAERO). Fragile ratios (less than 100 old votes, unknown votes or less than $10 weekly USD) receive graded evidence discounts and are capped at 39; this is a heuristic, not a probability. Incomplete USD data is unrated, not zero. Scores do not predict APR, veNFT earnings, market liquidity, risk or future rewards. No cross-epoch ranking.</p>
+    <details class="researcher-methodology">
+      <summary>How the 0–100 historical research score works</summary>
+      <p class="footnote">0–100 research score: 30 points for observed reward weeks (4 weeks), up to 25 for saved-quote weekly USD (logarithmic $10–$1,000), 25 for complete USD coverage, and up to 20 for old vote context (logarithmic 100–10,000 veAERO). Fragile ratios (less than 100 old votes, unknown votes or less than $10 weekly USD) receive graded evidence discounts and are capped at 39; this is a heuristic, not a probability. Incomplete USD data is unrated, not zero. Scores do not predict APR, veNFT earnings, market liquidity, risk or future rewards. No cross-epoch ranking.</p>
+    </details>
   </section>
   <section class="panel" id="compare-panel" hidden>
     <div class="section-head"><div><h2>Side-by-side observation comparison</h2><p id="compare-note">Compare up to three pools from the SAME saved collection epoch, including the four-week FEES / BRIBES mix and P5.1 observation cautions. Saved USD quote times can differ by collection batch. No APR or earning prediction.</p></div><button id="clear-compare" type="button">Clear comparison</button></div>

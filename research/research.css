@@ -78,3 +78,20 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding-top:30px}
 .leader-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 15px;border:1px solid var(--line);border-radius:10px;background:#10203a}
 .leader-row strong{font-size:13px}.leader-row .tiny{margin-top:4px}
 .score-number{font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--cyan)}
+
+/* Read-only four-week FEES / BRIBES comparison. All values derive from saved batches. */
+.weekly-analysis{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+.weekly-analysis h3{font-size:17px;margin:0 0 6px}
+.weekly-content{margin-top:15px;display:grid;gap:11px;font-size:12px}
+.weekly-item{background:#10203b;border:1px solid var(--line);border-radius:12px;padding:12px 15px}
+.weekly-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:11px}
+.weekly-heading strong{font-size:13px}
+.weekly-total{color:var(--cyan);font-variant-numeric:tabular-nums}
+.weekly-bars{display:grid;gap:9px}
+.weekly-bar-line{display:grid;grid-template-columns:55px minmax(90px,1fr) 92px;align-items:center;gap:9px}
+.weekly-kind{color:var(--muted);font-weight:750;font-size:11px}
+.weekly-track{height:13px;background:#24344b;border-radius:8px;overflow:hidden}
+.weekly-fill{height:100%;border-radius:8px}
+.fee-bar{background:#54e7d4}.bribe-bar{background:#7195ff}
+.weekly-value{text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+@media(max-width:500px){.weekly-bar-line{grid-template-columns:48px minmax(60px,1fr) 78px;gap:6px}}

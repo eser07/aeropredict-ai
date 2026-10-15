@@ -749,6 +749,42 @@ No scripts access live blockchain data, no new endpoints are required,
 and the 8765 dashboard, hourly Windows task, underlying JSON collections,
 P4 observations and P5.1 explanations are unchanged.
 
+**P7.4 — Per-pool data provenance & missing-evidence indicators.**
+The research browser now includes a collapsed Researcher explainer and an
+optional **Data provenance filter** for incomplete saved USD coverage,
+missing or invalid UTC timestamps on positive-reward token quotes,
+truncated reward registries and pools with both complete USD coverage
+and usable saved timestamps for every positive-reward token entry.
+
+Each pool's **Details** show its collection-cohort epoch (which is **not**
+the exact crawler timestamp), saved batch number, historical observation
+frequency, USD price-coverage flag, old inventory block, audit registry
+indicator and research-file generation UTC time. When quote-time metadata
+is available, the panel reports the number of **positive-reward token
+entries** with valid timezone-aware saved quote timestamps and the
+earliest/latest UTC times. Missing or invalid timestamps remain
+**Unknown**; they are not treated as missing USD prices. A pool with no
+positive token allocations is **Not applicable**, not a falsely complete
+quote-timestamp record. Even if all timestamps are recorded, USD prices
+are still collection-time saved quotes, not exact reward-week prices
+or a guarantee of live price or liquidity. The original token records
+remain visible in Details.
+
+P4 individual vote weights, pinned Base blocks and recorded block UTC
+times remain fetched separately in the existing P4 Details section;
+none of these observations are synchronized across pools or with the P2
+reward weeks. P7.4 does **not** add a numerical trust, confidence, risk,
+yield or safety score; it only presents auditable availability/caveat
+labels. The pre-existing 0–100 *historical research-priority* score is
+not modified or rebranded as confidence. Missing/unsupported saved fields
+are displayed as unavailable rather than inferred.
+
+The new Researcher filter combines with P7.1–P7.3 and existing search
+controls. Returning to Beginner View clears the hidden provenance filter.
+There are no new RPC calls, backend routes, on-chain actions, live
+updates, modified data collections, wallet operations, 8765 dashboard
+edits or scheduled-task changes.
+
 This is a presentation-only, English-language local prototype. Research
 data remain the historical October 8 / October 15 saved collections.
 The separately hosted 16-pool dashboard on 8765 and its Windows hourly

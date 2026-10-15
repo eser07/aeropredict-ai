@@ -585,7 +585,23 @@ index to prevent cross-epoch yield rankings.
 
 Pool details show separate FEES and BRIBES registered token amounts and saved
 USD quotes, number of weeks with rewards, the pool contract and collection
-provenance. Reward token symbols are **not trading-pair names**. Incomplete
+provenance.
+
+A **display-only evidence filter** can require 4 of 4 positive-reward weeks,
+$10 or more average pool reward USD per week at saved prices, and 100 or more
+votes from the older pinned-block snapshot. These are configurable research
+screening assumptions in the UI code—not safety labels, protocol thresholds,
+liquidity verification, or yield forecasts. The exploratory old-vote-ratio sort
+places low-denominator / tiny-total outliers after larger observations and
+marks fragile ratios visibly, so a $0.43/week pool with almost zero old votes
+does not appear to be the strongest opportunity merely from a huge ratio.
+
+You may compare up to **three pools from the SAME collection epoch** side by
+side, reviewing actual observed positive-reward weeks, separately observed
+FEES/BRIBES weeks, saved-price pool USD totals, prior-snapshot vote weights,
+and explicit low-evidence/missing-price caveats. Cross-epoch comparisons are
+blocked rather than silently treated as synchronized. Comparison does not
+claim future income or tradeability. Reward token symbols are **not trading-pair names**. Incomplete
 USD totals remain unknown (not zero), and no observed rewards over four weeks
 does not predict future zero rewards. This is **not a live APR or veNFT payout
 calculator**; neither historical reward observations nor unsynchronized old
@@ -596,6 +612,12 @@ Offline server regression tests:
 
 ```bash
 python -m unittest discover -s tests -p "serve_pool_research_test.py" -v
+```
+
+Frontend safety and optional JavaScript syntax tests:
+
+```bash
+python -m unittest discover -s tests -p "research_explorer_ui_test.py" -v
 ```
 
 ### Read token amounts and approximate USD equivalents

@@ -1203,3 +1203,17 @@ not run. WSL command access and Docker Linux engine remain unavailable in this
 session. The active forecast window is 22–29 October 2026 UTC; actual values
 must remain absent until valid post-period evidence exists. No network contract
 deployment, wallet action, paid model call or remote Git push was performed.
+
+
+### Saved P4 vote observations in the P9 detail view
+
+The P9 panel now displays saved previous-block voting weights for 928 of its
+950 pools. `/api/votes?index=64` serves validated P4 observations joined by
+pool index and address to the current P9 inventory. The original P4 inventory
+fingerprint, contiguous pages, UTC timestamps, block ordering and uint256 values
+are checked; the existing P4 Decimal share calculation is reused. The 22 newer
+pools return an explicit absent record with a null weight. Corrupt/unavailable
+P4 data returns 503 without preventing the P9 reward panel from starting.
+These are individual block observations, not weekly voting histories or
+observations synchronized with reward weeks. They do not enter Research Score
+or personal income calculations. Historical source files are read only.

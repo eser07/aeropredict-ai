@@ -58,6 +58,23 @@
       times.textContent="FEES dosyası: "+(data.source_times.fees_file_collected_at_utc || "bilinmiyor")+" · Teşvik dosyası: "+(data.source_times.incentives_file_collected_at_utc || "bilinmiyor")+" · Fiyat kayıt aralığı: "+(data.source_times.earliest_quote_utc || "bilinmiyor")+" — "+(data.source_times.latest_quote_utc || "bilinmiyor")+". Bu zamanlar ayrı okumalardır.";area.append(times);}
   }
 
+  async function showSavedVotes(pool,area,requestIndex){
+    const section=document.createElement("section");section.className="weekly-chart";
+    const title=document.createElement("h4");title.textContent="Önceki blokta kaydedilmiş oy ağırlığı";
+    const note=document.createElement("p");note.className="mini";note.textContent="Kaydedilmiş oy gözlemi yükleniyor…";
+    section.append(title,note);area.append(section);
+    try{
+      const response=await fetch("/api/votes?index="+pool.index,{cache:"no-store"});
+      if(!response.ok)throw new Error();const data=await response.json();
+      if(area.dataset.pool!==String(requestIndex))return;
+      if(data.index!==pool.index||data.address?.toLowerCase()!==pool.address.toLowerCase()||typeof data.available!=="boolean"||data.synchronized_with_reward_epochs!==false||data.is_weekly_vote_history!==false)throw new Error();
+      if(!data.available){note.textContent="Bu havuz için eski blok oy kaydı yok. Önceki kayıtlar 928/950 havuzu kapsıyor; eksik gözlem sıfır oy değildir.";return;}
+      if(!/^\d+$/.test(data.vote_weight_raw)||!/^\d+$/.test(data.voter_total_weight_raw)||!/^0x[0-9a-fA-F]{64}$/.test(data.block_hash)||!Number.isSafeInteger(data.block_number)||data.block_number>=pool.inventory_snapshot_block)throw new Error();
+      note.textContent="Havuz ağırlığı: "+tokenAmount(data.vote_weight_raw,18)+" veAERO · Aynı bloktaki Voter toplamı: "+tokenAmount(data.voter_total_weight_raw,18)+" veAERO · O bloktaki pay: "+(data.voter_share_percent_at_block===null?"Hesaplanamıyor":data.voter_share_percent_at_block+"%")+".";
+      for(const text of ["Base blok: "+data.block_number+" · Blok zamanı (UTC): "+data.block_timestamp_utc,"Toplama zamanı (UTC): "+data.collected_at_utc,"Blok hash'i: "+data.block_hash,"Kaynak SHA256: "+data.source_snapshot_sha256,"Kayıt kapsamı: 928/950 havuz. Her havuz kendi okuma bloğuna bağlıdır; farklı havuzların gözlemleri tek zamanlı dağılım olarak toplanamaz. Bu tek geçmiş gözlem haftalık oy geçmişi değildir ve ödül haftalarıyla eş zamanlı değildir. Oy kaydı Research Score veya kişisel gelir hesabında kullanılmaz."]){const line=document.createElement("p");line.className="mini";line.textContent=text;section.append(line);}
+    }catch{if(area.dataset.pool===String(requestIndex))note.textContent="Kaydedilmiş oy gözlemi doğrulanamadı; bu durum sıfır oy anlamına gelmez.";}
+  }
+
   function jumpTo(id){$(id).scrollIntoView({behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});}
   function syncLocation(){
     const url=new URL(window.location.href);
@@ -327,6 +344,7 @@
     line("Kaynak: kaydedilmiş birleşik P9 araştırması ve havuza ait haftalık teşvik kaydı. Fiyatlar tarihsel hafta fiyatı değildir.");
     const loading=document.createElement("p");loading.textContent="Dört haftalık FEES / BRIBES geçmişi yükleniyor…";area.append(loading);
     const requestIndex=++detailRequest; area.dataset.pool=String(requestIndex);
+    showSavedVotes(p,area,requestIndex);
 
     try {
       const data = await weeklyData(p);

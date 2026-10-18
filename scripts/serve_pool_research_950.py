@@ -10,6 +10,7 @@ from serve_pool_research import ResearchHandler
 from p9_weekly_950 import weekly_breakdown_950
 from p10_pilot_status import load_pilot_status
 from p9_validation import load_snapshot
+from p9_votes_950 import load_vote_sources, vote_detail_950
 
 ROOT = Path(__file__).resolve().parents[1]
 FOLDER = ROOT / "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25"
@@ -47,11 +48,7 @@ class P9Handler(ResearchHandler):
                        self.server.research_bytes)
             return
 
-        if path == "/api/votes":
-            self.error_json(404, "Independent historical P4 vote data not available for all 950 pools")
-            return
-
-        if path == "/api/weekly":
+        if path in ("/api/weekly", "/api/votes"):
             try:
                 query = parse_qs(urlsplit(self.path).query, strict_parsing=True)
                 if set(query) != {"index"} or len(query["index"]) != 1:
@@ -69,7 +66,13 @@ class P9Handler(ResearchHandler):
                 self.error_json(404, "Pool not found")
                 return
             try:
-                result = weekly_breakdown_950(pool, FOLDER)
+                if path == "/api/votes":
+                    if self.server.vote_sources is None:
+                        self.error_json(503, "Saved vote observations unavailable")
+                        return
+                    result = vote_detail_950(pool, self.server.vote_sources)
+                else:
+                    result = weekly_breakdown_950(pool, FOLDER)
             except (OSError, ValueError, KeyError, TypeError):
                 self.error_json(503, "Saved weekly data unavailable")
                 return
@@ -87,6 +90,11 @@ def make_server(port=8768):
     server.pairs_bytes = json.dumps(pairs, ensure_ascii=False).encode("utf-8")
     server.snapshot_summary = summary
     server.pool_map = {p["index"]: p for p in research["pools"]}
+    try:
+        server.vote_sources = load_vote_sources(research)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, ArithmeticError):
+        server.vote_sources = None
+    summary["recorded_vote_pools"] = len(server.vote_sources["covered"]) if server.vote_sources else None
     server.pair_path = PAIRS
     server.html_path = HTML
     server.js_path = HTML.parent / "research.js"

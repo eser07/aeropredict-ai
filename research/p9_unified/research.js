@@ -256,6 +256,7 @@
   function pairLabel(p) {
     const pair = state.pairs.get(p.index);
     if (!pair) return "Çift bilgisi doğrulanmadı";
+    if (pair.contract_classification?.kind === "emission_sink_placeholder") return "SinkPool · token çifti yok";
     const a = pair.token0_symbol || pair.token0?.symbol;
     const b = pair.token1_symbol || pair.token1?.symbol;
     return a && b ? a + " / " + b : "Çift bilgisi eksik";
@@ -338,6 +339,15 @@
     line("Envanter oy ağırlığı: " + p.inventory_snapshot_votes + " · Base blok: " + p.inventory_snapshot_block + " (ödül haftalarıyla eş zamanlı değildir)");
     const pair=state.pairs.get(p.index);
     if(pair) for(const key of ["token0_address","token1_address"]) if(pair[key]) line(key+": "+pair[key]);
+    if(pair?.contract_classification?.kind === "emission_sink_placeholder"){
+      const evidence=pair.contract_classification;
+      line("SinkPool, emisyon sink'i için yer tutucu sözleşmedir. Token0/token1 yöntemi bulunmadığı için token çifti uygulanmaz. Bu sınıflandırma ödül veya Research Score hesabını değiştirmez.");
+      const details=document.createElement("details"),summary=document.createElement("summary");
+      summary.textContent="Sözleşme kaynağı ve blok doğrulaması";details.append(summary);
+      const link=document.createElement("a");link.href=evidence.verified_source_url;link.target="_blank";link.rel="noopener noreferrer";link.textContent="BaseScan: doğrulanmış SinkPool kaynak kodu";details.append(link);
+      for(const text of ["Base blok: "+evidence.block_number+" · "+evidence.block_timestamp_utc,"Blok hash'i: "+evidence.block_hash,"Kontrol zamanı: "+evidence.observed_at_utc,"Çalışan kod SHA256: "+evidence.runtime_sha256,"Kaynak kod SHA256: "+evidence.source_sha256,"Kod, bu blok hash'ine sabitlenmiş salt okunur RPC çağrısıyla eşleştirildi. Bu kayıt tek sağlayıcı gözlemidir; bağımsız GenLayer mutabakatı değildir."]){const note=document.createElement("p");note.className="mini";note.textContent=text;details.append(note);}
+      area.append(details);
+    }
     for(const token of p.token_rewards || []) line(token.symbol+" · "+token.address+" · fiyat kaydı: "+(token.quote_timestamp_utc || "bilinmiyor"));
     const score=researchScore(p);
     line(score ? "Research Score: "+score.value+"/100 · Süreklilik: "+score.components.continuity.toFixed(1)+" · FEES: "+score.components.fees.toFixed(1)+" · Kaynak: "+score.components.composition.toFixed(1)+" · Dağılım: "+score.components.distribution.toFixed(1) : "Research Score hesaplanamıyor: eksik kanıt veya pozitif USD toplamı yok.");

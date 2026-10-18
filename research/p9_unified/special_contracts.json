@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "chain_id": 8453,
+  "inventory_sha256": "7db12533cca67e41ca488821c218607e76e534f4e023a3b07c29fbc185a429df",
+  "entries": [
+    {
+      "index": 1130,
+      "address": "0x97cd4eb683e29695dc93eec95d47d4e7a35e2112",
+      "kind": "emission_sink_placeholder",
+      "contract_name": "SinkPool",
+      "token_pair_applicable": false,
+      "abi": [],
+      "source_path": "contracts/sink/SinkPool.sol",
+      "source_code": "// SPDX-License-Identifier: GPL-3.0-or-later\npragma solidity >=0.8.19 <0.9.0;\n\n/// @title SinkPool\n/// @dev Placeholder contract for emission sink\ncontract SinkPool {\n\n}\n",
+      "source_sha256": "1abb9373367e32d88047f853946fc2a8a782c56c23ce4423f5e7a2e79003a352",
+      "verified_source_url": "https://basescan.org/address/0x97cd4eb683e29695dc93eec95d47d4e7a35e2112#code",
+      "public_page_sha256": "c5a7e804e904702c58a83178a6313bcbc462030332c27557316d05f0a322a614",
+      "compiler_version": "v0.8.19+commit.7dd6d404",
+      "observed_at_utc": "2026-10-18T20:14:40.195220+00:00",
+      "block_number": 52731839,
+      "block_hash": "0x2ec194e84e38772dff217ab5139469b7f200d199e403162f378ed1105157fa9b",
+      "block_timestamp_utc": "2026-10-17T16:03:45+00:00",
+      "block_hash_pinned": true,
+      "runtime_bytecode": "0x6080604052600080fdfea264697066735822122028fe928dfd54e2cc8bfd97b83d173fab5a6d92a49f6f0187b2af012b36f25c6264736f6c63430008130033",
+      "runtime_sha256": "02ed94e494b4eb603354665d259df0726b16f115a361c2a3174a964a61e24514",
+      "evidence_kind": "public_explorer_and_single_rpc_observation",
+      "independent_consensus": false
+    }
+  ]
+}

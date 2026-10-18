@@ -10,6 +10,7 @@ from serve_pool_research import ResearchHandler
 from p9_weekly_950 import weekly_breakdown_950
 from p10_pilot_status import load_pilot_status
 from p9_validation import load_snapshot
+from p9_contract_metadata import load_special_contracts
 from p9_votes_950 import load_vote_sources, vote_detail_950
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -87,7 +88,16 @@ def make_server(port=8768):
     research, pairs, _, _ = docs
     server = ThreadingHTTPServer(("127.0.0.1", port), P9Handler)
     server.research_bytes = json.dumps(research, ensure_ascii=False).encode("utf-8")
-    server.pairs_bytes = json.dumps(pairs, ensure_ascii=False).encode("utf-8")
+    try:
+        annotated_pairs = load_special_contracts(pairs, research)
+        summary["classified_special_contracts"] = [1130]
+        summary["contract_metadata_available"] = True
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        annotated_pairs = pairs
+        summary["classified_special_contracts"] = []
+        summary["contract_metadata_available"] = False
+    summary["unclassified_pair_records"] = [i for i in summary["unresolved_pairs"] if i not in summary["classified_special_contracts"]]
+    server.pairs_bytes = json.dumps(annotated_pairs, ensure_ascii=False).encode("utf-8")
     server.snapshot_summary = summary
     server.pool_map = {p["index"]: p for p in research["pools"]}
     try:

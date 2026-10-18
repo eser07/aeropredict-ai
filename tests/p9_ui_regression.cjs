@@ -2,7 +2,7 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const root=require('path').resolve(__dirname,'..');
 const nodes=new Map(); const get=id=>{if(!nodes.has(id))nodes.set(id,{value:id==='status'?'all':id==='sort'?'index':'',addEventListener(){},replaceChildren(){},append(){}});return nodes.get(id);};
 let source=fs.readFileSync(root+'/research/p9_unified/research.js','utf8');
-source=source.replace('  loadResearch();','  globalThis.testAPI={rewardMix,researchScore,filteredPools,state,tokenAmount,pilotStatusLabel,dollars,restoreLocation};');
+source=source.replace('  loadResearch();','  globalThis.testAPI={rewardMix,researchScore,filteredPools,state,tokenAmount,pilotStatusLabel,dollars,restoreLocation,pairLabel};');
 const ctx={P9Math:require(root+'/research/p9_unified/research-math.js'),document:{getElementById:get},Intl,console,URLSearchParams,window:{location:{search:""}}};vm.createContext(ctx);vm.runInContext(source,ctx);
 const a=ctx.testAPI;
 assert.equal(a.rewardMix(20,80,true).level,'high');assert.equal(a.rewardMix(50,50,true).level,'attention');
@@ -43,3 +43,13 @@ a.restoreLocation();assert.equal(get('search').value,'#64');assert.equal(get('so
 assert.equal(get('status').value,'missing');assert.equal(get('sort').value,'score');
 assert.deepEqual(Array.from(a.state.comparison),[64,35,0]);
 console.log('PASS: all source filters partition 950 pools, subcent display, empty search, URL restore and comparison limit');
+
+// A special contract is not a fabricated token pair; ordinary and unknown pairs stay distinct.
+get('search').value='';get('status').value='all';get('source').value='all';get('sort').value='index';
+const sink=doc.pools.find(p=>p.index===1130),normal=doc.pools.find(p=>p.index===64);
+a.state.pairs.set(1130,{index:1130,contract_name:'SinkPool',token0_symbol:null,token1_symbol:null,contract_classification:{kind:'emission_sink_placeholder'}});
+a.state.pairs.set(64,{index:64,token0_symbol:'AERO',token1_symbol:'USDC'});
+assert.equal(a.pairLabel(sink),'SinkPool · token çifti yok');assert.equal(a.pairLabel(normal),'AERO / USDC');
+get('search').value='SinkPool';assert.deepEqual(Array.from(a.filteredPools(),p=>p.index),[1130]);
+a.state.pairs.set(1130,{index:1130,token0_symbol:null,token1_symbol:null});assert.equal(a.pairLabel(sink),'Çift bilgisi eksik');
+console.log('PASS: SinkPool classification, exact special-contract search, ordinary pairs and unknown fallback');

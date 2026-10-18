@@ -1170,7 +1170,8 @@ or replace the original 8765 dashboard or its Windows hourly refresh task.
 
 The unified snapshot is Base 8453, inventory block 52,731,839, reward epoch
 2026-10-15 00:00 UTC: 904 fully priced pools, 46 incomplete, 249 with no observed
-reward, and 949 known pairs. Pool #1130 remains unresolved. Prices are saved
+reward, and 949 known token pairs. Pool #1130 is separately classified as a SinkPool
+placeholder with no token-pair interface; the original pair source remains unchanged. Prices are saved
 collection-time quotes, not prices at each historical week.
 
 The panel includes exact numeric search, source/coverage filters, four-week FEES
@@ -1217,3 +1218,24 @@ P4 data returns 503 without preventing the P9 reward panel from starting.
 These are individual block observations, not weekly voting histories or
 observations synchronized with reward weeks. They do not enter Research Score
 or personal income calculations. Historical source files are read only.
+
+
+### Pool #1130: saved SinkPool contract classification
+
+`research/p9_unified/special_contracts.json` records a read-only observation of
+Base contract `0x97cd4eb683e29695dc93eec95d47d4e7a35e2112`. BaseScan publishes
+an exact-match verified empty `SinkPool` source, an empty ABI, and deployed runtime
+code. On 18 October 2026 UTC that runtime was matched with `eth_getCode` pinned
+to inventory block 52,731,839 / hash
+`0x2ec194e84e38772dff217ab5139469b7f200d199e403162f378ed1105157fa9b`,
+using `requireCanonical: true` after checking chain ID 8453. This is a saved
+single-provider observation, not a cryptographic proof or GenLayer consensus.
+
+The optional loader binds index/address/inventory/block/source/runtime hashes
+to the reviewed record. Missing or invalid metadata leaves the original unknown
+pair label in place; reward APIs continue working. The panel shows 949 token
+pairs and one special placeholder, rather than inventing a 950th pair. No reward,
+score, vote or historical source JSON is changed. No network call runs on panel
+startup. Reproduce its offline checks with `python tests/p9_contract_metadata_test.py`.
+
+Source: https://basescan.org/address/0x97cd4eb683e29695dc93eec95d47d4e7a35e2112#code

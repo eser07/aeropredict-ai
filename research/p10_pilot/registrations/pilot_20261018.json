@@ -1,0 +1,116 @@
+{
+  "mode": "offline_prototype",
+  "forecasts": [
+    {
+      "commitment": {
+        "chain_id": 8453,
+        "pool_index": 64,
+        "pool_address": "0x6cdcb1c4a4d1c3c6d054b27ac5b77e89eafb971d",
+        "token_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        "reward_category": "FEES",
+        "predicted_raw": "46747419622",
+        "created_at_utc": "2026-10-18T13:19:46.172646+00:00",
+        "target_start_utc": "2026-10-22T00:00:00+00:00",
+        "target_end_utc": "2026-10-29T00:00:00+00:00",
+        "tolerance_percent": 20,
+        "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+        "source_file": "data\\pool_collection_batches_base\\p9_unified_research\\block_52731839\\registration_25\\incentives_batch_001.json",
+        "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+        "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required"
+      },
+      "commitment_sha256": "e06b0f6f4e6ba786bc517d029ef0b6aae48ac7b316bf028ce0db246d76b09ec7",
+      "status": "pending",
+      "registration": "local_file_only; not externally timestamped",
+      "genlayer_consensus": false
+    },
+    {
+      "commitment": {
+        "chain_id": 8453,
+        "pool_index": 35,
+        "pool_address": "0xbbf71aad6e1f8d180d3b1d898528654c1d18b2ff",
+        "token_address": "0x74ccbe53f77b08632ce0cb91d3a545bf6b8e0979",
+        "reward_category": "FEES",
+        "predicted_raw": "115070309051261402000665",
+        "created_at_utc": "2026-10-18T13:19:46.172646+00:00",
+        "target_start_utc": "2026-10-22T00:00:00+00:00",
+        "target_end_utc": "2026-10-29T00:00:00+00:00",
+        "tolerance_percent": 20,
+        "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+        "source_file": "data\\pool_collection_batches_base\\p9_unified_research\\block_52731839\\registration_25\\incentives_batch_001.json",
+        "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+        "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required"
+      },
+      "commitment_sha256": "81796e9c23919bfa6de1b81705ffd831bf2ed154c85a42ad9b07d19b8a90e504",
+      "status": "pending",
+      "registration": "local_file_only; not externally timestamped",
+      "genlayer_consensus": false
+    },
+    {
+      "commitment": {
+        "chain_id": 8453,
+        "pool_index": 0,
+        "pool_address": "0x723aef6543aece026a15662be4d3fb3424d502a9",
+        "token_address": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+        "reward_category": "FEES",
+        "predicted_raw": "25588389112564",
+        "created_at_utc": "2026-10-18T13:19:46.172646+00:00",
+        "target_start_utc": "2026-10-22T00:00:00+00:00",
+        "target_end_utc": "2026-10-29T00:00:00+00:00",
+        "tolerance_percent": 20,
+        "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+        "source_file": "data\\pool_collection_batches_base\\p9_unified_research\\block_52731839\\registration_25\\incentives_batch_001.json",
+        "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+        "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required"
+      },
+      "commitment_sha256": "de151e8139a010d953c7f1b5db1b9ba1af25f2caa31871197e0e21a6f56114eb",
+      "status": "pending",
+      "registration": "local_file_only; not externally timestamped",
+      "genlayer_consensus": false
+    },
+    {
+      "commitment": {
+        "chain_id": 8453,
+        "pool_index": 1,
+        "pool_address": "0x2722c8f9b5e2ac72d1f225f8e8c990e449ba0078",
+        "token_address": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+        "reward_category": "FEES",
+        "predicted_raw": "63702448854154",
+        "created_at_utc": "2026-10-18T13:19:46.172646+00:00",
+        "target_start_utc": "2026-10-22T00:00:00+00:00",
+        "target_end_utc": "2026-10-29T00:00:00+00:00",
+        "tolerance_percent": 20,
+        "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+        "source_file": "data\\pool_collection_batches_base\\p9_unified_research\\block_52731839\\registration_25\\incentives_batch_001.json",
+        "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+        "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required"
+      },
+      "commitment_sha256": "8c4e82def5eac7b4e6f7a82244dc5788ba5649ab5fb5af4f03a6edc41331adb3",
+      "status": "pending",
+      "registration": "local_file_only; not externally timestamped",
+      "genlayer_consensus": false
+    },
+    {
+      "commitment": {
+        "chain_id": 8453,
+        "pool_index": 4,
+        "pool_address": "0x0b25c51637c43decd6cc1c1e3da4518d54ddb528",
+        "token_address": "0x4621b7a9c75199271f773ebd9a499dbd165c3191",
+        "reward_category": "FEES",
+        "predicted_raw": "332608249017621780",
+        "created_at_utc": "2026-10-18T13:19:46.172646+00:00",
+        "target_start_utc": "2026-10-22T00:00:00+00:00",
+        "target_end_utc": "2026-10-29T00:00:00+00:00",
+        "tolerance_percent": 20,
+        "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+        "source_file": "data\\pool_collection_batches_base\\p9_unified_research\\block_52731839\\registration_25\\incentives_batch_001.json",
+        "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+        "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required"
+      },
+      "commitment_sha256": "61c0884111625885fba33a02bae26da6d4388703f2343e8b4feb9f72160c16ba",
+      "status": "pending",
+      "registration": "local_file_only; not externally timestamped",
+      "genlayer_consensus": false
+    }
+  ],
+  "paid_transactions": 0
+}

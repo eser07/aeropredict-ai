@@ -1,0 +1,44 @@
+{
+  "payload": {
+    "schema_version": 1,
+    "mode": "read_only_local_collection",
+    "collected_at_utc": "2026-10-18T14:45:40.682092+00:00",
+    "results": [
+      {
+        "pool_index": 64,
+        "commitment_sha256": "d1b49f3e7f677f16998de4a12cd439d020354b52f07cdd6bb3cd583ae384855f",
+        "status": "pending",
+        "reason": "epoch_not_completed"
+      },
+      {
+        "pool_index": 35,
+        "commitment_sha256": "9b0b0e600f1532fa68d684691e88c43e3c4108b7c3f5bbd270fbe705eed6d5bf",
+        "status": "pending",
+        "reason": "epoch_not_completed"
+      },
+      {
+        "pool_index": 0,
+        "commitment_sha256": "bdeb752a5978c130ab8a1e9b47599ffda0e5878e0f76f908c821d6639320cfe4",
+        "status": "pending",
+        "reason": "epoch_not_completed"
+      },
+      {
+        "pool_index": 1,
+        "commitment_sha256": "20a66abf4babefda647cddd377e8ec4d9df3423f39c4eb30e64f3527e0595084",
+        "status": "pending",
+        "reason": "epoch_not_completed"
+      },
+      {
+        "pool_index": 4,
+        "commitment_sha256": "c0c01b641dd14b3388803ced76b921791fc259e4eedb9a8f153ceb32947a5907",
+        "status": "pending",
+        "reason": "epoch_not_completed"
+      }
+    ],
+    "rpc_calls": 0,
+    "network_consensus": false,
+    "independent_timestamp": false,
+    "paid_transactions": 0
+  },
+  "sha256": "47db2e39771e4b4b8a6b5fd16df0e2f5f8a201827a39fe585373a3dc891f600c"
+}

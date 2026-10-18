@@ -1,0 +1,23 @@
+{
+  "mode": "GenLayer Direct Mode",
+  "sdk_release": "v0.2.12",
+  "genlayer_test": "0.29.2",
+  "passed": true,
+  "tests": 64,
+  "failures": 0,
+  "errors": 0,
+  "ran_at_utc": "2026-10-18T14:50:09.517924+00:00",
+  "network_consensus": false,
+  "rpc": "mocked responses only",
+  "paid_transactions": 0,
+  "windows_transport_adapter": true,
+  "source_sha256": {
+    "contracts/P10ForecastVerifier.py": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+    "contracts/AeroForecastVerifier.py": "e17553b4336c12bb29f6fe13971a0314b014517d31fc915a73bfe1ac1b6e085f",
+    "scripts/p10_forecast_v2.py": "361f28884f54163597321a776ef526f54a727718bc4c04f66ba52d6745b244bb",
+    "tests/p10_genlayer_direct_test.py": "d89b742558947767852d2977d86e7025fdc2dbeabadb3a7371380edb3684f3e4",
+    "scripts/p10_evidence.py": "76527b64cf378760196a833f7ad7c6b3ba9ad9e20241dbf023d93ea70ee3ede9",
+    "scripts/p10_pilot_status.py": "fa0da007f23f5ff69f48eb059ab12fed1bb56225e839b994c6eebb55b3740bd5",
+    "tests/p10_evidence_test.py": "901575581a91550398c89023dc076aa0dd41cd10ccfb2ee2defead540fcf200c"
+  }
+}

@@ -22,7 +22,7 @@ FEES_REWARD_CONTRACT = "0x958a5612390bb4134e1e7505c7cb6b0652941174"
 REWARD_EPOCH_SELECTOR = "0x92777b29"  # tokenRewardsPerEpoch(address,uint256)
 
 
-class AeroForecastVerifier(gl.contract.Contract):
+class AeroForecastVerifier(gl.Contract):
     token_address: str
     epoch_start: u256
     predicted_raw: u256

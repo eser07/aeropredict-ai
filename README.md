@@ -1158,3 +1158,48 @@ The local GLSim `sim_call` experiment proves a contract can execute the Base dat
 5. Build production-safe data refresh, monitoring, and public deployment infrastructure.
 
 **Not financial advice.** All forecasts and comparisons are experimental research tools, not investment recommendations or promised token rewards.
+
+
+## P9 unified research and P10 local pilot (18 October 2026)
+
+P9 is a separate, read-only panel on `http://127.0.0.1:8768/`. Start it with
+`python scripts/serve_pool_research_950.py` from this project. It binds only to
+loopback and validates all 950 pools, addresses, epoch, manifest assignments and
+the canonical inventory fingerprint before serving. This command does not start
+or replace the original 8765 dashboard or its Windows hourly refresh task.
+
+The unified snapshot is Base 8453, inventory block 52,731,839, reward epoch
+2026-10-15 00:00 UTC: 904 fully priced pools, 46 incomplete, 249 with no observed
+reward, and 949 known pairs. Pool #1130 remains unresolved. Prices are saved
+collection-time quotes, not prices at each historical week.
+
+The panel includes exact numeric search, source/coverage filters, four-week FEES
+and BRIBES charts, three-pool comparisons, URL-restored selections, responsive
+cards and an explainable Research Score. Its equally weighted components are
+reward continuity, FEES continuity, FEES share, and weekly reward distribution.
+It intentionally prefers recurring FEES; it does not measure personal income,
+APR, token safety, pool size or investment success. Incomplete or zero-total
+evidence has no score or fabricated reward percentages.
+
+Reproduce the P9 checks without network access:
+
+```sh
+python tests/p9_validation_test.py
+node tests/p9_math_test.cjs
+node tests/p9_ui_regression.cjs
+python scripts/p9_validate_saved.py
+```
+
+The latest run passed 23 Python data/HTTP tests, 15 JavaScript math tests and the
+UI regression assertions; all 950 weekly histories reconciled. The original
+309 hashed P9 research JSON files were unchanged. Browser checks covered search,
+950-row display, filters, three-selection limit, URL restoration, detail
+navigation, missing USD, pilot display and mobile page width without overflow.
+
+The five-pool P10 pilot and its safe 64-test Direct Mode runner are documented
+in [research/p10_pilot/README.md](research/p10_pilot/README.md). Direct Mode is a
+local logic test with controlled RPC responses; Studio/network consensus has
+not run. WSL command access and Docker Linux engine remain unavailable in this
+session. The active forecast window is 22–29 October 2026 UTC; actual values
+must remain absent until valid post-period evidence exists. No network contract
+deployment, wallet action, paid model call or remote Git push was performed.

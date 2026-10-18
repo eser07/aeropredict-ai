@@ -2,8 +2,8 @@ const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const root=require('path').resolve(__dirname,'..');
 const nodes=new Map(); const get=id=>{if(!nodes.has(id))nodes.set(id,{value:id==='status'?'all':id==='sort'?'index':'',addEventListener(){},replaceChildren(){},append(){}});return nodes.get(id);};
 let source=fs.readFileSync(root+'/research/p9_unified/research.js','utf8');
-source=source.replace('  loadResearch();','  globalThis.testAPI={rewardMix,researchScore,filteredPools,state,tokenAmount,pilotStatusLabel};');
-const ctx={document:{getElementById:get},Intl,console};vm.createContext(ctx);vm.runInContext(source,ctx);
+source=source.replace('  loadResearch();','  globalThis.testAPI={rewardMix,researchScore,filteredPools,state,tokenAmount,pilotStatusLabel,dollars,restoreLocation};');
+const ctx={P9Math:require(root+'/research/p9_unified/research-math.js'),document:{getElementById:get},Intl,console,URLSearchParams,window:{location:{search:""}}};vm.createContext(ctx);vm.runInContext(source,ctx);
 const a=ctx.testAPI;
 assert.equal(a.rewardMix(20,80,true).level,'high');assert.equal(a.rewardMix(50,50,true).level,'attention');
 for(const args of [[0,0,true],[null,10,true],[10,20,false],[-1,10,true],['NaN',10,true]])assert.equal(a.rewardMix(...args),null);
@@ -23,3 +23,23 @@ assert.equal(a.pilotStatusLabel({status:"pending"}),"Dönem bekleniyor");
 assert.equal(a.pilotStatusLabel({status:"locally_evaluated",forecast_matched:true}),"Yerel gözlem · tolerans içinde");
 assert.equal(a.pilotStatusLabel({status:"locally_evaluated",forecast_matched:false}),"Yerel gözlem · tolerans dışında");
 assert.equal(a.pilotStatusLabel({status:"unverifiable"}),"Doğrulanamadı");
+
+get('search').value='';get('status').value='all';
+const partitions=new Set();let partitionCount=0;
+for(const source of ['fees','attention','high','unknown']){
+  get('source').value=source;const rows=a.filteredPools();
+  for(const pool of rows){assert(!partitions.has(pool.index));partitions.add(pool.index);}
+  partitionCount+=rows.length;
+  if(source==='fees')assert(rows.some(p=>p.index===64));
+  if(source==='high')assert(rows.some(p=>p.index===35));
+}
+assert.equal(partitionCount,950);get('source').value='all';
+get('search').value='zzzz-no-pool';assert.equal(a.filteredPools().length,0);
+assert.equal(a.dollars(null),'USD bilinmiyor');
+assert.equal(a.dollars('0.000001'),'< $0.01');assert.equal(a.dollars('0'),'$0.00');
+for(const [id,values] of [['status',['all','missing']],['source',['all','high']],['sort',['index','score']]])get(id).options=values.map(value=>({value}));
+ctx.window.location.search='?q=%2364&coverage=missing&source=high&sort=score&compare=64,35,64,0,1,999999';
+a.restoreLocation();assert.equal(get('search').value,'#64');assert.equal(get('source').value,'high');
+assert.equal(get('status').value,'missing');assert.equal(get('sort').value,'score');
+assert.deepEqual(Array.from(a.state.comparison),[64,35,0]);
+console.log('PASS: all source filters partition 950 pools, subcent display, empty search, URL restore and comparison limit');

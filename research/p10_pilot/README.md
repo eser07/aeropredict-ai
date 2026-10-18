@@ -35,4 +35,33 @@ Resmî belgeler: https://docs.genlayer.com/developers/intelligent-contracts/test
 
 Panel en fazla son 256 kontrol dosyasını okur. Dosya hashini, tahmin kimliğini, dönemi ve kanıt alanlarını yeniden kontrol eder. İleri tarihli veya bozuk dosyaları yok sayar. Yeni bir başarısız okuma önceki geçerli yerel gözlemi silmez; son deneme bilgisi ayrıca gösterilir. Gerçekleşen değer ancak tamamlanmış dönem için geçerli bir yerel gözlem varsa görünür.
 
-18 Ekim 2026 kontrolü: beş pending kaydı, sıfır RPC çağrısı. Studio/Docker ve WSL engeli sürüyor. İki açık Base RPC adresine ayrı bağlantı kontrolü HTTP 403 döndürdü; canlı zincir doğrulaması başarılı sayılmadı. Otomatik zamanlayıcı veya arka plan takip görevi kurulmadı.
+18 Ekim 2026 kontrolü: beş pending kaydı, sıfır RPC çağrısı. Studio/Docker ve WSL engeli sürüyor. İki açık Base RPC adresine ayrı bağlantı kontrolü HTTP 403 döndürdü; canlı zincir doğrulaması başarılı sayılmadı. Özgün Windows saatlik yenileme görevi değiştirilmedi. Kullanıcının sürekli devam etme isteği üzerine bu Codex sohbetinde ayrı saatlik devam görevi etkinleştirildi; yerel uygulama ve bilgisayar açık olmalıdır. Anlamlı ilerleme, tamamlanma veya gereken kullanıcı müdahalesi dışında aynı engeli tekrar bildirmez.
+
+
+## GenLayer maliyet, fayda ve teşvik kontrolü — 18 Ekim 2026
+
+Bu çalışma ücretli RPC/LLM hizmeti etkinleştirmedi ve gerçek ağ işlemi göndermedi.
+Direct Mode yerel CPU/disk kullanır; ağ validator maliyeti bu testlerden
+ölçülemez. Resmî güncel belgelere göre Studio'nun EVM katmanındaki sıfır gas,
+GenLayer protokol ücretinin sıfır olduğu anlamına gelmez. Ağ aşamasında önce
+yerel fee profile, güncel tahmin ve finalized receipt ile ölçüm gerekir.
+[Studio sınırları](https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/limitations),
+[dağıtım ve ücret profili](https://docs.genlayer.com/developers/intelligent-contracts/deploying).
+
+Bu prototipin faydası, tahmin/veri kaynağı/dönem/değerlendirme kuralını birlikte
+saklamak ve eksik kanıtı başarısız tahminden ayırmaktır. Gelecekte bağımsız
+validator tekrarları tek uygulamanın kararına bağımlılığı azaltabilir. Aynı RPC
+kaynağından gelen yanlış veriye karşı kendiliğinden doğruluk garantisi vermez.
+Sayısal FEES eşleştirmesi için LLM zorunlu değildir; mevcut model dört haftalık
+ham token ortalamasıdır.
+
+Resmî Portal, builder/validator/community katkıları ve GenLayer Points programını
+tanıtıyor. Katkıların kabul ve inceleme süreci bulunuyor. Yerel test geçirmek
+AeroPredict'e otomatik puan veya ödül kazandırdığını kanıtlamaz; hesap uygunluğu,
+başvuru ve kabul durumu doğrulanmadı, başvuru yapılmadı. Points için kazanç
+öngörüsü kullanılmamalıdır. Portal ana sayfası ile açıklama sayfasındaki sezon
+metinleri aynı gün farklılık gösterdiğinden sabit puan oranı veya sezon durumu
+taahhüt edilmedi.
+[Portal](https://portal.genlayer.foundation/),
+[katkıların inceleme süreci](https://portal.genlayer.foundation/how-it-works/),
+[resmî builder duyurusu ve şartlar](https://talks.genlayer.foundation/t/introducing-genlayers-incentivized-builders-program/20).

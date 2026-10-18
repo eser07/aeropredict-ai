@@ -3,77 +3,56 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AeroPredict AI | 950 Havuz Araştırması</title>
+<title>AeroPredict AI | Birleşik Havuz Araştırması</title>
 <link rel="stylesheet" href="/research.css">
+<script defer src="/research-math.js"></script>
 <script defer src="/research.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#pool-directory">Havuz listesine geç</a>
 <main class="wrap">
-<header class="hero">
-<p class="eyebrow">AEROPREDICT AI · BASE MAINNET · P9</p>
-<h1>950 Aerodrome havuzu. <em>Tek araştırma.</em></h1>
-<p>15 Ekim 2026 ödül dönemi · Dört tamamlanmış hafta</p>
-<p class="mini">Base envanter bloğu: 52.731.839</p>
+<nav class="brand" aria-label="Araştırma bölümleri"><a class="mark" href="#overview">AeroPredict <span>AI</span></a><div><a href="#pool-directory">Havuzlar</a><a href="#methodology">Yöntem</a><a href="#pilot">Doğrulama pilotu</a></div><span class="network-chip">BASE · 8453</span></nav>
+<header class="hero" id="overview">
+<p class="eyebrow">AERODROME · TARİHSEL ARAŞTIRMA</p>
+<h1>950 havuz.<br><em>Ödülün kaynağını görün.</em></h1>
+<p class="lead">FEES ve BRIBES geçmişini tek listede inceleyin. Ödül devamlılığını karşılaştırın, araştırmanızın dayandığı veriyi görün.</p>
+<div class="provenance-strip"><div><strong>Ortak ödül dönemi</strong><span>15 Ekim 2026 · 00:00 UTC</span></div><div><strong>Dört tamamlanmış hafta</strong><span>17 Eylül – 15 Ekim 2026</span></div><div><strong>Envanter</strong><span>Base blok 52.731.839 · 2.013 kayıtlı havuz</span></div></div>
+<p id="quote-window" class="mini">Kaydedilmiş fiyat zamanları yükleniyor…</p>
+<p class="notice">USD tutarları kayıt anındaki token fiyatlarını kullanır; geçmiş haftaların tarihsel USD fiyatları değildir. Eksik fiyat sıfır ödül sayılmaz. Havuz ödülleri kişisel veAERO geliri veya gelecek APR değildir.</p>
 </header>
-
-<p id="error" role="alert" hidden></p>
-
-<section class="stats">
-<article class="stat"><span>Aktif havuz</span><b id="stat-pools">—</b></article>
-<article class="stat"><span>USD tam</span><b id="stat-priced">—</b></article>
-<article class="stat"><span>USD eksik</span><b id="stat-missing">—</b></article>
-<article class="stat"><span>Ödül gözlenmeyen</span><b id="stat-zero">—</b></article>
+<p id="error" role="alert" hidden></p><button id="retry-research" type="button" hidden>Verileri yeniden yükle</button>
+<section class="stats" aria-label="Veri kapsamı">
+<article class="stat"><span>Aktif havuz</span><b id="stat-pools">—</b><small>Tek birleşik envanter</small></article>
+<article class="stat"><span>USD kapsamı tam</span><b id="stat-priced">—</b><small>Kaydedilmiş fiyatlarla</small></article>
+<article class="stat"><span>USD kapsamı eksik</span><b id="stat-missing">—</b><small>Tam toplam bilinmiyor</small></article>
+<article class="stat"><span>Ödül gözlenmeyen</span><b id="stat-zero">—</b><small>Son dört tamamlanmış hafta</small></article>
 </section>
-
-<details class="panel"><summary>Research Score yöntemi ve veri sınırları</summary><p>0–100 puan: ödül gözlenen hafta / 4 × 25; FEES gözlenen hafta / 4 × 25; dört haftalık FEES payı × 25; (1 − en büyük haftanın payı) / 0,75 × 25. Ağırlıklar araştırma için seçilmiş varsayımlardır; gelecekte başarı olasılığı değildir. FEES ağırlıklı ve haftalara dağılmış geçmişi öne çıkarır; bu tercih BRIBES ağırlıklı havuzları geriye atabilir.</p><p>Eksik USD, eksik kayıt veya sıfır USD toplamında puan verilmez. Küçük oy ağırlığına bölünmez, gelir büyüklüğünü veya token güvenliğini ölçmez. Oy verileri dönemle eş zamanlı olmadığı için puana katılmaz. Tam USD kapsamı eş zamanlı ve güvenilir piyasa fiyatı anlamına gelmez. Dört hafta kısa bir gözlem aralığıdır.</p><p>FEES turkuaz, BRIBES mavidir. Fiyatlar kaydedildikleri zamana aittir. Havuz ödülleri kişisel veAERO geliri veya gelecek APR değildir.</p></details>
+<details class="panel methodology" id="methodology"><summary>Research Score nasıl hesaplanır?</summary><p>0–100 puan dört eşit bileşenden oluşur: ödül gözlenen hafta / 4 × 25; FEES gözlenen hafta / 4 × 25; dört haftalık FEES payı × 25; (1 − en büyük haftanın payı) / 0,75 × 25. Her bileşen havuz detayında ayrıca gösterilir.</p><p>Ağırlıklar araştırma için seçilmiş varsayımlardır. FEES ağırlıklı ve haftalara dağılmış geçmişi öne çıkarır; BRIBES ağırlıklı havuzları geriye atabilir. Puan gelir büyüklüğünü, token güvenliğini veya gelecekte başarı olasılığını ölçmez. Düşük tutarlı bir havuz da yüksek puan alabilir.</p><p>Eksik USD, eksik kayıt veya sıfır USD toplamında puan verilmez. Oy ağırlığı ödül haftalarıyla eş zamanlı olmadığı için puana katılmaz; puan oy ağırlığına bölünmez. Tam fiyat kapsamı eş zamanlı piyasa verisi anlamına gelmez. Dört hafta kısa bir gözlem aralığıdır.</p></details>
+<div class="workspace-bar"><span>ARAŞTIRMA ÇALIŞMA ALANI</span><button id="jump-compare" type="button" disabled>Karşılaştırma (0/3)</button></div>
 <section class="panel" id="pool-directory">
-<h2>Tüm aktif havuzlar</h2>
-<label for="search">Havuz, token veya sözleşme adresi</label><input id="search" type="search" placeholder="Havuz, token veya adres ara">
-<label for="status">Veri kapsamı</label><select id="status">
-<option value="all">Tüm havuzlar</option>
-<option value="priced">USD tam</option>
-<option value="missing">USD eksik</option>
-<option value="positive">Ödül gözlenen</option>
-<option value="zero">Ödül gözlenmeyen</option>
-</select>
-<label for="sort">Sıralama</label><select id="sort">
-<option value="index">Havuz numarası</option>
-<option value="rewards">Geçmiş haftalık USD</option>
-<option value="score">Research Score</option>
-<option value="weeks">Ödül gözlenen hafta</option>
-</select>
-<button type="button" id="reset-filters">Filtreleri sıfırla</button>
-<p id="count" aria-live="polite">Veriler yükleniyor…</p>
-<div class="table-wrap"><table><thead><tr><th>Havuz</th><th>Token çifti</th><th>USD/hafta</th><th>Ödül haftası</th><th>Research Score</th><th>Detay</th></tr></thead>
-<tbody id="rows"></tbody></table></div>
-<button id="prev" type="button">Önceki</button>
-<span id="page-count">—</span>
-<button id="next" type="button">Sonraki</button>
+<div class="section-head"><div><h2>Tüm aktif havuzlar</h2><p class="mini">Havuz numarası tam eşleşir. Örnek: 64 veya #64.</p></div></div>
+<div class="filters">
+<label>Havuz, token veya sözleşme adresi<input id="search" type="search" placeholder="64, USDC veya 0x…" maxlength="200"></label>
+<label>Veri kapsamı<select id="status"><option value="all">Tüm havuzlar</option><option value="priced">USD tam</option><option value="missing">USD eksik</option><option value="positive">Ödül gözlenen</option><option value="zero">Ödül gözlenmeyen</option></select></label>
+<label>Ödül kaynağı<select id="source"><option value="all">Tüm kaynaklar</option><option value="fees">FEES payı daha yüksek</option><option value="attention">BRIBES %50–80</option><option value="high">BRIBES ≥ %80</option><option value="unknown">Oran hesaplanamayan</option></select></label>
+<label>Sıralama<select id="sort"><option value="index">Havuz numarası</option><option value="rewards">Geçmiş haftalık USD</option><option value="score">Research Score</option><option value="weeks">Ödül gözlenen hafta</option></select></label>
+</div>
+<div class="toolbar"><p id="count" aria-live="polite">Veriler yükleniyor…</p><div class="toolbar-actions"><label class="pagesize">Göster<select id="page-size"><option value="25">25</option><option value="50">50</option><option value="100">100</option><option value="950">Tümü (950)</option></select></label><button type="button" id="reset-filters">Filtreleri sıfırla</button></div></div>
+<div class="table-wrap directory-table"><table><thead><tr><th>Havuz</th><th>Token çifti</th><th>USD / hafta</th><th>4 haftalık ödül kaynağı</th><th>Ödül haftası</th><th>Research Score</th><th>İşlemler</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p id="empty-results" class="empty" hidden>Eşleşen havuz bulunamadı. Aramayı veya filtreleri değiştirin.</p>
+<div class="pager"><button id="prev" type="button">Önceki</button><span id="page-count">—</span><button id="next" type="button">Sonraki</button></div>
 </section>
-
-
 <section class="panel" id="compare-panel" hidden>
-  <h2>Havuz karşılaştırması</h2>
-  <p class="mini">
-    En fazla 3 havuzu karşılaştır.
-    Geçmiş FEES ve BRIBES verileri kullanılır.
-    Fiyatların kayıt zamanları farklı olabilir.
-  </p>
-  <p id="compare-count">0 / 3 havuz seçildi</p>
-  <div id="compare-items" class="compare-items"></div>
-  <button id="clear-compare" type="button">
-    Karşılaştırmayı temizle
-  </button>
+<div class="section-head"><div><h2>Havuz karşılaştırması</h2><p class="mini">En fazla üç havuz · Kaydedilmiş fiyat zamanları farklı olabilir.</p></div><button id="clear-compare" type="button">Karşılaştırmayı temizle</button></div>
+<p id="compare-count" aria-live="polite">0 / 3 havuz seçildi</p><div id="compare-items" class="compare-items"></div>
 </section>
-
 <section class="panel" id="detail" hidden>
-<h2 id="detail-title">Havuz detayı</h2>
-  <p id="detail-intro" class="mini"></p>
-<div id="detail-content"></div>
-<button id="close-detail" type="button">Kapat</button>
+<div class="section-head"><h2 id="detail-title">Havuz detayı</h2><button id="close-detail" type="button">Kapat</button></div>
+<div class="detail-nav"><button id="detail-prev" type="button">Önceki havuz</button><span id="detail-position"></span><button id="detail-next" type="button">Sonraki havuz</button></div>
+<p id="detail-intro" class="mini"></p><div id="detail-content"></div>
 </section>
-<section class="panel"><h2>P10 · Yerel doğrulama pilotu</h2><p class="mini">5 havuz · Dört haftalık ham FEES ortalaması baz modeli. GenLayer Direct Mode testleri kontrollü RPC yanıtlarıyla çalıştırıldı; bağımsız ağ mutabakatı çalıştırılmadı. LLM tahmini kullanılmadı. Yerel kayıt bağımsız zaman damgası sağlamaz. Gelecek dönem tamamlanınca aynı tokenın gerçekleşen ham ödülü karşılaştırılacak.</p><button id="load-pilot" type="button">Pilot kayıtlarını göster</button><div id="pilot-content" aria-live="polite"></div></section>
-<p class="mini">Tarihsel araştırmadır. Canlı APR veya garanti veAERO getirisi değildir. Eksik USD verisi sıfır sayılmaz.</p>
+<section class="panel" id="pilot"><p class="eyebrow">P10 · YEREL PROTOTİP</p><h2>Tahmin doğrulama pilotu</h2><p class="mini">Beş havuz için aynı tokenın dört haftalık ham FEES ortalaması baz modeli kullanılır; LLM tahmini değildir. Direct Mode testleri kontrollü RPC yanıtlarıyla yapılır; bağımsız ağ mutabakatı sağlandığı anlamına gelmez. Yerel kayıt bağımsız zaman damgası sağlamaz. Gerçekleşen ödül ancak dönem bittikten sonra geçerli kanıt varsa gösterilir.</p><button id="load-pilot" type="button">Pilot kayıtlarını göster</button><div id="pilot-content" aria-live="polite"></div></section>
+<footer>AeroPredict AI · Doğrulanabilir geçmiş verilerle araştırma. Geçmiş gözlemler gelecek sonuçları garanti etmez.</footer>
 </main>
 </body>
 </html>

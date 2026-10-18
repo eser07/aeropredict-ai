@@ -6,34 +6,20 @@
     pairs: new Map(),
     page: 0,
     pageSize: 25,
-    comparison: []
+    comparison: [],
+    detailPool: null
   };
 
 
-  function rewardMix(fees, bribes, complete) {
-    if (!complete || fees === null || bribes === null || fees === undefined || bribes === undefined) return null;
-    const f = Number(fees), b = Number(bribes), total = f + b;
-    if (![f,b,total].every(Number.isFinite) || f < 0 || b < 0 || total <= 0) return null;
-    const share = 100 * b / total;
-    return {fees:100-share, bribes:share, level: share >= 80 ? "high" : share >= 50 ? "attention" : "context"};
-  }
-
-  function researchScore(p) {
-    if (!p.usd_coverage_complete || p.truncated_reward_registry || p.missing_or_stale_components?.length) return null;
-    if (!Number.isInteger(p.observed_fees_positive_weeks) || p.observed_fees_positive_weeks < 0 || p.observed_fees_positive_weeks > 4) return null;
-    const weeks = p.weekly_pool_usd_at_collection_quote?.map(Number);
-    if (!weeks || weeks.length !== 4 || !weeks.every(n => Number.isFinite(n) && n >= 0)) return null;
-    const total = weeks.reduce((a,b)=>a+b,0);
-    if (total <= 0) return null;
-    const tokens = p.token_rewards || [];
-    if (tokens.some(t=>t.mean_usd_at_collection_quote == null || !Number.isFinite(Number(t.mean_usd_at_collection_quote)))) return null;
-    const sum = kind => tokens.filter(t=>t.type===kind).reduce((a,t)=>a+Number(t.mean_usd_at_collection_quote)*4,0);
-    const fees=sum("FEES"), bribes=sum("BRIBES");
-    if (Math.abs(fees+bribes-total) > Math.max(1e-7,total*1e-10)) return null;
-    const mix=rewardMix(fees,bribes,true);
-    const components={continuity:25*weeks.filter(n=>n>0).length/4, fees:25*p.observed_fees_positive_weeks/4,
-      composition:25*mix.fees/100, distribution:25*(1-Math.max(...weeks)/total)/0.75};
-    return {value:Math.round(Object.values(components).reduce((a,b)=>a+b,0)),components};
+  const {finiteNumber,nonnegative,rewardMix,poolMetrics,researchScore,validateWeekly}=P9Math;
+  const weeklyCache=new Map();
+  let detailRequest=0;
+  async function weeklyData(pool){
+    if(!weeklyCache.has(pool.index)){
+      const pending=fetch("/api/weekly?index="+encodeURIComponent(pool.index),{cache:"no-store"}).then(response=>{if(!response.ok)throw new Error("Haftalık API yanıt vermedi");return response.json();}).then(data=>validateWeekly(pool,data)).catch(error=>{weeklyCache.delete(pool.index);throw error;});
+      weeklyCache.set(pool.index,pending);
+    }
+    return weeklyCache.get(pool.index);
   }
 
   function appendMix(area, data) {
@@ -50,16 +36,52 @@
   }
 
   function appendWeeks(area,data) {
+    const chart=document.createElement("section");chart.className="weekly-chart";
+    const heading=document.createElement("h4");heading.textContent="Dört tamamlanmış hafta";chart.append(heading);
+    const known=data.weeks.map(w=>nonnegative(w.total_usd)).filter(v=>v!==null),max=Math.max(0,...known);
+    for(const w of data.weeks){
+      const row=document.createElement("div");row.className="chart-row";
+      const date=document.createElement("span");date.textContent=w.week_start_utc.slice(0,10);
+      const track=document.createElement("div");track.className="chart-track";track.setAttribute("role","img");
+      track.setAttribute("aria-label",date.textContent+" FEES "+dollars(w.fees_usd)+", BRIBES "+dollars(w.bribes_usd));
+      const value=document.createElement("span");value.className="num";value.textContent=dollars(w.total_usd);
+      if(w.total_usd===null){track.classList.add("unknown");track.textContent="USD eksik";}
+      else for(const [kind,amount] of [["fees",w.fees_usd],["bribes",w.bribes_usd]]){const bar=document.createElement("span");bar.className="trend-"+kind;bar.style.width=(max ? Number(amount)/max*100 : 0)+"%";track.append(bar);}
+      row.append(date,track,value);chart.append(row);
+    }
+    const caption=document.createElement("p");caption.className="mini";caption.textContent="Turkuaz: FEES · Mavi: BRIBES. Grafik ölçeği havuza özeldir; havuzları USD tutarlarıyla karşılaştırın.";chart.append(caption);area.append(chart);
     const table=document.createElement("table");table.className="weekly-table";
     const head=table.createTHead().insertRow();for(const title of ["Hafta (UTC)","FEES","BRIBES","Toplam"]){const th=document.createElement("th");th.textContent=title;head.append(th);}
     const body=table.createTBody();for(const w of data.weeks){const row=body.insertRow();for(const value of [w.week_start_utc.slice(0,10),dollars(w.fees_usd),dollars(w.bribes_usd),dollars(w.total_usd)])cell(row,value);}
     const wrap=document.createElement("div");wrap.className="table-wrap";wrap.append(table);area.append(wrap);
+    if(data.source_times){const times=document.createElement("p");times.className="mini source-times";
+      times.textContent="FEES dosyası: "+(data.source_times.fees_file_collected_at_utc || "bilinmiyor")+" · Teşvik dosyası: "+(data.source_times.incentives_file_collected_at_utc || "bilinmiyor")+" · Fiyat kayıt aralığı: "+(data.source_times.earliest_quote_utc || "bilinmiyor")+" — "+(data.source_times.latest_quote_utc || "bilinmiyor")+". Bu zamanlar ayrı okumalardır.";area.append(times);}
+  }
+
+  function jumpTo(id){$(id).scrollIntoView({behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});}
+  function syncLocation(){
+    const url=new URL(window.location.href);
+    for(const [key,value] of [["q",$("search").value.trim()],["coverage",$("status").value==="all"?"":$("status").value],["source",$("source").value==="all"?"":$("source").value],["sort",$("sort").value==="index"?"":$("sort").value],["compare",state.comparison.join(",")]]){if(value)url.searchParams.set(key,value);else url.searchParams.delete(key);}
+    history.replaceState(null,"",url);
+  }
+  function restoreLocation(){
+    const params=new URLSearchParams(window.location.search);
+    $("search").value=(params.get("q")||"").slice(0,200);
+    for(const [id,key] of [["status","coverage"],["source","source"],["sort","sort"]]){const value=params.get(key);if([...$(id).options].some(o=>o.value===value))$(id).value=value;}
+    state.comparison=[...new Set((params.get("compare")||"").split(",").filter(v=>/^\d+$/.test(v)).map(Number))].filter(id=>state.pools.some(p=>p.index===id)).slice(0,3);
+  }
+  function updateDetailNav(){
+    const list=filteredPools(),pos=list.findIndex(p=>p.index===state.detailPool);
+    $("detail-prev").disabled=pos<=0;$("detail-next").disabled=pos<0||pos>=list.length-1;
+    $("detail-position").textContent=pos<0?"Seçili havuz filtre dışında":(pos+1)+" / "+list.length+" filtrelenmiş havuz";
   }
 
   function dollars(value) {
     if (value === null || value === undefined) return "USD bilinmiyor";
-    const n = Number(value);
-    if (!Number.isFinite(n)) return "USD bilinmiyor";
+    const n = finiteNumber(value);
+    if (n===null) return "USD bilinmiyor";
+    if(n>0&&n<0.01)return "< $0.01";
+    if(n<0&&n>-0.01)return "−(< $0.01)";
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
@@ -69,7 +91,7 @@
 
   function cell(row, value) {
     const td = document.createElement("td");
-    td.dataset.label = ["Havuz","Token çifti","USD/hafta","Ödül haftası","Research Score"][row.children.length] || "İşlemler";
+    td.dataset.label = ["Havuz","Token çifti","USD/hafta","Ödül kaynağı","Ödül haftası","Research Score"][row.children.length] || "İşlemler";
     td.textContent = String(value);
     row.append(td);
     return td;
@@ -77,6 +99,7 @@
 
   function showError(message) {
     $("error").hidden = !message;
+    $("retry-research").hidden=!message;
     $("error").textContent = message || "";
   }
 
@@ -88,19 +111,7 @@
     card.append(note);
 
     try {
-      const response = await fetch(
-        "/api/weekly?index=" + pool.index,
-        {cache: "no-store"}
-      );
-      if (!response.ok) throw new Error("API unavailable");
-
-      const data = await response.json();
-      if (data.index !== pool.index ||
-          data.address?.toLowerCase() !== pool.address.toLowerCase() ||
-          data.collection_epoch_utc !== pool.collection_epoch_utc ||
-          !Array.isArray(data.weeks) || data.weeks.length !== 4) {
-        throw new Error("Weekly identity mismatch");
-      }
+      const data = await weeklyData(pool);
 
       if (!card.isConnected || !state.comparison.includes(pool.index)) return;
 
@@ -134,6 +145,8 @@
 
   function updateComparison() {
     const ids = state.comparison;
+    $("jump-compare").disabled=ids.length===0;
+    $("jump-compare").textContent="Karşılaştırma ("+ids.length+"/3)";
     $("compare-panel").hidden = ids.length === 0;
     $("compare-count").textContent = ids.length + " / 3 havuz seçildi";
     const area = $("compare-items");
@@ -155,12 +168,13 @@
           : "USD eksik") +
         " | Ödül haftası: " + p.observed_any_reward_positive_weeks + "/4";
 
+      const view=document.createElement("button");view.type="button";view.textContent="Havuz detayına git";view.addEventListener("click",()=>showDetail(p));
       const remove = document.createElement("button");
       remove.type = "button";
       remove.textContent = "Çıkar";
       remove.addEventListener("click", () => toggleComparison(p));
 
-      card.append(heading, info, remove);
+      card.append(heading, info, view, remove);
       area.append(card);
       showComparisonWeeks(p, card);
     }
@@ -175,6 +189,7 @@
     }
     updateComparison();
     render();
+    syncLocation();
   }
 
   function filteredPools() {
@@ -195,6 +210,11 @@
       if (status === "missing" && p.usd_coverage_complete) return false;
       if (status === "positive" && p.no_observed_rewards) return false;
       if (status === "zero" && !p.no_observed_rewards) return false;
+      const source=$("source").value,mix=poolMetrics(p)?.mix;
+      if(source==="fees"&&(!mix||mix.bribes>=50))return false;
+      if(source==="attention"&&(!mix||mix.bribes<50||mix.bribes>=80))return false;
+      if(source==="high"&&(!mix||mix.bribes<80))return false;
+      if(source==="unknown"&&mix)return false;
       return true;
     });
 
@@ -239,6 +259,9 @@
       cell(tr, p.usd_coverage_complete
         ? dollars(p.avg_pool_usd_per_week_at_collection_quote)
         : "USD eksik");
+      const mix=poolMetrics(p)?.mix;
+      const composition=cell(tr,mix ? "FEES %"+mix.fees.toFixed(2)+" / BRIBES %"+mix.bribes.toFixed(2) : "Oran hesaplanamıyor");
+      composition.className=mix?.level==="high"?"source-high":"source-mix";
       cell(tr, p.observed_any_reward_positive_weeks + "/4");
 
       cell(tr, researchScore(p)?.value ?? "Hesaplanamıyor");
@@ -253,6 +276,7 @@
       compare.type = "button";
       compare.textContent = state.comparison.includes(p.index)
         ? "Çıkar" : "Karşılaştır";
+      compare.setAttribute("aria-pressed",String(state.comparison.includes(p.index)));
       compare.disabled = state.comparison.length >= 3 &&
         !state.comparison.includes(p.index);
       compare.addEventListener("click", () => toggleComparison(p));
@@ -261,14 +285,19 @@
       $("rows").append(tr);
     }
 
+    $("empty-results").hidden=pools.length!==0;
     $("count").textContent = pools.length + " / 950 havuz gösteriliyor";
     $("page-count").textContent = (state.page + 1) + " / " + pages;
     $("prev").disabled = state.page === 0;
     $("next").disabled = state.page >= pages - 1;
+    if(state.detailPool!==null)updateDetailNav();
   }
 
   async function showDetail(p) {
+    state.detailPool=p.index;
     $("detail").hidden = false;
+    updateDetailNav();
+    jumpTo("detail");
     $("detail-title").textContent = "Havuz #" + p.index;
     $("detail-intro").textContent = "";
     const area = $("detail-content");
@@ -297,17 +326,10 @@
     line(score ? "Research Score: "+score.value+"/100 · Süreklilik: "+score.components.continuity.toFixed(1)+" · FEES: "+score.components.fees.toFixed(1)+" · Kaynak: "+score.components.composition.toFixed(1)+" · Dağılım: "+score.components.distribution.toFixed(1) : "Research Score hesaplanamıyor: eksik kanıt veya pozitif USD toplamı yok.");
     line("Kaynak: kaydedilmiş birleşik P9 araştırması ve havuza ait haftalık teşvik kaydı. Fiyatlar tarihsel hafta fiyatı değildir.");
     const loading=document.createElement("p");loading.textContent="Dört haftalık FEES / BRIBES geçmişi yükleniyor…";area.append(loading);
-    const requestIndex=p.index; area.dataset.pool=String(requestIndex);
+    const requestIndex=++detailRequest; area.dataset.pool=String(requestIndex);
 
     try {
-      const response = await fetch(
-        "/api/weekly?index=" + encodeURIComponent(p.index),
-        {cache: "no-store"}
-      );
-      if (!response.ok) throw new Error("Haftalık veri alınamadı");
-      const data = await response.json();
-      if (data.index !== p.index || data.address?.toLowerCase() !== p.address.toLowerCase() || data.collection_epoch_utc !== p.collection_epoch_utc || !Array.isArray(data.weeks) || data.weeks.length !== 4)
-        throw new Error("Havuz verisi eşleşmiyor");
+      const data = await weeklyData(p);
 
       if(area.dataset.pool !== String(requestIndex)) return;
       loading.remove(); appendMix(area,data); appendWeeks(area,data);
@@ -316,10 +338,11 @@
     }
   }
 
-  for (const id of ["search", "status", "sort"]) {
+  for (const id of ["search", "status", "source", "sort"]) {
     $(id).addEventListener("input", () => {
       state.page = 0;
       render();
+      syncLocation();
     });
   }
 
@@ -336,7 +359,10 @@
   });
 
   $("close-detail").addEventListener("click", () => {
+    detailRequest++;
+    $("detail-content").dataset.pool=String(detailRequest);
     $("detail").hidden = true;
+    state.detailPool = null;
   });
 
   async function loadResearch() {
@@ -376,12 +402,17 @@
 
       state.pairs = pairMap;
       state.pools = doc.pools;
+      restoreLocation();
+      const quotes=state.pools.flatMap(p=>(p.token_rewards||[]).map(t=>t.quote_timestamp_utc)).filter(v=>typeof v==="string").sort();
+      $("quote-window").textContent=quotes.length ? "Fiyat kayıtları (UTC): "+quotes[0]+" — "+quotes.at(-1) : "Fiyat kayıt zamanları eksik";
+      updateComparison();
       $("stat-pools").textContent = "950";
       $("stat-priced").textContent = "904";
       $("stat-missing").textContent = "46";
       $("stat-zero").textContent = String(
         doc.no_observed_rewards_pool_count
       );
+      showError("");
       render();
     } catch (error) {
       showError("Araştırma yüklenemedi: " + error.message);
@@ -392,9 +423,14 @@
     state.comparison = [];
     updateComparison();
     render();
+    syncLocation();
   });
 
-  $("reset-filters").addEventListener("click",()=>{ $("search").value="";$("status").value="all";$("sort").value="index";state.page=0;render(); });
+  $("reset-filters").addEventListener("click",()=>{ $("search").value="";$("status").value="all";$("sort").value="index";$("source").value="all";state.page=0;render();syncLocation(); });
+  $("retry-research").addEventListener("click",()=>loadResearch());
+  $("jump-compare").addEventListener("click",()=>jumpTo("compare-panel"));
+  $("page-size").addEventListener("change",()=>{state.pageSize=Number($("page-size").value);state.page=0;render();});
+  for(const [id,delta] of [["detail-prev",-1],["detail-next",1]])$(id).addEventListener("click",()=>{const list=filteredPools();const pos=list.findIndex(p=>p.index===state.detailPool);if(list[pos+delta])showDetail(list[pos+delta]);});
   function tokenAmount(raw,decimals) {
     if(raw === null || raw === undefined) return "Henüz yok";
     if(!/^[0-9]+$/.test(raw) || !Number.isInteger(decimals) || decimals<0 || decimals>36) return raw+" ham birim";

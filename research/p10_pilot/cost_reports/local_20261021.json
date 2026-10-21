@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-10-21T17:17:49.016071+00:00",
+  "status": "local_evidence_review_complete_protocol_cost_unmeasured",
+  "document_type": "cost_evidence_review_not_a_submission_fee_profile",
+  "source_commit": "3a112c71a8c67f5ac4c656b423879028d59a0c04",
+  "environment": {
+    "chain_id": 61127,
+    "studio_release": "v0.121.6",
+    "genvm_executor": "v0.2.16",
+    "client_sdk": "genlayer-js 1.1.8"
+  },
+  "measured_operations": {
+    "deployments": 6,
+    "probe_writes": 1,
+    "settlements": 0,
+    "note": "Simulator funding and previous failed transport attempts are excluded from these operation counts and are not financial charges."
+  },
+  "transactions": [
+    {
+      "label": "P10 pool #64",
+      "hash": "0x4a0aa6f3f78df30e1bcf26359e3908fd5e846c5f5f350cc6b135312a106aab68",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 3,
+        "idle": 2
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #35",
+      "hash": "0xbf0207899f7c73a729457b39d47e7f150a9d54dde5604a6efce242c20832c966",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "idle": 2,
+        "agree": 3
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #0",
+      "hash": "0xf403edd59070e2b444976a141fc9310132d6c5bc4ecea8d9093b69ea62b8ef1b",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 3,
+        "idle": 2
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #1",
+      "hash": "0xe85e36718b393a119df29772e5dc3d8cc31d2ca0440e4fde9b4b2875d6a76dac",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 3,
+        "idle": 2
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #4",
+      "hash": "0xdd6c0d646bf3e1c1e0d055a1705c8c4ce224f0afa104edad01af9c6cb3adeb53",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "idle": 2,
+        "agree": 3
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "BaseRpcProbe deployment",
+      "hash": "0x2a203ae6a6b4845622e66d518b1eac7aed8176f5a84833583c098817d2948c76",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 3,
+        "idle": 2
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "Real Base RPC strict_eq",
+      "hash": "0x882b3663b572c8b8059d58948729d8d60eded778f24a54ee0637ca9e0689194e",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "idle": 2,
+        "agree": 3
+      },
+      "successful_execution_receipts": 4,
+      "idle_execution_receipts": 2,
+      "reported_execution_gas_used": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "receipt_fee_fields_present": [],
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    }
+  ],
+  "run_windows": [
+    {
+      "file": "p10-local-studio-js-20261021T164552Z.json",
+      "started_at_utc": "2026-10-21T16:45:52.234000+00:00",
+      "completed_at_utc": "2026-10-21T16:46:45.182000+00:00",
+      "client_run_elapsed_seconds": 52.948,
+      "scope": "Full client run including simulator funding, submissions, waits and reads; not CPU time or per-transaction latency"
+    },
+    {
+      "file": "p10-local-base-probe-20261021T164926Z.json",
+      "started_at_utc": "2026-10-21T16:49:26.887000+00:00",
+      "completed_at_utc": "2026-10-21T16:49:52.750000+00:00",
+      "client_run_elapsed_seconds": 25.863,
+      "scope": "Full client run including simulator funding, submissions, waits and reads; not CPU time or per-transaction latency"
+    }
+  ],
+  "cost": {
+    "protocol_fee_gen": null,
+    "protocol_fee_usd": null,
+    "total_usd": null,
+    "cpu_ram_electricity_cost_usd": null,
+    "real_funds_used": false,
+    "paid_services_activated": false,
+    "personal_wallet_used": false,
+    "contracts_call_exec_prompt": false,
+    "note": "Recorded gas_used=0 is a simulator field. It is not a protocol price, a zero-cost claim, or an amount to convert to GEN/USD. Wall time is not a billable protocol time unit."
+  },
+  "missing_for_protocol_cost_completion": [
+    "Fee-reporting compatible runtime and SDK verified for the target network",
+    "Measured fee budgets for deploy, probe and settlement paths; Direct Mode correctness tests are not fee-profile measurements",
+    "Live target-network fee policy and a pre-submission estimate",
+    "Finalized protocol accounting for deposit, amount consumed and refund",
+    "A valid conversion quote if reporting USD; an unknown rate remains null"
+  ],
+  "remote_scope": {
+    "authorization": "awaiting_explicit_remote_deployment_approval",
+    "proposal": "outputs/p10-studionet-islem-plani-20261021.json",
+    "maximum_deployments": 6,
+    "maximum_probe_writes": 1,
+    "settlements": 0,
+    "expected_chain_id": 61999,
+    "test_balance_only": true,
+    "same_epoch_registration_deadline_utc": "2026-10-22T00:00:00+00:00",
+    "no_backdated_registration": true
+  },
+  "fees_outcome": {
+    "pool_indices": [
+      64,
+      35,
+      0,
+      1,
+      4
+    ],
+    "target_start_utc": "2026-10-22T00:00:00+00:00",
+    "target_end_utc": "2026-10-29T00:00:00+00:00",
+    "status": "waiting_for_completed_epoch",
+    "actual_fees": null,
+    "forecast_accuracy": null,
+    "collector_executed_this_review": false,
+    "pending_observation_files_created_this_review": 0,
+    "collector": "scripts/p10_evidence.py",
+    "post_epoch_process": "Read-only finalized Base boundary and block-hash-pinned FEES evidence; preserve old files; report evidence validity separately from forecast accuracy and local/public consensus."
+  },
+  "source_evidence": {
+    "file": "research/p10_pilot/studio_runs/local_20261021.json",
+    "sha256": "a9b095d6c739eb472aa2a7d714331384673d1e571e37d63104b15742cfe1dcb5",
+    "registration_sha256": "0a380b4183c6936f260547a0ee3e9fd353ddd30d8569c13d9d216b4bd11c76f4",
+    "raw_receipts": [
+      {
+        "file": "p10-local-studio-js-20261021T164552Z.json",
+        "sha256": "ac9c2b35b3f779d7eb574fcfc7eb06b6e1bca9a7c4591292a0b294986f181c6e"
+      },
+      {
+        "file": "p10-local-base-probe-20261021T164926Z.json",
+        "sha256": "a2f13ce04ca716656975c7ab04e25f803c2606f45c0bf6dc284716a2bf5f139e"
+      }
+    ]
+  },
+  "integrity_before_document_update": {
+    "source_files_matched_v4": 40,
+    "protected_user_script_sha256": {
+      "scripts/collect_pool_pairs_base.py": "7f2f18ac9d89ca6a8ca7f71a0e4be65be47231b32f5e6aba889a1ac0765b3c2f",
+      "scripts/pool_fee_histories_base.py": "c9456189fee8864d9cc5c3eb8883037ad82560e59fa0bcd47724d98d2e3144f6",
+      "scripts/reward_tokens.py": "b9bb682eec2b070b8d31dd9a8aefbcb7c1da84f4c10616dd9e1607f339e2d71f"
+    }
+  },
+  "validation": {
+    "method": "Offline receipt/hash/registration/arithmetic review",
+    "new_contract_or_application_tests_run": 0,
+    "previous_p10_tests": 67,
+    "previous_tests_rerun": false,
+    "network_requests_by_report_generator": 0
+  },
+  "official_references": [
+    "https://docs.genlayer.com/developers/decentralized-applications/fee-profiling-and-estimation",
+    "https://docs.genlayer.com/developers/decentralized-applications/fees-and-transaction-kit",
+    "https://docs.genlayer.com/developers/intelligent-contracts/tools/genlayer-studio/limitations"
+  ]
+}

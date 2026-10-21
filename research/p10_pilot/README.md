@@ -71,3 +71,8 @@ taahhüt edilmedi.
 [Portal](https://portal.genlayer.foundation/),
 [katkıların inceleme süreci](https://portal.genlayer.foundation/how-it-works/),
 [resmî builder duyurusu ve şartlar](https://talks.genlayer.foundation/t/introducing-genlayers-incentivized-builders-program/20).
+
+
+## 21 Ekim: yerel maliyet kanıtı
+
+[Makbuzlara dayalı maliyet incelemesi](cost_reports/local_20261021.md) ve [JSON kaydı](cost_reports/local_20261021.json), altı yerel dağıtım/bir prob çağrısını kapsar. Yerel işlem kanıtı tamamdır; gerçek protokol GEN/USD maliyeti ölçülmedi ve null kalır. Bu inceleme işlem göndermek için bir fee-profile değildir. Dönem sonu FEES, 29 Ekim Türkiye 03.00 sonrasında toplanabilir; mevcut sözleşmeler veya tahminler değiştirilmedi.

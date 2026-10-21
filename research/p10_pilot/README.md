@@ -16,13 +16,19 @@ Paket ayrı dizine kurulmuşsa `--runtime-path <paket_dizini>` kullanın. SDK s�
 
 Test runner, `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1` kullanarak yalnızca Direct Mode eklentisini yükler. Studio test eklentisinin varsayılan artifacts temizliğini tetiklemez. Genel `pytest` çağrısı bu korumayı sağlamaz; pilot kayıtları bu yüzden artifacts dışında tutulur.
 
-64 test: önceki verifier/pilot/yaşam döngüsü için 33, kanıt toplama ve dosya okuma kontrolleri için 31. Kontrollü Base RPC yanıtları kullanılır. Beş havuz eşleşmesi, validator replay uyuşması/uyuşmazlığı, yanlış zincir, yanlış FEES sözleşmesi, yanlış dönem, parent hash, blok yeniden örgütlenmesi, finality yüksekliği, ABI hataları, geç kayıt, veri yetersizliği ve tekrar deneme kapsanır.
+67 test: önceki verifier/pilot/yaşam döngüsü için 33, kanıt toplama ve dosya okuma kontrolleri için 31, SDK başlığı sabitlenmiş Base RPC probu için 3. Kontrollü Base RPC yanıtları kullanılır. Beş havuz eşleşmesi, validator replay uyuşması/uyuşmazlığı, yanlış zincir, yanlış FEES sözleşmesi, yanlış dönem, parent hash, blok yeniden örgütlenmesi, finality yüksekliği, ABI hataları, geç kayıt, veri yetersizliği ve tekrar deneme kapsanır. 21 Ekim çalıştırmasında 67 test geçti. Önceki 64 testlik rapor test_reports/direct_20261018.json içinde korunur.
 
 Yeni verifier her tahmini constructor içinde kaydeder. Base Voter üzerinden havuz/gauge/FEES eşleşmesini, 7 günlük süreyi, ilk dönem sonu bloğunu, parent bağını ve finalized yüksekliğini kontrol eder; eth_call blockHash/requireCanonical ile sabitlenir. Tahmin isabeti, gerçekleşen verinin doğrulanmasından ayrı tutulur. Başarılı/başarısız tahmin tekrar yerleştirilemez; yetersiz veri yeniden denenebilir.
 
 Veri yetersizliği bir validator'ın kanıt alamadığı durumdur. GenLayer strict_eq anlaşmazlığı işlem seviyesinde ayrıca başarısız olabilir. Burada bağımsız GenLayer ağı finality'si test edilmedi.
 
-Studio: Docker Linux motoru ve yerel :4000 servisi bu bilgisayarda erişilebilir olmadı. WSL komutları Wsl/E_ACCESSDENIED döndürdü. Ana ağa/testnete dağıtım yapılmadı. Dönem 22–29 Ekim 2026 UTC; gerçekleşen değer henüz yoktur. Sonraki aşama çalışan Docker/WSL ortamında Studio ağı ile bağımsız validator testidir; gerçek fon harcaması veya ağ dağıtımı ayrıca kapsam dışındadır.
+Studio — 21 Ekim güncellemesi: Docker ve WSL komutları gerekli komut izinleriyle erişilebilir. Yerel Docker Studio v0.121.6, GenVM v0.2.16 ve genlayer-js 1.1.8 ile API 127.0.0.1:4000/api, arayüz 127.0.0.1:8080 üzerinde çalıştırıldı. Zincir kimliği 61127, kayıtlı validator sayısı beştir. Beş mevcut tahmin, kaynak/taahhüt hashleri değiştirilmeden yerel sözleşmelere kaydedildi; işlemler FINALIZED, tahmin durumları PENDING olarak okundu. Eski pilot dosyaları değiştirilmedi.
+
+BaseRpcProbe için eksik SDK bağımlılık başlığı ve eski Contract sınıfı düzeltildi. Gerçek Base RPC eth_chainId okuması GenVM strict_eq içinden 8453 döndürdü; kayıtta üç agree, iki idle oyu vardır. Bu, tek yerel kurulumun validator çoğunluğudur; farklı işletmecilerden bağımsız kamu ağı mutabakatı değildir. Hosted Studio dağıtımı için açık kullanıcı onayı hâlâ beklenir.
+
+Yapılandırma local_studio/, tamamlanan işlem kanıtı studio_runs/local_20261021.json içindedir. Ortamda LLM anahtarı yoktur. Validator model adları metadata olarak bulunur; bu sözleşmeler exec_prompt çağırmaz. Sayısal probun gerçek web erişimi LLM model erişimini kanıtlamaz. Yerel test bakiyesi gerçek fon değildir; simülatörün gas_used=0 kaydı kamu ağının protokol ücretini veya USD maliyetini göstermez. Bilinmeyen USD alanları null kalır.
+
+Dönem 22–29 Ekim 2026 UTC'dir; gerçekleşen FEES ve tahmin isabeti henüz yoktur. Dönem sonunda salt okunur toplayıcıyla gerçek kanıt alınması, ardından ayrıca doğrulanmış GenLayer settlement değerlendirmesi gerekir. Erken settlement yapılmadı; kamu ağı/testnet dağıtımı, kişisel cüzdan işlemi, ücretli hizmet veya git push yapılmadı.
 
 Resmî belgeler: https://docs.genlayer.com/developers/intelligent-contracts/testing
 

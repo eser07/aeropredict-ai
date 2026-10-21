@@ -1197,13 +1197,20 @@ UI regression assertions; all 950 weekly histories reconciled. The original
 950-row display, filters, three-selection limit, URL restoration, detail
 navigation, missing USD, pilot display and mobile page width without overflow.
 
-The five-pool P10 pilot and its safe 64-test Direct Mode runner are documented
-in [research/p10_pilot/README.md](research/p10_pilot/README.md). Direct Mode is a
-local logic test with controlled RPC responses; Studio/network consensus has
-not run. WSL command access and Docker Linux engine remain unavailable in this
-session. The active forecast window is 22–29 October 2026 UTC; actual values
-must remain absent until valid post-period evidence exists. No network contract
-deployment, wallet action, paid model call or remote Git push was performed.
+The five-pool P10 pilot and its safe 67-test Direct Mode runner are documented
+in [research/p10_pilot/README.md](research/p10_pilot/README.md). Direct Mode uses
+controlled RPC responses. On 21 October, Docker/WSL access was restored and
+local Docker Studio v0.121.6, GenVM v0.2.16 and JavaScript SDK 1.1.8 were used
+to finalize all five unchanged forecast commitments on local chain 61127.
+A separate Base RPC probe read real Base chain ID 8453 through strict_eq and
+reached a recorded local validator quorum (three agree, two idle).
+These validators share one local Studio installation and are not independent
+public network operators. Hosted Studio deployment remains unapproved.
+The forecast window is 22–29 October 2026 UTC; actual reward values remain
+absent until valid post-period evidence exists. No remote deployment, personal
+wallet, paid model call or remote Git push was used. Reproducible local
+configuration and receipts are under research/p10_pilot/local_studio and
+research/p10_pilot/studio_runs.
 
 
 ### Saved P4 vote observations in the P9 detail view

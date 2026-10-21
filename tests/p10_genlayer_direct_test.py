@@ -14,6 +14,27 @@ BLOCK=60000000
 HASH="0x"+"a"*64
 PARENT="0x"+"b"*64
 
+@pytest.mark.parametrize("mode", ["base", "wrong_chain", "http_error"])
+def test_base_rpc_probe_pinned_sdk(direct_vm, direct_deploy, mode):
+    """The real Studio requires the runner header; Direct Mode checks logic only."""
+    direct_vm.warp(NOW.isoformat())
+    contract = direct_deploy("contracts/BaseRpcProbe.py")
+    module = sys.modules["_contract_BaseRpcProbe"]
+    assert int(contract.get_chain_id()) == 0
+    response = SimpleNamespace(
+        status=503 if mode == "http_error" else 200,
+        body=json.dumps({"jsonrpc": "2.0", "id": 1, "result": "0x1" if mode == "wrong_chain" else "0x2105"}).encode(),
+    )
+    with patch.object(module.gl.nondet.web, "request", return_value=response):
+        if mode == "base":
+            contract.check_base_rpc()
+            assert int(contract.get_chain_id()) == 8453
+        else:
+            expected = "Unexpected chain ID" if mode == "wrong_chain" else "HTTP request failed"
+            with pytest.raises(Exception, match=expected):
+                contract.check_base_rpc()
+            assert int(contract.get_chain_id()) == 0
+
 @pytest.fixture
 def setup_case(direct_vm,direct_deploy):
     def setup(index=64):

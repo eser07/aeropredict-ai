@@ -1,3 +1,4 @@
+# { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }
 """AeroPredict AI: isolated GenLayer-to-Base RPC connectivity probe.
 
 This separate contract is intentionally small. A successful write proves
@@ -13,7 +14,7 @@ BASE_RPC = "https://base-rpc.publicnode.com"
 BASE_CHAIN_ID = 8453
 
 
-class BaseRpcProbe(gl.contract.Contract):
+class BaseRpcProbe(gl.Contract):
     checked_chain_id: u256
 
     def __init__(self):

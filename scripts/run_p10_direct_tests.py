@@ -46,7 +46,7 @@ if not temp_dir.is_relative_to(cache.parent):raise ValueError("Unsafe test temp 
 code=pytest.main(["--basetemp="+str(temp_dir),"-p","gltest.direct.pytest_plugin","-p","no:cacheprovider",*tests,"-q","--tb=short","--junitxml="+str(xml_path)])
 suites=ET.parse(xml_path).getroot()
 cases=list(suites.iter("testcase"))
-paths=["contracts/P10ForecastVerifier.py","contracts/AeroForecastVerifier.py","scripts/p10_forecast_v2.py","tests/p10_genlayer_direct_test.py","scripts/p10_evidence.py","scripts/p10_pilot_status.py","tests/p10_evidence_test.py"]
+paths=["contracts/P10ForecastVerifier.py","contracts/AeroForecastVerifier.py","contracts/BaseRpcProbe.py","scripts/p10_forecast_v2.py","tests/p10_genlayer_direct_test.py","scripts/p10_evidence.py","scripts/p10_pilot_status.py","tests/p10_evidence_test.py"]
 from datetime import datetime,timezone
 summary={"mode":"GenLayer Direct Mode","sdk_release":"v0.2.12","genlayer_test":"0.29.2","passed":code==0,
  "tests":len(cases),"failures":len(list(suites.iter("failure"))),"errors":len(list(suites.iter("error"))),

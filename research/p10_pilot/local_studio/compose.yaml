@@ -1,0 +1,81 @@
+# Local-only adaptation of genlayerlabs/genlayer-studio v0.121.6.
+# Prebuilt official images; no AeroPredict source mounts or provider keys.
+name: aeropredict-studio
+x-runtime: &runtime
+  env_file: [runtime.env.example]
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  logging:
+    driver: json-file
+    options: {max-size: 10m, max-file: '3'}
+services:
+  postgres:
+    <<: *runtime
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: aeropredict-local-development
+      POSTGRES_DB: genlayer_state
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U postgres -d genlayer_state']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  redis:
+    <<: *runtime
+    image: redis:8-alpine
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+  webdriver:
+    <<: *runtime
+    image: yeagerai/genlayer-genvm-webdriver:0.0.9
+    shm_size: 1gb
+    environment: {PORT: '4444'}
+  database-migration:
+    <<: *runtime
+    image: yeagerai/simulator-database-migration:v0.121.6
+    restart: 'no'
+    depends_on:
+      postgres: {condition: service_healthy}
+  jsonrpc:
+    <<: *runtime
+    image: yeagerai/simulator-jsonrpc:v0.121.6
+    volumes: [genvm_cache:/genvm-cache]
+    ports: ['127.0.0.1:4000:4000']
+    depends_on:
+      database-migration: {condition: service_completed_successfully}
+      webdriver: {condition: service_started}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -f, 'http://localhost:4000/health']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+  consensus-worker:
+    <<: *runtime
+    image: yeagerai/simulator-consensus-worker:v0.121.6
+    volumes: [genvm_cache:/genvm-cache]
+    depends_on:
+      jsonrpc: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -f, 'http://localhost:4001/health']
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 300s
+  frontend:
+    <<: *runtime
+    image: yeagerai/simulator-frontend:v0.121.6
+    ports: ['127.0.0.1:8080:8080']
+    depends_on:
+      jsonrpc: {condition: service_healthy}
+volumes:
+  postgres_data:
+  redis_data:
+  genvm_cache:

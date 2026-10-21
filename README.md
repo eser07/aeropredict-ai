@@ -1205,7 +1205,7 @@ to finalize all five unchanged forecast commitments on local chain 61127.
 A separate Base RPC probe read real Base chain ID 8453 through strict_eq and
 reached a recorded local validator quorum (three agree, two idle).
 These validators share one local Studio installation and are not independent
-public network operators. Hosted Studio deployment remains unapproved.
+public network operators. On 21 October, explicit approval was received and the stable Hosted Studio pilot on chain 61999 finalized six deployments and one Base RPC probe. All six deployed source hashes were read back. These hosted simulator votes do not establish independent public-network operators; protocol GEN/USD fees remain unavailable in the stable runtime. Evidence: research/p10_pilot/studio_runs/hosted_20261021.json.
 The forecast window is 22–29 October 2026 UTC; actual reward values remain
 absent until valid post-period evidence exists. No remote deployment, personal
 wallet, paid model call or remote Git push was used. Reproducible local

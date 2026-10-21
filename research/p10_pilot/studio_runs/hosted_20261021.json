@@ -1,0 +1,580 @@
+{
+  "schema_version": 1,
+  "verified_at_utc": "2026-10-21T18:02:47.375632+00:00",
+  "authorization": {
+    "human_message": "onaylıyorum",
+    "approved_plan": "outputs/p10-studionet-islem-plani-20261021.json",
+    "maximum_deployments": 6,
+    "maximum_probe_writes": 1,
+    "maximum_faucet_credits": 0,
+    "settlements": 0
+  },
+  "approved_plan_sha256": "f0405577e538d09f2f7b613219c3ee26dc1860c853904ab531425f0a5e6ff523",
+  "environment": "Stable Hosted Studio / Studionet",
+  "chain_id": 61999,
+  "client_sdk": "genlayer-js 1.1.8",
+  "remote_exact_runtime_version": null,
+  "runtime_compatibility_evidence": "Both pinned sources accepted by remote schema generation; six deployed source hashes read back and seven successful finalized executions verified",
+  "source_base_commit": "41b6a7e14c52618f65fecb8a023bff3ab3624633",
+  "registration_sha256": "0a380b4183c6936f260547a0ee3e9fd353ddd30d8569c13d9d216b4bd11c76f4",
+  "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+  "probe_sha256": "dc8bd0be6e2dce27aa78c976c3bfb85cb6c3c9aa17bb920bd2c3f2e67be0f011",
+  "remote_deployment": true,
+  "hosted_validator_quorum": true,
+  "independent_public_network_consensus": false,
+  "consensus_limit": "Hosted Studio is a shared development simulator. Validator votes do not prove independent operators or durable public-chain finality; outer receipts use synthetic block fields.",
+  "forecast_registrations": [
+    {
+      "pool_index": 64,
+      "contract_address": "0x7Bc30ED1B121C77161223FacD25ad851b39e8118",
+      "details": {
+        "commitment": {
+          "chain_id": 8453,
+          "created_at_utc": "2026-10-18T13:42:22.406108+00:00",
+          "evidence_policy": "Base finalized block, first block crossing target end, parent hash continuity, voter pool/gauge/FEES mapping, block-hash-pinned eth_call",
+          "fees_contract": "0xa2eded6ee17af8debf70a1e93ac66e60dbfaaf33",
+          "fees_source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/fee_histories_batch_001.json",
+          "fees_source_sha256": "2eda9eac9c0e1a542513d684a3427a64eda350ec855e6832ab123ed7d580e43b",
+          "gauge_address": "0x4f09bab2f0e15e2a078a227fe1537665f55b8360",
+          "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+          "pool_address": "0x6cdcb1c4a4d1c3c6d054b27ac5b77e89eafb971d",
+          "pool_index": 64,
+          "predicted_raw": "46747419622",
+          "reward_category": "FEES",
+          "schema_version": 2,
+          "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required",
+          "source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/incentives_batch_001.json",
+          "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+          "target_end_utc": "2026-10-29T00:00:00+00:00",
+          "target_start_utc": "2026-10-22T00:00:00+00:00",
+          "token_address": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+          "token_decimals": 6,
+          "token_symbol": "USDC",
+          "tolerance_percent": 20,
+          "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a"
+        },
+        "commitment_sha256": "d1b49f3e7f677f16998de4a12cd439d020354b52f07cdd6bb3cd583ae384855f",
+        "registered_at": 1792605309,
+        "result": {},
+        "status": "PENDING"
+      }
+    },
+    {
+      "pool_index": 35,
+      "contract_address": "0xf1778b5A8770643431355056058A3500C87e47E7",
+      "details": {
+        "commitment": {
+          "chain_id": 8453,
+          "created_at_utc": "2026-10-18T13:42:22.406108+00:00",
+          "evidence_policy": "Base finalized block, first block crossing target end, parent hash continuity, voter pool/gauge/FEES mapping, block-hash-pinned eth_call",
+          "fees_contract": "0x033a629a174b31bd57f15310cc453f0c3c9b8b35",
+          "fees_source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/fee_histories_batch_001.json",
+          "fees_source_sha256": "2eda9eac9c0e1a542513d684a3427a64eda350ec855e6832ab123ed7d580e43b",
+          "gauge_address": "0x12e45be50dd4f3bc430b65d399b1e3b90275661c",
+          "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+          "pool_address": "0xbbf71aad6e1f8d180d3b1d898528654c1d18b2ff",
+          "pool_index": 35,
+          "predicted_raw": "115070309051261402000665",
+          "reward_category": "FEES",
+          "schema_version": 2,
+          "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required",
+          "source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/incentives_batch_001.json",
+          "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+          "target_end_utc": "2026-10-29T00:00:00+00:00",
+          "target_start_utc": "2026-10-22T00:00:00+00:00",
+          "token_address": "0x74ccbe53f77b08632ce0cb91d3a545bf6b8e0979",
+          "token_decimals": 18,
+          "token_symbol": "fBOMB",
+          "tolerance_percent": 20,
+          "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a"
+        },
+        "commitment_sha256": "9b0b0e600f1532fa68d684691e88c43e3c4108b7c3f5bbd270fbe705eed6d5bf",
+        "registered_at": 1792605348,
+        "result": {},
+        "status": "PENDING"
+      }
+    },
+    {
+      "pool_index": 0,
+      "contract_address": "0x6D8340DF4026811b2180d6aB3DAB495733324101",
+      "details": {
+        "commitment": {
+          "chain_id": 8453,
+          "created_at_utc": "2026-10-18T13:42:22.406108+00:00",
+          "evidence_policy": "Base finalized block, first block crossing target end, parent hash continuity, voter pool/gauge/FEES mapping, block-hash-pinned eth_call",
+          "fees_contract": "0x958a5612390bb4134e1e7505c7cb6b0652941174",
+          "fees_source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/fee_histories_batch_001.json",
+          "fees_source_sha256": "2eda9eac9c0e1a542513d684a3427a64eda350ec855e6832ab123ed7d580e43b",
+          "gauge_address": "0x50f0249b824033cf0af0c8b9fe1c67c2842a34d5",
+          "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+          "pool_address": "0x723aef6543aece026a15662be4d3fb3424d502a9",
+          "pool_index": 0,
+          "predicted_raw": "25588389112564",
+          "reward_category": "FEES",
+          "schema_version": 2,
+          "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required",
+          "source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/incentives_batch_001.json",
+          "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+          "target_end_utc": "2026-10-29T00:00:00+00:00",
+          "target_start_utc": "2026-10-22T00:00:00+00:00",
+          "token_address": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+          "token_decimals": 18,
+          "token_symbol": "tBTC",
+          "tolerance_percent": 20,
+          "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a"
+        },
+        "commitment_sha256": "bdeb752a5978c130ab8a1e9b47599ffda0e5878e0f76f908c821d6639320cfe4",
+        "registered_at": 1792605582,
+        "result": {},
+        "status": "PENDING"
+      }
+    },
+    {
+      "pool_index": 1,
+      "contract_address": "0x0dF409a283ADec93d0B68854af582a969282B28d",
+      "details": {
+        "commitment": {
+          "chain_id": 8453,
+          "created_at_utc": "2026-10-18T13:42:22.406108+00:00",
+          "evidence_policy": "Base finalized block, first block crossing target end, parent hash continuity, voter pool/gauge/FEES mapping, block-hash-pinned eth_call",
+          "fees_contract": "0x8cc161140fbab7baa80369a0f0bd621cf667c022",
+          "fees_source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/fee_histories_batch_001.json",
+          "fees_source_sha256": "2eda9eac9c0e1a542513d684a3427a64eda350ec855e6832ab123ed7d580e43b",
+          "gauge_address": "0xfae8c18d83655fbf31af10d2e9a1ad5ba77d0377",
+          "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+          "pool_address": "0x2722c8f9b5e2ac72d1f225f8e8c990e449ba0078",
+          "pool_index": 1,
+          "predicted_raw": "63702448854154",
+          "reward_category": "FEES",
+          "schema_version": 2,
+          "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required",
+          "source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/incentives_batch_001.json",
+          "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+          "target_end_utc": "2026-10-29T00:00:00+00:00",
+          "target_start_utc": "2026-10-22T00:00:00+00:00",
+          "token_address": "0x236aa50979d5f3de3bd1eeb40e81137f22ab794b",
+          "token_decimals": 18,
+          "token_symbol": "tBTC",
+          "tolerance_percent": 20,
+          "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a"
+        },
+        "commitment_sha256": "20a66abf4babefda647cddd377e8ec4d9df3423f39c4eb30e64f3527e0595084",
+        "registered_at": 1792605630,
+        "result": {},
+        "status": "PENDING"
+      }
+    },
+    {
+      "pool_index": 4,
+      "contract_address": "0x2f1Bfa001BF4B3C66D74d45D248b688EF55f10A8",
+      "details": {
+        "commitment": {
+          "chain_id": 8453,
+          "created_at_utc": "2026-10-18T13:42:22.406108+00:00",
+          "evidence_policy": "Base finalized block, first block crossing target end, parent hash continuity, voter pool/gauge/FEES mapping, block-hash-pinned eth_call",
+          "fees_contract": "0x2bd2e186a04ed9fb5f469f208f5f466afde0775d",
+          "fees_source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/fee_histories_batch_001.json",
+          "fees_source_sha256": "2eda9eac9c0e1a542513d684a3427a64eda350ec855e6832ab123ed7d580e43b",
+          "gauge_address": "0xeae066c25106006fb386a3a8b1698a0cb6931c1a",
+          "model": "four_week_mean_raw_v1 (deterministic baseline, not an LLM)",
+          "pool_address": "0x0b25c51637c43decd6cc1c1e3da4518d54ddb528",
+          "pool_index": 4,
+          "predicted_raw": "332608249017621780",
+          "reward_category": "FEES",
+          "schema_version": 2,
+          "settlement_rule": "Compare same pool/token FEES raw amount at first Base block after target end; pin block hash and parent boundary; independent GenLayer adapter still required",
+          "source_file": "data/pool_collection_batches_base/p9_unified_research/block_52731839/registration_25/incentives_batch_001.json",
+          "source_sha256": "0d334d2e4fe2e1eb42ec3b890e422d0de36b3690979980902a4414b110014b32",
+          "target_end_utc": "2026-10-29T00:00:00+00:00",
+          "target_start_utc": "2026-10-22T00:00:00+00:00",
+          "token_address": "0x4621b7a9c75199271f773ebd9a499dbd165c3191",
+          "token_decimals": 18,
+          "token_symbol": "DOLA",
+          "tolerance_percent": 20,
+          "verifier_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a"
+        },
+        "commitment_sha256": "c0c01b641dd14b3388803ced76b921791fc259e4eedb9a8f153ceb32947a5907",
+        "registered_at": 1792605677,
+        "result": {},
+        "status": "PENDING"
+      }
+    }
+  ],
+  "transactions": [
+    {
+      "label": "BaseRpcProbe deployment",
+      "hash": "0x8fc790cf206f87c2cb9a2353fb2ab641fd7302d4b34d1035a5363288cf180f1d",
+      "contract_address": "0xFe3996ea12491CCC4d66FB46c3C2F91Fecf4eb7D",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T17:53:46.125444+00:00",
+      "finalized_observed_at_utc": "2026-10-21T17:54:26.059Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "Real Base RPC strict_eq",
+      "hash": "0x0204b8d8cf78fbe9351f1918e4d0f2dee8c356c4d7f7099e4e5285c8fd804bc3",
+      "contract_address": "0xFe3996ea12491CCC4d66FB46c3C2F91Fecf4eb7D",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 3,
+        "idle": 2
+      },
+      "created_at": "2026-10-21T17:54:27.242387+00:00",
+      "finalized_observed_at_utc": "2026-10-21T17:55:07.089Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #64",
+      "hash": "0xf585dc956b7acb4089c1271c6967251212129df59cf99df57df59e0849db4bfd",
+      "contract_address": "0x7Bc30ED1B121C77161223FacD25ad851b39e8118",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T17:55:09.728809+00:00",
+      "finalized_observed_at_utc": "2026-10-21T17:55:46.112Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #35",
+      "hash": "0x49aac9612308516894b4892576eae0d38b7a03b5cec93a8ff49cfe04418719e6",
+      "contract_address": "0xf1778b5A8770643431355056058A3500C87e47E7",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T17:55:48.938784+00:00",
+      "finalized_observed_at_utc": "2026-10-21T17:56:26.064Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #0",
+      "hash": "0x24880c30b32fcd2a32ce32364acf2520611639ae64c3f43a1bc782908a932fe4",
+      "contract_address": "0x6D8340DF4026811b2180d6aB3DAB495733324101",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T17:59:42.821367+00:00",
+      "finalized_observed_at_utc": "2026-10-21T18:00:22.356Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #1",
+      "hash": "0xdbe0dcd0ee26511280d08372964b92b589959b398d2f50e02d5de9d419825279",
+      "contract_address": "0x0dF409a283ADec93d0B68854af582a969282B28d",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T18:00:30.409093+00:00",
+      "finalized_observed_at_utc": "2026-10-21T18:01:09.832Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    },
+    {
+      "label": "P10 pool #4",
+      "hash": "0x5e8cab700fcbd153cfa2dc313c6b79a57dc5459fadacbf8ef3b34da525d4365c",
+      "contract_address": "0x2f1Bfa001BF4B3C66D74d45D248b688EF55f10A8",
+      "status": "FINALIZED",
+      "vote_counts": {
+        "agree": 5
+      },
+      "created_at": "2026-10-21T18:01:17.868814+00:00",
+      "finalized_observed_at_utc": "2026-10-21T18:01:54.624Z",
+      "outer_gas_used": 8000000,
+      "outer_effective_gas_price_raw": "0",
+      "outer_evm_fee_raw": "0",
+      "protocol_fee_gen": null,
+      "protocol_fee_usd": null
+    }
+  ],
+  "base_rpc_probe": {
+    "contract_address": "0xFe3996ea12491CCC4d66FB46c3C2F91Fecf4eb7D",
+    "base_chain_id": 8453,
+    "passed": true
+  },
+  "source_readback": {
+    "checked_at_utc": "2026-10-21T18:02:03.861Z",
+    "chain_id": 61999,
+    "transactions_sent": 0,
+    "forecast_checks": [
+      {
+        "pool_index": 64,
+        "contract_address": "0x7Bc30ED1B121C77161223FacD25ad851b39e8118",
+        "code_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+        "commitment_sha256": "d1b49f3e7f677f16998de4a12cd439d020354b52f07cdd6bb3cd583ae384855f",
+        "status": "PENDING",
+        "registered_at": 1792605309,
+        "target_start_utc": "2026-10-22T00:00:00+00:00"
+      },
+      {
+        "pool_index": 35,
+        "contract_address": "0xf1778b5A8770643431355056058A3500C87e47E7",
+        "code_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+        "commitment_sha256": "9b0b0e600f1532fa68d684691e88c43e3c4108b7c3f5bbd270fbe705eed6d5bf",
+        "status": "PENDING",
+        "registered_at": 1792605348,
+        "target_start_utc": "2026-10-22T00:00:00+00:00"
+      },
+      {
+        "pool_index": 0,
+        "contract_address": "0x6D8340DF4026811b2180d6aB3DAB495733324101",
+        "code_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+        "commitment_sha256": "bdeb752a5978c130ab8a1e9b47599ffda0e5878e0f76f908c821d6639320cfe4",
+        "status": "PENDING",
+        "registered_at": 1792605582,
+        "target_start_utc": "2026-10-22T00:00:00+00:00"
+      },
+      {
+        "pool_index": 1,
+        "contract_address": "0x0dF409a283ADec93d0B68854af582a969282B28d",
+        "code_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+        "commitment_sha256": "20a66abf4babefda647cddd377e8ec4d9df3423f39c4eb30e64f3527e0595084",
+        "status": "PENDING",
+        "registered_at": 1792605630,
+        "target_start_utc": "2026-10-22T00:00:00+00:00"
+      },
+      {
+        "pool_index": 4,
+        "contract_address": "0x2f1Bfa001BF4B3C66D74d45D248b688EF55f10A8",
+        "code_sha256": "77f62cfcbd39c07e69f49b66bde8fea35c702526a73b604fc679c985e0c8aa0a",
+        "commitment_sha256": "c0c01b641dd14b3388803ced76b921791fc259e4eedb9a8f153ceb32947a5907",
+        "status": "PENDING",
+        "registered_at": 1792605677,
+        "target_start_utc": "2026-10-22T00:00:00+00:00"
+      }
+    ],
+    "probe_check": {
+      "contract_address": "0xFe3996ea12491CCC4d66FB46c3C2F91Fecf4eb7D",
+      "code_sha256": "dc8bd0be6e2dce27aa78c976c3bfb85cb6c3c9aa17bb920bd2c3f2e67be0f011",
+      "observed_base_chain_id": 8453
+    },
+    "independent_public_network_consensus": false,
+    "account_balance_raw": "0x0",
+    "previous_account_balance_raw": "0x0",
+    "passed": true,
+    "completed_at_utc": "2026-10-21T18:02:14.137Z"
+  },
+  "preflight": {
+    "started_at_utc": "2026-10-21T17:49:54.586Z",
+    "explicit_human_approval": true,
+    "approved_plan": "outputs/p10-studionet-islem-plani-20261021.json",
+    "endpoint": "https://studio.genlayer.com/api",
+    "expected_chain_id": 61999,
+    "sdk": "genlayer-js 1.1.8",
+    "transactions_sent": 0,
+    "account_created": false,
+    "source_uploaded": true,
+    "rpc": [
+      {
+        "method": "eth_chainId",
+        "started_at_utc": "2026-10-21T17:49:54.607Z",
+        "http_status": 200,
+        "result": "0xf22f"
+      },
+      {
+        "method": "web3_clientVersion",
+        "started_at_utc": "2026-10-21T17:49:55.345Z",
+        "http_status": 200,
+        "error_code": -32601,
+        "error_message": "Method not found: web3_clientVersion"
+      },
+      {
+        "method": "rpc_modules",
+        "started_at_utc": "2026-10-21T17:49:55.736Z",
+        "http_status": 200,
+        "error_code": -32601,
+        "error_message": "Method not found: rpc_modules"
+      },
+      {
+        "method": "eth_gasPrice",
+        "started_at_utc": "2026-10-21T17:49:55.940Z",
+        "http_status": 200,
+        "result": "0x0"
+      },
+      {
+        "method": "gen_protocolVersion",
+        "started_at_utc": "2026-10-21T17:49:56.126Z",
+        "http_status": 200,
+        "error_code": -32601,
+        "error_message": "Method not found: gen_protocolVersion"
+      },
+      {
+        "method": "eth_feeHistory",
+        "started_at_utc": "2026-10-21T17:49:56.340Z",
+        "http_status": 200,
+        "result": {
+          "baseFeePerGas": [
+            "0x0",
+            "0x0"
+          ],
+          "gasUsedRatio": [
+            0
+          ],
+          "oldestBlock": "0x0"
+        }
+      },
+      {
+        "method": "rpc.discover",
+        "started_at_utc": "2026-10-21T17:49:56.546Z",
+        "http_status": 200,
+        "error_code": -32601,
+        "error_message": "Method not found: rpc.discover"
+      },
+      {
+        "method": "gen_getContractSchemaForCode",
+        "started_at_utc": "2026-10-21T17:49:56.750Z",
+        "http_status": 200,
+        "result": {
+          "ctor": {
+            "params": [],
+            "kwparams": {}
+          },
+          "methods": {
+            "check_base_rpc": {
+              "params": [],
+              "kwparams": {},
+              "readonly": false,
+              "ret": "null",
+              "payable": false
+            },
+            "get_chain_id": {
+              "params": [],
+              "kwparams": {},
+              "readonly": true,
+              "ret": "int"
+            }
+          }
+        }
+      },
+      {
+        "method": "gen_getContractSchemaForCode",
+        "started_at_utc": "2026-10-21T17:49:57.974Z",
+        "http_status": 200,
+        "result": {
+          "ctor": {
+            "params": [
+              [
+                "commitment_json",
+                "string"
+              ],
+              [
+                "commitment_sha256",
+                "string"
+              ]
+            ],
+            "kwparams": {}
+          },
+          "methods": {
+            "get_details": {
+              "params": [],
+              "kwparams": {},
+              "readonly": true,
+              "ret": "string"
+            },
+            "settle": {
+              "params": [
+                [
+                  "first_next_epoch_block",
+                  "int"
+                ]
+              ],
+              "kwparams": {},
+              "readonly": false,
+              "ret": "null",
+              "payable": false
+            }
+          }
+        }
+      }
+    ],
+    "protocol_fee_gen": null,
+    "protocol_fee_usd": null,
+    "readiness": false,
+    "probe_schema_supported": true,
+    "verifier_schema_supported": true,
+    "sdk_has_protocol_fee_estimator": false,
+    "sdk_fee_manager_address": null,
+    "completed_at_utc": "2026-10-21T17:49:59.239Z"
+  },
+  "cost": {
+    "account_address": "0xefE3f08E50425E72F0D0F552B439Ed4940036215",
+    "account_policy": "Disposable memory-only development key; no personal wallet",
+    "faucet_used": false,
+    "real_funds_used": false,
+    "paid_services_activated": false,
+    "balance_before_raw": "0x0",
+    "balance_after_raw": "0x0",
+    "previous_account_address": "0x466f9DB5A441AE9ff01f23ae66904d59b1a0fEe0",
+    "previous_account_balance_after_operations": "0x0",
+    "observed_native_test_balance_delta_raw": "0",
+    "outer_evm_fee_total_raw": "0",
+    "protocol_fee_gen": null,
+    "protocol_fee_usd": null,
+    "total_usd": null,
+    "fee_profile_available": false,
+    "status": "legacy_evm_and_test_balance_measured_protocol_cost_unavailable",
+    "note": "Stable Studionet exposes legacy gas estimates and zero EVM price, not v0.6 protocol fee estimation or settlement accounting. Observed test balance and outer EVM fees are not public-network economics or USD costs."
+  },
+  "actual_fees_observed": false,
+  "forecast_accuracy_evaluated": false,
+  "settlement_transactions": 0,
+  "target_end_utc": "2026-10-29T00:00:00+00:00",
+  "integrity": {
+    "historical_files_unchanged": 311,
+    "protected_user_scripts_unchanged": [
+      "scripts/collect_pool_pairs_base.py",
+      "scripts/pool_fee_histories_base.py",
+      "scripts/reward_tokens.py"
+    ],
+    "p10_test_source_hashes_unchanged": true
+  },
+  "validation": {
+    "real_hosted_contract_operations_passed": 7,
+    "contract_source_hashes_read_back": 6,
+    "previous_direct_tests_passed": 67,
+    "previous_p9_tests_passed": 74,
+    "tests_rerun_this_step": false
+  },
+  "artifacts": [
+    {
+      "file": "p10-hosted-run-20261021-r3.json",
+      "sha256": "f94a6903ba63691840b18d8f1ea077fdfe6a6b0b6d2be83d4e86ba6774709480"
+    },
+    {
+      "file": "p10-hosted-readback-20261021.json",
+      "sha256": "5c9a41eec91646a611d4423dd9ad51c8ea1da856f0d033f4b1cf21a6ea911905"
+    },
+    {
+      "file": "p10-hosted-preflight-20261021T174954Z.json",
+      "sha256": "c9d91e0a4ad699d6bc65a16c4ba76757aa5f0d80b3aec5156999ad1d95b31819"
+    }
+  ]
+}

@@ -24,7 +24,7 @@ Veri yetersizliği bir validator'ın kanıt alamadığı durumdur. GenLayer stri
 
 Studio — 21 Ekim güncellemesi: Docker ve WSL komutları gerekli komut izinleriyle erişilebilir. Yerel Docker Studio v0.121.6, GenVM v0.2.16 ve genlayer-js 1.1.8 ile API 127.0.0.1:4000/api, arayüz 127.0.0.1:8080 üzerinde çalıştırıldı. Zincir kimliği 61127, kayıtlı validator sayısı beştir. Beş mevcut tahmin, kaynak/taahhüt hashleri değiştirilmeden yerel sözleşmelere kaydedildi; işlemler FINALIZED, tahmin durumları PENDING olarak okundu. Eski pilot dosyaları değiştirilmedi.
 
-BaseRpcProbe için eksik SDK bağımlılık başlığı ve eski Contract sınıfı düzeltildi. Gerçek Base RPC eth_chainId okuması GenVM strict_eq içinden 8453 döndürdü; kayıtta üç agree, iki idle oyu vardır. Bu, tek yerel kurulumun validator çoğunluğudur; farklı işletmecilerden bağımsız kamu ağı mutabakatı değildir. Hosted Studio dağıtımı için açık kullanıcı onayı hâlâ beklenir.
+BaseRpcProbe için eksik SDK bağımlılık başlığı ve eski Contract sınıfı düzeltildi. Gerçek Base RPC eth_chainId okuması GenVM strict_eq içinden 8453 döndürdü; kayıtta üç agree, iki idle oyu vardır. Bu, tek yerel kurulumun validator çoğunluğudur; farklı işletmecilerden bağımsız kamu ağı mutabakatı değildir. 21 Ekim'de açık kullanıcı onayı alındı; kararlı Hosted Studio 61999 pilotu tamamlandı. Güncel kanıt studio_runs/hosted_20261021.json içindedir; bu ortak geliştirme ortamı bağımsız kamu ağı mutabakatı değildir.
 
 Yapılandırma local_studio/, tamamlanan işlem kanıtı studio_runs/local_20261021.json içindedir. Ortamda LLM anahtarı yoktur. Validator model adları metadata olarak bulunur; bu sözleşmeler exec_prompt çağırmaz. Sayısal probun gerçek web erişimi LLM model erişimini kanıtlamaz. Yerel test bakiyesi gerçek fon değildir; simülatörün gas_used=0 kaydı kamu ağının protokol ücretini veya USD maliyetini göstermez. Bilinmeyen USD alanları null kalır.
 
@@ -76,3 +76,8 @@ taahhüt edilmedi.
 ## 21 Ekim: yerel maliyet kanıtı
 
 [Makbuzlara dayalı maliyet incelemesi](cost_reports/local_20261021.md) ve [JSON kaydı](cost_reports/local_20261021.json), altı yerel dağıtım/bir prob çağrısını kapsar. Yerel işlem kanıtı tamamdır; gerçek protokol GEN/USD maliyeti ölçülmedi ve null kalır. Bu inceleme işlem göndermek için bir fee-profile değildir. Dönem sonu FEES, 29 Ekim Türkiye 03.00 sonrasında toplanabilir; mevcut sözleşmeler veya tahminler değiştirilmedi.
+
+
+## Onaylı Hosted Studio pilotu — 21 Ekim 2026
+
+Altı dağıtım ve bir Base RPC probu FINALIZED oldu. Beş eski taahhüt korunarak dönem başlamadan kaydedildi; kaynaklar ve PENDING durumları ayrıca yeniden okundu. [İşlem ve maliyet raporu](cost_reports/hosted_20261021.md), legacy EVM sıfır ücretini gerçek protokol GEN/USD maliyetinden ayırır. Protokol ücreti null kalır; yeni RC ağına geçilmedi. FEES kanıtı 29 Ekim Türkiye 03.00 sonrasını bekler. Erken veya uzak settlement yapılmadı.

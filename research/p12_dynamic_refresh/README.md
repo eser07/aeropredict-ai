@@ -1,7 +1,7 @@
 # P12 — hourly provider observations
 
 This is a read-only Base collector for the entire Voter registry, not another
-GenLayer deployment. Default example: 10,000 AERO, maximum 25% to one pool.
+GenLayer deployment. Default example: 10,000 AERO. Each selected pool receives 10–25%; only the latest completed week enters this allocation. Earlier weeks are excluded from the income scenario, while historical research remains available.
 The example is hypothetical while active/voting eligibility is unresolved.
 
 ## What changes on each successful update
@@ -63,12 +63,25 @@ arrival. Show the last successful data time and stale state after 90 minutes.
 
 ## Activation state
 
-NOT ACTIVATED. Source/data branch push and the website update still need the
-human's explicit Git push approval under the original project instruction.
-After authorization: push the reviewed source, dispatch the workflow once,
-verify that it finishes and publishes a coherent snapshot, verify anonymous
-browser readback of that exact block, then connect/publish the same existing
-Sites project. Do not claim hourly operation before this writer/readback test.
+ACTIVATED with explicit human approval on 2026-10-22. The source branch was
+fast-forwarded to 8189391; the clean runner required the explicit
+eth-hash[pycryptodome] backend correction c7b8c4e. First successful GitHub run:
+https://github.com/eser07/aeropredict-ai/actions/runs/39811460656
+
+It published 2,013 provider records at Base finalized block 52947436,
+hash 0xf9e2b38093b6cf9faa529c0dbb20e17ee0aedf669d97cfc58a947ed9ca39130f,
+completed 2026-10-22T16:10:30.169348+00:00. Anonymous JSON readback returned 200
+with the exact identity count/block and CORS access. Hourly cron is active at
+minute 23; the first verified run was manually dispatched. Scheduled arrival
+remains best effort, not an exact-time guarantee. Site publication is recorded
+separately by its native deployment/version evidence.
+
+`scenario-math.mjs` reproduces the latest-week 10–25% allocation. Dynamic
+programming selects zero or 10–25 one-percent units per pool, sums to 100%,
+and maximizes the hypothetical R*x/(W+x) value on that grid. Unknown older
+weeks do not affect this latest-week computation. This remains hypothetical
+while live voting eligibility is unresolved.
+
 Preserve the previous Windows tasks, panels, historical data and dirty scripts.
 
 ## Verification

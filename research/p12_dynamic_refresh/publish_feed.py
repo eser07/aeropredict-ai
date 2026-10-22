@@ -18,7 +18,7 @@ def prepare(output,feed):
     for j,total in enumerate(s['totals'][:4]):
         target=feed/'weekly'/total['end_utc'][:10]/'first_observation.json'
         if not target.exists():
-            replace_json(target,{'context':s['context'],'totals':total,'pools':[{'index':p['index'],'address':p['address'],'fees_usd':p['fees'][j],'bribes_usd':p['bribes'][j],'rewards':{k:[{'token_address':t['token_address'],'raw':t['raw'][j]} for t in p['rewards'][k]['tokens']] for k in ['fees','bribes']}} for p in s['pools']]})
+            replace_json(target,{'context':s['context'],'token_metadata':s['token_metadata'],'prices':s['prices'],'totals':total,'pools':[{'index':p['index'],'address':p['address'],'fees_usd':p['fees'][j],'bribes_usd':p['bribes'][j],'rewards':{k:[{'token_address':t['token_address'],'raw':t['raw'][j]} for t in p['rewards'][k]['tokens']] for k in ['fees','bribes']}} for p in s['pools']]})
     (feed/'README.md').write_text('# AeroPredict provider observations\n\nHourly data only. Source code is on grass-main. Amounts are read at one finalized Base block, not independent historical boundary snapshots. USD uses collection-time prices; missing prices are unknown. Latest data has no new GenLayer attestation. Weekly first observations are immutable. No wallet or transaction is involved.\n',encoding='utf-8')
 
 if __name__=='__main__':

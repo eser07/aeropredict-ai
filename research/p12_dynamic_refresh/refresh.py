@@ -142,7 +142,7 @@ def summarize(pools,metadata,prices,weeks,context):
                 values=[value_usd(t['raw'][j],metadata.get(t['token_address'],{}),prices.get(t['token_address'],{})) for t in p['rewards'][kind]['tokens']]
                 amounts[kind].append(None if any(v is None for v in values) else str(sum(values,Decimal(0))))
         rows.append({'index':p['index'],'address':p['pool_address'],'gauge':p['gauge_address'],'pair':p['pair'],'votes_raw':p['vote_weight_raw'],'alive_at_snapshot':p['active_at_collection'],'usd_complete':all(v is not None for a in amounts.values() for v in a[:4]),'fees':amounts['fees'][:4],'bribes':amounts['bribes'][:4],'current_fees':amounts['fees'][4],'current_bribes':amounts['bribes'][4],'source_status':'PROVIDER_OBSERVED','rewards':p['rewards']})
-    return {'schema_version':1,'context':context,'pool_count':len(rows),'registry_length':context['registry_length'],'observed_at_utc':context['completed_at_utc'],'genlayer_status':'NOT_ATTESTED_FOR_THIS_SNAPSHOT','totals':totals,'pools':rows}
+    return {'schema_version':1,'context':context,'pool_count':len(rows),'registry_length':context['registry_length'],'observed_at_utc':context['completed_at_utc'],'genlayer_status':'NOT_ATTESTED_FOR_THIS_SNAPSHOT','token_metadata':metadata,'prices':prices,'totals':totals,'pools':rows}
 
 def validate_snapshot(s,previous=None):
     rows=s['pools'];ctx=s['context']

@@ -1,0 +1,1 @@
+{"checked_at_utc":"2026-10-22T06:24:23.882829+00:00","offline_tests":8,"passed":true,"real_genlayer_transactions":0,"warning":"Offline SDK stubs are not validator consensus evidence. Real schema/runtime and network integration remain separate."}

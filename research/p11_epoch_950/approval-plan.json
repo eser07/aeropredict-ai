@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "prepared_at_utc": "2026-10-22T06:32:52.058685+00:00",
+  "approval_state": "AWAITING_EXPLICIT_HUMAN_APPROVAL",
+  "network": {
+    "kind": "Hosted shared development Studio",
+    "chain_id": 61999,
+    "endpoint": "https://studio.genlayer.com/api",
+    "sdk": "genlayer-js 1.1.8",
+    "independent_public_network_consensus": false
+  },
+  "scope": {
+    "pool_count": 950,
+    "epoch_end_utc": "2026-10-22T00:00:00+00:00",
+    "four_completed_weeks": [
+      "2026-09-24T00:00:00+00:00",
+      "2026-10-01T00:00:00+00:00",
+      "2026-10-08T00:00:00+00:00",
+      "2026-10-15T00:00:00+00:00"
+    ],
+    "block_number": 52929586,
+    "block_hash": "0x2d62018d94b4b1c45ea3c7e009bc0229738d8cb49c8232b739effe0a91d9b6c5",
+    "checks": [
+      "Voter index and pool address",
+      "Gauge, current weight and alive flag",
+      "FEES and BRIBES contract mappings",
+      "DURATION and complete registered token lists",
+      "All four epoch raw reward amounts for every listed token"
+    ],
+    "excluded": [
+      "USD quote validation",
+      "Original five forecast settlement",
+      "Future predictions",
+      "Personal income or APR"
+    ]
+  },
+  "limits": {
+    "new_deployments": 1,
+    "verify_batch_writes": 95,
+    "total_broadcast_attempts_max": 96,
+    "pools_per_batch_max": 10,
+    "faucet_calls": 0,
+    "real_funds_spend_max_usd": 0,
+    "extra_probe_calls": 0,
+    "settlements": 0,
+    "other_networks": false
+  },
+  "fees": {
+    "observed_legacy_gas_price": "0x0",
+    "successful_legacy_estimates": 96,
+    "estimate_scope": "Legacy compatibility estimates using the exact payload and zero placeholder destination; repeat against real consensus destination before each signature. Not full protocol accounting.",
+    "protocol_gen": null,
+    "total_usd": null,
+    "no_paid_rpc_llm_or_personal_wallet": true
+  },
+  "merkle_root": "7928f8b2b2785df66a0eb8722427ccf891bf9bc37c50c125389e5065eab88786",
+  "source_sha256": "b835f9a011c785f780576f09e56f9399b8bbccca11c6121357a053ddbce43436",
+  "batch_plan_sha256": "38565ce44898dc178cbba1a7937aa2773c42901ea296544607ddb800832a867a",
+  "constructor_args": [
+    "7928f8b2b2785df66a0eb8722427ccf891bf9bc37c50c125389e5065eab88786",
+    "0x2d62018d94b4b1c45ea3c7e009bc0229738d8cb49c8232b739effe0a91d9b6c5",
+    52929586,
+    1792627200,
+    "2756d7c52baee85cacb504f6ee1df7aad6809ac8d94a4a111d76991f90d36d6e"
+  ],
+  "local_evidence": {
+    "source_sha256": "b835f9a011c785f780576f09e56f9399b8bbccca11c6121357a053ddbce43436",
+    "contract_address": "0xa10881220567D287d721d32095350E1f8C9486E4",
+    "verified_pools": 10,
+    "votes": {
+      "0x0D3c85eEa26FB4853DbB426C0ED6a90F352a6445": "agree",
+      "0x2ba7428dB1a1CB3ae34E16A9EDcD0316Da100082": "idle",
+      "0x3FBaBdE54dCAEAC74d904a3d6783a1d2d7d40A2f": "agree",
+      "0x7AeB9e2b3647e23A5dF629fee11612807D996Be5": "idle",
+      "0xcd50db60143b655Fab86E328529034d2114DE714": "agree"
+    },
+    "scope": "Same-machine logical validators, not independent public operators"
+  },
+  "publication": {
+    "project_id": "appgprj_6ad906411e8881919303e90d1499e11a",
+    "url": "https://aeropredict.app/",
+    "push_target": "Existing Sites source repository only",
+    "changes": [
+      "22 October completed-epoch 950-pool dataset",
+      "Neutral search; no default pool 64",
+      "Searchable all950 validator status and real per-pool receipts",
+      "Preserve original five forecasts"
+    ],
+    "canonical_github_push": false
+  },
+  "stops": [
+    "Unexpected chain or nonzero legacy gas price",
+    "Real funds, personal wallet, paid service or faucet required",
+    "Ambiguous broadcast, missing validator majority or mismatched stored data",
+    "Any extra operation beyond 96 broadcasts requires a new plan"
+  ]
+}

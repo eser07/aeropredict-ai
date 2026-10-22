@@ -1,0 +1,53 @@
+name: AeroPredict hourly pool data
+on:
+  workflow_dispatch:
+  schedule:
+    # Minute 23 UTC is also minute 23 in Europe/Istanbul; avoid hourly peak.
+    - cron: '23 * * * *'
+permissions:
+  contents: write
+concurrency:
+  group: aeropredict-hourly-data
+  cancel-in-progress: false
+jobs:
+  refresh:
+    # Do not enable paid/private runner usage or fork writes.
+    if: github.repository == 'eser07/aeropredict-ai' && github.event.repository.private == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified 2026-10-22
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5, verified 2026-10-22
+        with:
+          python-version: '3.12'
+      - name: Install read-only collector dependencies
+        run: python -m pip install --disable-pip-version-check -r research/p12_dynamic_refresh/requirements.txt
+      - name: Open isolated data branch
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --heads origin aeropredict-data >/dev/null; then
+            git fetch origin aeropredict-data
+            git worktree add --detach feed FETCH_HEAD
+            git -C feed checkout -b aeropredict-data
+            mkdir -p run-data
+            cp feed/latest.json run-data/latest.json
+          else
+            git worktree add --detach feed HEAD
+            git -C feed switch --orphan aeropredict-data
+          fi
+      - name: Read finalized pool registry, rewards and prices
+        run: python -B research/p12_dynamic_refresh/refresh.py --live --output run-data
+      - name: Validate and prepare public data
+        run: python -B research/p12_dynamic_refresh/publish_feed.py --output run-data --feed feed
+      - name: Publish data only by normal fast-forward
+        shell: bash
+        run: |
+          git -C feed config user.name 'AeroPredict data update'
+          git -C feed config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C feed add latest.json status.json README.md weekly
+          if ! git -C feed diff --cached --quiet; then
+            git -C feed commit -m "Update finalized pool observations $(date -u +%FT%TZ)"
+            git -C feed push origin HEAD:refs/heads/aeropredict-data
+          fi

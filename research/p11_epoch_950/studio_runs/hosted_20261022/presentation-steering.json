@@ -1,0 +1,10 @@
+{
+  "human_instruction": "eski beş tahmin olmasın",
+  "applied_scope": "Remove original five-forecast cards, old receipts and old public assets/readers from the site; preserve canonical history and on-chain records.",
+  "old_public_assets_removed": [
+    "data/hosted-evidence.json",
+    "contracts/P10ForecastVerifier.py",
+    "contracts/BaseRpcProbe.py"
+  ],
+  "current_public_cohort": 950
+}

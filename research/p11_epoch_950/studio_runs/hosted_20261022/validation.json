@@ -1,0 +1,11 @@
+{
+  "checked_at_utc": "2026-10-22T09:45:36.311Z",
+  "passed": 4,
+  "checks": [
+    "950 unique identities retain910 priced and40 unknown records",
+    "all data manifest entries and the deployed epoch source hash match",
+    "all current HTML links and static assets resolve",
+    "public UI has no old five-forecast presentation or assets"
+  ],
+  "network_calls": 0
+}

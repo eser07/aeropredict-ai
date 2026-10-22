@@ -1,0 +1,7 @@
+{
+  "recorded_at_utc": "2026-10-22T06:52:47.049254+00:00",
+  "source": "Direct human answer to async question call_429a84d12ff844db8cce5d830b9688e5",
+  "answer": "Evet, 96 test işlemini ve yayını onaylıyorum",
+  "plan_sha256": "0bd3a028633e3c6cf15be860140e9514988222d8daaab738ef4a19f8253eaa76",
+  "scope": "Hosted Studio 61999 one deployment plus 95 verify_batch calls, at most 96 broadcasts; then same Sites source push and aeropredict.app publication. No canonical GitHub push."
+}

@@ -1,0 +1,20 @@
+{
+  "checked_at_utc": "2026-10-22T09:45:37.633Z",
+  "passed": 11,
+  "checks": [
+    "valid source, Merkle membership, full coverage, claim and receipt quorum",
+    "rejects chain",
+    "rejects source",
+    "rejects coverage",
+    "rejects claim",
+    "rejects block",
+    "rejects receipt",
+    "rejects target",
+    "rejects quorum",
+    "tampered raw reward fails cohort membership before networking",
+    "unknown receipt cannot be used as validator proof"
+  ],
+  "network_calls": 0,
+  "fixture_requests": 34,
+  "source_sha256": "b835f9a011c785f780576f09e56f9399b8bbccca11c6121357a053ddbce43436"
+}

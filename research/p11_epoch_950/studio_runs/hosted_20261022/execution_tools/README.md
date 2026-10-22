@@ -1,0 +1,1 @@
+Archived operational sources from the completed run. Paths refer to the original workspace. Do not replay execution: all 96 authorized broadcasts have been used. Readback is read-only; publication preparation builds artifacts from the completed evidence.

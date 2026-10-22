@@ -1,0 +1,10 @@
+{
+  "passed": true,
+  "archive": "C:\\Users\\eseri\\Documents\\Codex\\2026-10-18\\files-pasted-by-the-user-aeropredict\\outputs\\epoch950-20261022\\site-final.tar.gz",
+  "archive_sha256": "f4c1becb42a53c923b77553c2274bf749a247024146c4a0cc0e37123e82da2b0",
+  "source_sha256": "b835f9a011c785f780576f09e56f9399b8bbccca11c6121357a053ddbce43436",
+  "file_count": 32,
+  "commit_sha": "a325022d05a60574aaefa7a38eadcf35a61cba92",
+  "json_and_math_bytes_match_checkout": true,
+  "old_forecast_public_assets_absent": true
+}

@@ -1,0 +1,38 @@
+{
+  "published": true,
+  "primary_url": "https://aeropredict.app/",
+  "project_id": "appgprj_6ad906411e8881919303e90d1499e11a",
+  "version_id": "appgprj_6ad906411e8881919303e90d1499e11a~appgver_2c278e901cc081919ebae2269d2664f2",
+  "version_number": 4,
+  "deployment": {
+    "id": "appgdep_6ad9dc6214fc8191bc18c06be9ea21ea",
+    "project_id": "appgprj_6ad906411e8881919303e90d1499e11a",
+    "title": "AeroPredict AI",
+    "version_id": "appgprj_6ad906411e8881919303e90d1499e11a~appgver_2c278e901cc081919ebae2269d2664f2",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://aeropredict-ai-research.amberball130.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6ad906411e8881919303e90d1499e11a",
+    "failure_message": null,
+    "env_set_revision": 0,
+    "updated_at": "2026-10-22T09:50:44.588031+00:00"
+  },
+  "source": {
+    "project_id": "appgprj_6ad906411e8881919303e90d1499e11a",
+    "commit_sha": "a325022d05a60574aaefa7a38eadcf35a61cba92",
+    "archive": "C:\\Users\\eseri\\Documents\\Codex\\2026-10-18\\files-pasted-by-the-user-aeropredict\\outputs\\epoch950-20261022\\site-final.tar.gz"
+  },
+  "scope": {
+    "epoch_end_utc": "2026-10-22T00:00:00Z",
+    "verified_pools": 950,
+    "transactions": 96,
+    "old_five_forecasts_removed_from_public_site": true,
+    "default_search_empty": true,
+    "canonical_github_push": false
+  },
+  "independent_public_operator_consensus": false,
+  "protocol_gen_fee": null,
+  "total_usd_fee": null
+}
